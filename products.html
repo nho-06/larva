@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Larva | Quản lý sản phẩm</title>
+
+    <link
+        rel="stylesheet"
+        href="./assets/css/main.css"
+    >
+
+    <!-- Tạo mã vạch Code 128 -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.1/dist/JsBarcode.all.min.js"></script>
+
+    <!-- Quét mã vạch bằng camera điện thoại -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+
+<body>
+
+<div class="app-layout">
+
+    <div id="sidebarContainer"></div>
+
+    <main class="main-content">
+
+        <header class="page-header">
+
+            <div>
+                <p class="eyebrow">
+                    KHO HÀNG
+                </p>
+
+                <h1>
+                    Quản lý sản phẩm
+                </h1>
+            </div>
+
+            <div class="page-actions">
+
+                <button
+                    class="button button-light"
+                    id="openScannerButton"
+                    type="button"
+                >
+                    Quét mã
+                </button>
+
+                <button
+                    class="button"
+                    id="openProductForm"
+                    type="button"
+                >
+                    + Thêm sản phẩm
+                </button>
+
+            </div>
+
+        </header>
+
+        <section
+            id="scannedProductBox"
+            class="scanned-product-box hidden"
+        ></section>
+
+        <section class="panel">
+
+            <div class="toolbar">
+
+                <input
+                    id="searchInput"
+                    class="input"
+                    type="search"
+                    placeholder="Tìm tên, mã sản phẩm hoặc mã vạch"
+                >
+
+                <select
+                    id="categoryFilter"
+                    class="input"
+                >
+                    <option value="">
+                        Tất cả danh mục
+                    </option>
+                </select>
+
+            </div>
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Mã sản phẩm</th>
+                        <th>Mã vạch</th>
+                        <th>Danh mục</th>
+                        <th>Giá nhập</th>
+                        <th>Giá bán</th>
+                        <th>Tồn kho</th>
+                        <th>Thao tác</th>
+                    </tr>
+                    </thead>
+
+                    <tbody id="productTable"></tbody>
+
+                </table>
+
+            </div>
+
+            <p
+                id="emptyState"
+                class="empty-state hidden"
+            >
+                Chưa có sản phẩm phù hợp.
+            </p>
+
+        </section>
+
+    </main>
+
+</div>
+
+<!-- Form thêm và sửa sản phẩm -->
+<div
+    class="modal hidden"
+    id="productModal"
+>
+
+    <div
+        class="modal-backdrop"
+        data-close-product-modal
+    ></div>
+
+    <section class="modal-card">
+
+        <div class="modal-header">
+
+            <div>
+                <p class="eyebrow">
+                    SẢN PHẨM
+                </p>
+
+                <h2 id="formTitle">
+                    Thêm sản phẩm
+                </h2>
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-product-modal
+            >
+                ×
+            </button>
+
+        </div>
+
+        <form
+            id="productForm"
+            class="form-grid"
+        >
+
+            <input
+                type="hidden"
+                id="productId"
+            >
+
+            <input
+                type="hidden"
+                id="barcode"
+            >
+
+            <label>
+                Tên sản phẩm
+
+                <input
+                    class="input"
+                    id="name"
+                    type="text"
+                    placeholder="Nhập tên sản phẩm"
+                    required
+                >
+            </label>
+
+            <label>
+                Mã sản phẩm
+
+                <input
+                    class="input"
+                    id="sku"
+                    type="text"
+                    placeholder="Ví dụ: VAY001"
+                    required
+                >
+            </label>
+
+            <label>
+                Danh mục
+
+                <input
+                    class="input"
+                    id="category"
+                    type="text"
+                    placeholder="Ví dụ: Váy, Áo, Quần"
+                >
+            </label>
+
+            <label>
+                Số lượng
+
+                <input
+                    class="input"
+                    id="quantity"
+                    type="number"
+                    min="0"
+                    value="0"
+                    required
+                >
+            </label>
+
+            <label>
+                Giá nhập
+
+                <input
+                    class="input"
+                    id="costPrice"
+                    type="number"
+                    min="0"
+                    value="0"
+                >
+            </label>
+
+            <label>
+                Giá bán
+
+                <input
+                    class="input"
+                    id="salePrice"
+                    type="number"
+                    min="0"
+                    value="0"
+                    required
+                >
+            </label>
+
+            <label class="full-width">
+                Link ảnh
+
+                <input
+                    class="input"
+                    id="image"
+                    type="url"
+                    placeholder="https://..."
+                >
+            </label>
+
+            <label class="full-width">
+                Mô tả
+
+                <textarea
+                    class="input"
+                    id="description"
+                    rows="4"
+                    placeholder="Nhập mô tả sản phẩm"
+                ></textarea>
+            </label>
+
+            <div
+                id="barcodePreviewBox"
+                class="barcode-preview-box full-width hidden"
+            >
+                <span>Mã vạch sản phẩm</span>
+
+                <svg id="barcodePreview"></svg>
+            </div>
+
+            <div class="form-actions full-width">
+
+                <button
+                    class="button button-light"
+                    type="button"
+                    data-close-product-modal
+                >
+                    Hủy
+                </button>
+
+                <button
+                    class="button"
+                    type="submit"
+                >
+                    Lưu sản phẩm
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+</div>
+
+<!-- Camera quét mã -->
+<div
+    class="modal hidden"
+    id="scannerModal"
+>
+
+    <div
+        class="modal-backdrop"
+        data-close-scanner-modal
+    ></div>
+
+    <section class="modal-card scanner-card">
+
+        <div class="modal-header">
+
+            <div>
+                <p class="eyebrow">
+                    CAMERA
+                </p>
+
+                <h2>
+                    Quét mã sản phẩm
+                </h2>
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-scanner-modal
+            >
+                ×
+            </button>
+
+        </div>
+
+        <p class="scanner-help">
+            Đưa mã vạch vào giữa khung camera.
+        </p>
+
+        <div id="barcodeReader"></div>
+
+        <p
+            id="scannerMessage"
+            class="scanner-message"
+        ></p>
+
+    </section>
+
+</div>
+
+<script src="./assets/js/sidebar.js"></script>
+
+<script
+    type="module"
+    src="./assets/js/pages/products.js"
+></script>
+
+</body>
+
+</html>

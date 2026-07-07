@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Quản lý bán hàng
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="./assets/css/main.css"
+    >
+
+</head>
+
+<body>
+
+<div class="app-layout">
+
+    <div id="sidebarContainer"></div>
+
+    <main class="main-content">
+
+        <header class="page-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    BẢNG ĐIỀU KHIỂN
+                </p>
+
+                <h1>
+                    Tổng quan cửa hàng
+                </h1>
+
+            </div>
+
+        </header>
+
+        <section class="stats-grid">
+
+            <article class="stat-card">
+
+                <span>
+                    Tổng sản phẩm
+                </span>
+
+                <strong id="productCount">
+                    0
+                </strong>
+
+            </article>
+
+            <article class="stat-card">
+
+                <span>
+                    Tổng tồn kho
+                </span>
+
+                <strong id="stockCount">
+                    0
+                </strong>
+
+            </article>
+
+            <article class="stat-card">
+
+                <span>
+                    Sản phẩm sắp hết
+                </span>
+
+                <strong id="lowStockCount">
+                    0
+                </strong>
+
+            </article>
+
+            <article class="stat-card">
+
+                <span>
+                    Tổng giá trị kho
+                </span>
+
+                <strong id="inventoryValue">
+                    0 ₫
+                </strong>
+
+            </article>
+
+        </section>
+
+        <section class="panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>
+                        Sản phẩm mới cập nhật
+                    </h2>
+
+                    <p>
+                        Hiển thị tối đa 5 sản phẩm gần nhất.
+                    </p>
+
+                </div>
+
+                <a
+                    class="button button-light"
+                    href="./products.html"
+                >
+                    Quản lý sản phẩm
+                </a>
+
+            </div>
+
+            <div class="table-wrap">
+
+                <table>
+
+                    <thead>
+
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Mã</th>
+                        <th>Giá bán</th>
+                        <th>Tồn kho</th>
+                    </tr>
+
+                    </thead>
+
+                    <tbody id="recentProducts"></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="./assets/js/sidebar.js"></script>
+
+<script
+    type="module"
+    src="./assets/js/pages/dashboard.js"
+></script>
+
+</body>
+
+</html>
