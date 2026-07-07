@@ -17,10 +17,14 @@
     >
 
     <!-- Tạo mã vạch Code 128 -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.1/dist/JsBarcode.all.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.1/dist/JsBarcode.all.min.js"
+    ></script>
 
-    <!-- Quét mã vạch bằng camera điện thoại -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Quét mã vạch bằng camera -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"
+    ></script>
 </head>
 
 <body>
@@ -65,6 +69,7 @@
 
         </header>
 
+        <!-- Kết quả sau khi quét mã -->
         <section
             id="scannedProductBox"
             class="scanned-product-box hidden"
@@ -128,7 +133,7 @@
 
 </div>
 
-<!-- Form thêm và sửa sản phẩm -->
+<!-- Modal thêm và sửa sản phẩm -->
 <div
     class="modal hidden"
     id="productModal"
@@ -278,7 +283,9 @@
                 id="barcodePreviewBox"
                 class="barcode-preview-box full-width hidden"
             >
-                <span>Mã vạch sản phẩm</span>
+                <span>
+                    Mã vạch sản phẩm
+                </span>
 
                 <svg id="barcodePreview"></svg>
             </div>
@@ -308,7 +315,7 @@
 
 </div>
 
-<!-- Camera quét mã -->
+<!-- Modal camera quét mã -->
 <div
     class="modal hidden"
     id="scannerModal"

@@ -14,11 +14,8 @@ import {
 
 const state = {
     products: [],
-
     scanner: null,
-
     scannerRunning: false,
-
     scanLocked: false
 };
 
@@ -100,7 +97,7 @@ const elements = {
 };
 
 /*
-    Tạo giá trị mã vạch duy nhất.
+    Tạo mã vạch tự động.
 
     Ví dụ:
     LRV-1783423123456-456
@@ -119,13 +116,9 @@ function generateBarcodeValue() {
 
 /*
     Vẽ mã vạch Code 128.
-
-    selector có thể là:
-    - chuỗi CSS
-    - phần tử SVG
 */
 function renderBarcode(
-    selector,
+    target,
     barcodeValue,
     compact = false
 ) {
@@ -138,7 +131,7 @@ function renderBarcode(
 
     try {
         JsBarcode(
-            selector,
+            target,
             barcodeValue,
             {
                 format: "CODE128",
@@ -165,9 +158,11 @@ function renderBarcode(
                         ? 2
                         : 8,
 
-                background: "#ffffff",
+                background:
+                    "#ffffff",
 
-                lineColor: "#111111"
+                lineColor:
+                    "#111111"
             }
         );
     } catch (error) {
@@ -217,19 +212,13 @@ function openProductModal(product = null) {
             product.category || "";
 
         elements.quantity.value =
-            Number(
-                product.quantity || 0
-            );
+            Number(product.quantity || 0);
 
         elements.costPrice.value =
-            Number(
-                product.costPrice || 0
-            );
+            Number(product.costPrice || 0);
 
         elements.salePrice.value =
-            Number(
-                product.salePrice || 0
-            );
+            Number(product.salePrice || 0);
 
         elements.image.value =
             product.image || "";
@@ -266,13 +255,10 @@ function closeProductModal() {
 }
 
 /*
-    Lấy dữ liệu trong form.
-
-    Nếu sản phẩm chưa có mã vạch,
-    hệ thống sẽ tự tạo mã mới.
+    Lấy dữ liệu sản phẩm trong form.
 */
 function getFormData() {
-    const existingBarcode =
+    const currentBarcode =
         elements.barcode.value.trim();
 
     return {
@@ -283,7 +269,7 @@ function getFormData() {
             elements.sku.value.trim(),
 
         barcode:
-            existingBarcode
+            currentBarcode
             || generateBarcodeValue(),
 
         category:
@@ -316,7 +302,7 @@ function getFormData() {
     Hiển thị danh mục trong ô lọc.
 */
 function renderCategoryFilter() {
-    const selectedCategory =
+    const currentCategory =
         elements.categoryFilter.value;
 
     const categories = [
@@ -353,13 +339,13 @@ function renderCategoryFilter() {
     `;
 
     elements.categoryFilter.value =
-        categories.includes(selectedCategory)
-            ? selectedCategory
+        categories.includes(currentCategory)
+            ? currentCategory
             : "";
 }
 
 /*
-    Lọc danh sách sản phẩm.
+    Lọc sản phẩm theo từ khóa và danh mục.
 */
 function getFilteredProducts() {
     const keyword =
@@ -539,7 +525,7 @@ function renderProducts() {
 }
 
 /*
-    Vẽ các mã vạch trong bảng.
+    Vẽ toàn bộ mã vạch trong bảng.
 */
 function renderTableBarcodes() {
     const barcodeElements =
@@ -562,8 +548,7 @@ function renderTableBarcodes() {
 }
 
 /*
-    Hiển thị thông tin sản phẩm
-    sau khi quét mã thành công.
+    Hiển thị sản phẩm sau khi quét mã.
 */
 function showScannedProduct(product) {
     const productImage =
@@ -665,8 +650,139 @@ function showScannedProduct(product) {
 }
 
 /*
-    Đưa camera về mức zoom thấp nhất
-    và bật lấy nét liên tục nếu điện thoại hỗ trợ.
+    Hiển thị lỗi camera dễ hiểu.
+*/
+function getCameraErrorMessage(error) {
+    const errorName =
+        error?.name || "";
+
+    const errorMessage =
+        error?.message
+        || String(error || "");
+
+    if (
+        errorName === "NotAllowedError"
+        || errorName === "PermissionDeniedError"
+        || errorMessage
+            .toLowerCase()
+            .includes("permission")
+    ) {
+        return (
+            "Camera đang bị chặn. "
+            + "Hãy cho phép trang web sử dụng camera "
+            + "rồi tải lại trang."
+        );
+    }
+
+    if (
+        errorName === "NotFoundError"
+        || errorName === "DevicesNotFoundError"
+        || errorMessage
+            .toLowerCase()
+            .includes("not found")
+    ) {
+        return (
+            "Không tìm thấy camera trên thiết bị."
+        );
+    }
+
+    if (
+        errorName === "NotReadableError"
+        || errorName === "TrackStartError"
+    ) {
+        return (
+            "Camera đang được ứng dụng khác sử dụng. "
+            + "Hãy tắt Camera, Zalo, Meet "
+            + "hoặc ứng dụng gọi video."
+        );
+    }
+
+    if (
+        errorName === "OverconstrainedError"
+        || errorName
+            === "ConstraintNotSatisfiedError"
+    ) {
+        return (
+            "Camera không hỗ trợ thiết lập đang yêu cầu."
+        );
+    }
+
+    if (errorName === "SecurityError") {
+        return (
+            "Trình duyệt không cho phép "
+            + "mở camera trên trang này."
+        );
+    }
+
+    return (
+        "Không mở được camera: "
+        + errorMessage
+    );
+}
+
+/*
+    Xin quyền camera trước.
+
+    Safari và Chrome sẽ hiện hộp thoại
+    yêu cầu người dùng cho phép camera.
+*/
+async function requestCameraPermission() {
+    if (
+        !navigator.mediaDevices
+        || !navigator.mediaDevices.getUserMedia
+    ) {
+        throw new Error(
+            "Trình duyệt này không hỗ trợ camera."
+        );
+    }
+
+    const stream =
+        await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+        });
+
+    stream
+        .getTracks()
+        .forEach((track) => {
+            track.stop();
+        });
+}
+
+/*
+    Chọn camera sau chính.
+
+    Không chọn camera cuối danh sách,
+    vì có thể là camera tele.
+*/
+function chooseCamera(cameras) {
+    if (
+        !Array.isArray(cameras)
+        || !cameras.length
+    ) {
+        return null;
+    }
+
+    const backCamera =
+        cameras.find((camera) => {
+            const label =
+                String(camera.label || "")
+                    .toLowerCase();
+
+            return (
+                label.includes("back")
+                || label.includes("rear")
+                || label.includes("environment")
+                || label.includes("camera sau")
+            );
+        });
+
+    return backCamera || cameras[0];
+}
+
+/*
+    Đưa zoom về nhỏ nhất và bật lấy nét liên tục
+    nếu thiết bị hỗ trợ.
 */
 async function applyCameraSettings() {
     if (
@@ -681,12 +797,8 @@ async function applyCameraSettings() {
             state.scanner
                 .getRunningTrackCameraCapabilities();
 
-        const settings = {};
+        const advancedSettings = {};
 
-        /*
-            Một số trình duyệt trả về focusMode
-            dưới dạng mảng.
-        */
         if (
             Array.isArray(
                 capabilities.focusMode
@@ -695,42 +807,32 @@ async function applyCameraSettings() {
                 "continuous"
             )
         ) {
-            settings.focusMode =
+            advancedSettings.focusMode =
                 "continuous";
         }
 
-        /*
-            Đưa zoom về giá trị nhỏ nhất.
-
-            Thường là 1.
-        */
         if (capabilities.zoom) {
-            const minimumZoom =
+            advancedSettings.zoom =
                 Number(
                     capabilities.zoom.min || 1
                 );
-
-            settings.zoom =
-                minimumZoom;
         }
 
         if (
-            Object.keys(settings).length > 0
+            Object.keys(
+                advancedSettings
+            ).length > 0
         ) {
             await state.scanner
                 .applyVideoConstraints({
                     advanced: [
-                        settings
+                        advancedSettings
                     ]
                 });
         }
     } catch (error) {
-        /*
-            Không phải điện thoại nào cũng hỗ trợ
-            chỉnh zoom hoặc focus bằng trình duyệt.
-        */
         console.warn(
-            "Thiết bị không hỗ trợ chỉnh zoom hoặc lấy nét:",
+            "Không thể chỉnh focus hoặc zoom:",
             error
         );
     }
@@ -738,9 +840,6 @@ async function applyCameraSettings() {
 
 /*
     Mở camera quét mã.
-
-    Không lấy camera cuối danh sách nữa,
-    vì camera cuối có thể là camera tele.
 */
 async function openScanner() {
     if (state.scannerRunning) {
@@ -754,50 +853,67 @@ async function openScanner() {
     );
 
     elements.scannerMessage.textContent =
-        "Đang mở camera...";
-
-    if (
-        typeof Html5Qrcode
-        === "undefined"
-    ) {
-        elements.scannerMessage.textContent =
-            "Không tải được thư viện quét mã.";
-
-        return;
-    }
+        "Đang yêu cầu quyền sử dụng camera...";
 
     try {
-        /*
-            Tạo trình quét một lần.
-        */
-        if (!state.scanner) {
-            state.scanner =
-                new Html5Qrcode(
-                    "barcodeReader",
-                    {
-                        verbose: false
-                    }
-                );
+        if (
+            typeof Html5Qrcode === "undefined"
+            || typeof Html5QrcodeSupportedFormats
+                === "undefined"
+        ) {
+            throw new Error(
+                "Thư viện quét mã chưa tải được."
+            );
         }
 
         /*
-            facingMode environment giúp trình duyệt
-            tự chọn camera sau chính.
-
-            Không dùng cameras[cameras.length - 1]
-            vì có thể chọn nhầm camera tele.
+            Xin quyền trước để trình duyệt
+            hiện thông báo cho phép camera.
         */
+        await requestCameraPermission();
+
+        elements.scannerMessage.textContent =
+            "Đang tìm camera...";
+
+        const cameras =
+            await Html5Qrcode.getCameras();
+
+        const selectedCamera =
+            chooseCamera(cameras);
+
+        if (!selectedCamera) {
+            throw new Error(
+                "Không tìm thấy camera."
+            );
+        }
+
+        /*
+            Khởi tạo đúng thư viện.
+
+            Tham số thứ hai là mảng
+            các định dạng cần quét.
+        */
+        state.scanner =
+            new Html5Qrcode(
+                "barcodeReader",
+                [
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.UPC_E
+                ],
+                false
+            );
+
         await state.scanner.start(
+            selectedCamera.id,
             {
-                facingMode: {
-                    ideal: "environment"
-                }
-            },
-            {
-                fps: 12,
+                fps: 10,
 
                 qrbox: {
-                    width: 300,
+                    width: 280,
                     height: 120
                 },
 
@@ -805,22 +921,13 @@ async function openScanner() {
                     16 / 9,
 
                 disableFlip:
-                    true,
-
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.UPC_E
-                ]
+                    true
             },
             handleScanSuccess,
             () => {
                 /*
-                    Không hiện lỗi liên tục
-                    khi camera chưa bắt được mã.
+                    Không hiện lỗi mỗi khung hình
+                    khi chưa đọc được mã.
                 */
             }
         );
@@ -828,25 +935,33 @@ async function openScanner() {
         state.scannerRunning = true;
 
         elements.scannerMessage.textContent =
-            "Giữ điện thoại cách mã khoảng 15–25 cm và giữ yên.";
+            "Camera đã mở. "
+            + "Giữ mã vạch cách camera khoảng 15–25 cm.";
 
-        /*
-            Chờ camera ổn định rồi mới áp dụng zoom/focus.
-        */
         setTimeout(() => {
             applyCameraSettings();
-        }, 500);
+        }, 700);
 
     } catch (error) {
         console.error(
-            "Lỗi mở camera:",
+            "Lỗi camera đầy đủ:",
             error
         );
 
         state.scannerRunning = false;
 
         elements.scannerMessage.textContent =
-            "Không mở được camera. Hãy cho phép trình duyệt sử dụng camera.";
+            getCameraErrorMessage(error);
+
+        if (state.scanner) {
+            try {
+                await state.scanner.clear();
+            } catch (clearError) {
+                console.warn(clearError);
+            }
+        }
+
+        state.scanner = null;
     }
 }
 
@@ -854,24 +969,26 @@ async function openScanner() {
     Đóng camera.
 */
 async function closeScanner() {
-    if (
-        state.scanner
-        && state.scannerRunning
-    ) {
+    state.scanLocked = false;
+
+    if (state.scanner) {
         try {
-            await state.scanner.stop();
+            if (state.scannerRunning) {
+                await state.scanner.stop();
+            }
 
             await state.scanner.clear();
+
         } catch (error) {
             console.warn(
-                "Không thể dừng camera:",
+                "Lỗi khi đóng camera:",
                 error
             );
         }
     }
 
     state.scannerRunning = false;
-    state.scanLocked = false;
+    state.scanner = null;
 
     elements.scannerModal.classList.add(
         "hidden"
@@ -879,20 +996,15 @@ async function closeScanner() {
 
     elements.scannerMessage.textContent = "";
 
-    elements.barcodeReader.innerHTML = "";
-
-    /*
-        Sau clear, tạo lại đối tượng khi quét lần sau.
-    */
-    state.scanner = null;
+    if (elements.barcodeReader) {
+        elements.barcodeReader.innerHTML = "";
+    }
 }
 
 /*
-    Xử lý khi quét được mã.
+    Xử lý sau khi quét được mã.
 */
-async function handleScanSuccess(
-    decodedText
-) {
+async function handleScanSuccess(decodedText) {
     if (state.scanLocked) {
         return;
     }
@@ -904,14 +1016,12 @@ async function handleScanSuccess(
             .trim();
 
     const product =
-        state.products.find(
-            (item) => {
-                return (
-                    item.barcode === scannedCode
-                    || item.sku === scannedCode
-                );
-            }
-        );
+        state.products.find((item) => {
+            return (
+                item.barcode === scannedCode
+                || item.sku === scannedCode
+            );
+        });
 
     await closeScanner();
 
@@ -943,7 +1053,7 @@ elements.openProductForm.addEventListener(
 );
 
 /*
-    Mở camera.
+    Mở camera quét mã.
 */
 elements.openScannerButton.addEventListener(
     "click",
@@ -993,17 +1103,15 @@ elements.form.addEventListener(
             elements.productId.value;
 
         const duplicatedSku =
-            state.products.some(
-                (item) => {
-                    return (
-                        normalizeText(item.sku)
-                        === normalizeText(product.sku)
+            state.products.some((item) => {
+                return (
+                    normalizeText(item.sku)
+                    === normalizeText(product.sku)
 
-                        && item.id
-                        !== productId
-                    );
-                }
-            );
+                    && item.id
+                    !== productId
+                );
+            });
 
         if (duplicatedSku) {
             alert(
@@ -1014,17 +1122,15 @@ elements.form.addEventListener(
         }
 
         const duplicatedBarcode =
-            state.products.some(
-                (item) => {
-                    return (
-                        item.barcode
-                        === product.barcode
+            state.products.some((item) => {
+                return (
+                    item.barcode
+                    === product.barcode
 
-                        && item.id
-                        !== productId
-                    );
-                }
-            );
+                    && item.id
+                    !== productId
+                );
+            });
 
         if (duplicatedBarcode) {
             alert(
@@ -1060,7 +1166,7 @@ elements.form.addEventListener(
 );
 
 /*
-    Xử lý nút sửa và xóa.
+    Xử lý nút sửa và xóa sản phẩm.
 */
 elements.productTable.addEventListener(
     "click",
@@ -1083,11 +1189,9 @@ elements.productTable.addEventListener(
 
         if (editId) {
             const product =
-                state.products.find(
-                    (item) => {
-                        return item.id === editId;
-                    }
-                );
+                state.products.find((item) => {
+                    return item.id === editId;
+                });
 
             if (product) {
                 openProductModal(product);
@@ -1096,11 +1200,9 @@ elements.productTable.addEventListener(
 
         if (deleteId) {
             const product =
-                state.products.find(
-                    (item) => {
-                        return item.id === deleteId;
-                    }
-                );
+                state.products.find((item) => {
+                    return item.id === deleteId;
+                });
 
             const accepted =
                 confirm(
@@ -1135,7 +1237,7 @@ elements.searchInput.addEventListener(
 );
 
 /*
-    Lọc danh mục.
+    Lọc theo danh mục.
 */
 elements.categoryFilter.addEventListener(
     "change",
@@ -1143,8 +1245,7 @@ elements.categoryFilter.addEventListener(
 );
 
 /*
-    Khi rời khỏi trang hoặc chuyển tab,
-    dừng camera để tránh camera tiếp tục chạy.
+    Khi rời trang thì dừng camera.
 */
 window.addEventListener(
     "pagehide",
@@ -1154,7 +1255,7 @@ window.addEventListener(
 );
 
 /*
-    Nhận danh sách sản phẩm từ Firebase.
+    Nhận dữ liệu sản phẩm từ Firebase.
 */
 listenProducts((products) => {
     state.products = products;
