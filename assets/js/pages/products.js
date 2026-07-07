@@ -96,12 +96,6 @@ const elements = {
         document.querySelector("#scannedProductBox")
 };
 
-/*
-    Tạo mã vạch tự động.
-
-    Ví dụ:
-    LRV-1783423123456-456
-*/
 function generateBarcodeValue() {
     const timePart =
         Date.now().toString();
@@ -114,9 +108,6 @@ function generateBarcodeValue() {
     return `LRV-${timePart}-${randomPart}`;
 }
 
-/*
-    Vẽ mã vạch Code 128.
-*/
 function renderBarcode(
     target,
     barcodeValue,
@@ -173,9 +164,6 @@ function renderBarcode(
     }
 }
 
-/*
-    Mở form thêm hoặc sửa sản phẩm.
-*/
 function openProductModal(product = null) {
     elements.form.reset();
 
@@ -245,18 +233,12 @@ function openProductModal(product = null) {
     );
 }
 
-/*
-    Đóng form sản phẩm.
-*/
 function closeProductModal() {
     elements.productModal.classList.add(
         "hidden"
     );
 }
 
-/*
-    Lấy dữ liệu sản phẩm trong form.
-*/
 function getFormData() {
     const currentBarcode =
         elements.barcode.value.trim();
@@ -298,9 +280,6 @@ function getFormData() {
     };
 }
 
-/*
-    Hiển thị danh mục trong ô lọc.
-*/
 function renderCategoryFilter() {
     const currentCategory =
         elements.categoryFilter.value;
@@ -344,9 +323,6 @@ function renderCategoryFilter() {
             : "";
 }
 
-/*
-    Lọc sản phẩm theo từ khóa và danh mục.
-*/
 function getFilteredProducts() {
     const keyword =
         normalizeText(
@@ -384,9 +360,6 @@ function getFilteredProducts() {
     );
 }
 
-/*
-    Hiển thị bảng sản phẩm.
-*/
 function renderProducts() {
     const products =
         getFilteredProducts();
@@ -402,7 +375,6 @@ function renderProducts() {
                     <tr>
 
                         <td>
-
                             <div class="product-cell">
 
                                 <img
@@ -428,7 +400,6 @@ function renderProducts() {
                                 </div>
 
                             </div>
-
                         </td>
 
                         <td>
@@ -436,7 +407,6 @@ function renderProducts() {
                         </td>
 
                         <td>
-
                             ${
                                 product.barcode
                                     ? `
@@ -459,7 +429,6 @@ function renderProducts() {
                                         </span>
                                     `
                             }
-
                         </td>
 
                         <td>
@@ -488,7 +457,6 @@ function renderProducts() {
                         </td>
 
                         <td>
-
                             <div class="actions">
 
                                 <button
@@ -508,7 +476,6 @@ function renderProducts() {
                                 </button>
 
                             </div>
-
                         </td>
 
                     </tr>
@@ -524,9 +491,6 @@ function renderProducts() {
     renderTableBarcodes();
 }
 
-/*
-    Vẽ toàn bộ mã vạch trong bảng.
-*/
 function renderTableBarcodes() {
     const barcodeElements =
         document.querySelectorAll(
@@ -547,9 +511,6 @@ function renderTableBarcodes() {
     );
 }
 
-/*
-    Hiển thị sản phẩm sau khi quét mã.
-*/
 function showScannedProduct(product) {
     const productImage =
         product.image
@@ -640,6 +601,10 @@ function showScannedProduct(product) {
                 elements.scannedProductBox.classList.add(
                     "hidden"
                 );
+
+                elements.searchInput.value = "";
+
+                renderProducts();
             }
         );
 
@@ -649,9 +614,6 @@ function showScannedProduct(product) {
     });
 }
 
-/*
-    Hiển thị lỗi camera dễ hiểu.
-*/
 function getCameraErrorMessage(error) {
     const errorName =
         error?.name || "";
@@ -660,12 +622,14 @@ function getCameraErrorMessage(error) {
         error?.message
         || String(error || "");
 
+    const lowerMessage =
+        errorMessage.toLowerCase();
+
     if (
         errorName === "NotAllowedError"
         || errorName === "PermissionDeniedError"
-        || errorMessage
-            .toLowerCase()
-            .includes("permission")
+        || lowerMessage.includes("permission")
+        || lowerMessage.includes("denied")
     ) {
         return (
             "Camera đang bị chặn. "
@@ -677,9 +641,7 @@ function getCameraErrorMessage(error) {
     if (
         errorName === "NotFoundError"
         || errorName === "DevicesNotFoundError"
-        || errorMessage
-            .toLowerCase()
-            .includes("not found")
+        || lowerMessage.includes("not found")
     ) {
         return (
             "Không tìm thấy camera trên thiết bị."
@@ -703,7 +665,7 @@ function getCameraErrorMessage(error) {
             === "ConstraintNotSatisfiedError"
     ) {
         return (
-            "Camera không hỗ trợ thiết lập đang yêu cầu."
+            "Không thể chọn camera sau trên thiết bị này."
         );
     }
 
@@ -720,70 +682,57 @@ function getCameraErrorMessage(error) {
     );
 }
 
-/*
-    Xin quyền camera trước.
+function getSupportedBarcodeFormats() {
+    return [
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E
+    ];
+}
 
-    Safari và Chrome sẽ hiện hộp thoại
-    yêu cầu người dùng cho phép camera.
-*/
-async function requestCameraPermission() {
-    if (
-        !navigator.mediaDevices
-        || !navigator.mediaDevices.getUserMedia
-    ) {
-        throw new Error(
-            "Trình duyệt này không hỗ trợ camera."
+function createScanner() {
+    return new Html5Qrcode(
+        "barcodeReader",
+        getSupportedBarcodeFormats(),
+        false
+    );
+}
+
+function getScannerConfig() {
+    const screenWidth =
+        Math.max(
+            window.innerWidth || 320,
+            320
         );
-    }
 
-    const stream =
-        await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-        });
+    const qrWidth =
+        Math.min(
+            300,
+            Math.max(
+                220,
+                screenWidth - 90
+            )
+        );
 
-    stream
-        .getTracks()
-        .forEach((track) => {
-            track.stop();
-        });
+    return {
+        fps: 12,
+
+        qrbox: {
+            width: qrWidth,
+            height: 110
+        },
+
+        aspectRatio:
+            16 / 9,
+
+        disableFlip:
+            true
+    };
 }
 
-/*
-    Chọn camera sau chính.
-
-    Không chọn camera cuối danh sách,
-    vì có thể là camera tele.
-*/
-function chooseCamera(cameras) {
-    if (
-        !Array.isArray(cameras)
-        || !cameras.length
-    ) {
-        return null;
-    }
-
-    const backCamera =
-        cameras.find((camera) => {
-            const label =
-                String(camera.label || "")
-                    .toLowerCase();
-
-            return (
-                label.includes("back")
-                || label.includes("rear")
-                || label.includes("environment")
-                || label.includes("camera sau")
-            );
-        });
-
-    return backCamera || cameras[0];
-}
-
-/*
-    Đưa zoom về nhỏ nhất và bật lấy nét liên tục
-    nếu thiết bị hỗ trợ.
-*/
 async function applyCameraSettings() {
     if (
         !state.scanner
@@ -812,10 +761,13 @@ async function applyCameraSettings() {
         }
 
         if (capabilities.zoom) {
-            advancedSettings.zoom =
+            const minimumZoom =
                 Number(
                     capabilities.zoom.min || 1
                 );
+
+            advancedSettings.zoom =
+                minimumZoom;
         }
 
         if (
@@ -838,9 +790,143 @@ async function applyCameraSettings() {
     }
 }
 
-/*
-    Mở camera quét mã.
-*/
+async function clearScannerInstance() {
+    if (!state.scanner) {
+        return;
+    }
+
+    try {
+        if (state.scannerRunning) {
+            await state.scanner.stop();
+        }
+    } catch (error) {
+        console.warn(
+            "Không thể dừng camera:",
+            error
+        );
+    }
+
+    try {
+        await state.scanner.clear();
+    } catch (error) {
+        console.warn(
+            "Không thể xóa trình quét:",
+            error
+        );
+    }
+
+    state.scannerRunning = false;
+    state.scanner = null;
+
+    if (elements.barcodeReader) {
+        elements.barcodeReader.innerHTML = "";
+    }
+}
+
+async function startBackCameraExact() {
+    state.scanner =
+        createScanner();
+
+    await state.scanner.start(
+        {
+            facingMode: {
+                exact: "environment"
+            }
+        },
+        getScannerConfig(),
+        handleScanSuccess,
+        () => {
+            // Chờ đến khi đọc được mã.
+        }
+    );
+
+    state.scannerRunning = true;
+}
+
+async function startBackCameraIdeal() {
+    state.scanner =
+        createScanner();
+
+    await state.scanner.start(
+        {
+            facingMode: {
+                ideal: "environment"
+            }
+        },
+        getScannerConfig(),
+        handleScanSuccess,
+        () => {
+            // Chờ đến khi đọc được mã.
+        }
+    );
+
+    state.scannerRunning = true;
+}
+
+async function startCameraByDeviceList() {
+    const cameras =
+        await Html5Qrcode.getCameras();
+
+    if (
+        !Array.isArray(cameras)
+        || !cameras.length
+    ) {
+        throw new Error(
+            "Không tìm thấy camera."
+        );
+    }
+
+    const normalizedCameras =
+        cameras.map((camera) => {
+            return {
+                ...camera,
+
+                normalizedLabel:
+                    String(
+                        camera.label || ""
+                    ).toLowerCase()
+            };
+        });
+
+    const rearCamera =
+        normalizedCameras.find(
+            (camera) => {
+                const label =
+                    camera.normalizedLabel;
+
+                return (
+                    label.includes("back")
+                    || label.includes("rear")
+                    || label.includes("environment")
+                    || label.includes("camera sau")
+                    || label.includes("wide")
+                    || label.includes("0.5x")
+                    || label.includes("1x")
+                );
+            }
+        );
+
+    if (!rearCamera) {
+        throw new Error(
+            "Không xác định được camera sau."
+        );
+    }
+
+    state.scanner =
+        createScanner();
+
+    await state.scanner.start(
+        rearCamera.id,
+        getScannerConfig(),
+        handleScanSuccess,
+        () => {
+            // Chờ đến khi đọc được mã.
+        }
+    );
+
+    state.scannerRunning = true;
+}
+
 async function openScanner() {
     if (state.scannerRunning) {
         return;
@@ -853,7 +939,7 @@ async function openScanner() {
     );
 
     elements.scannerMessage.textContent =
-        "Đang yêu cầu quyền sử dụng camera...";
+        "Đang mở camera sau...";
 
     try {
         if (
@@ -866,77 +952,44 @@ async function openScanner() {
             );
         }
 
-        /*
-            Xin quyền trước để trình duyệt
-            hiện thông báo cho phép camera.
-        */
-        await requestCameraPermission();
-
-        elements.scannerMessage.textContent =
-            "Đang tìm camera...";
-
-        const cameras =
-            await Html5Qrcode.getCameras();
-
-        const selectedCamera =
-            chooseCamera(cameras);
-
-        if (!selectedCamera) {
+        if (
+            !navigator.mediaDevices
+            || !navigator.mediaDevices.getUserMedia
+        ) {
             throw new Error(
-                "Không tìm thấy camera."
+                "Trình duyệt không hỗ trợ camera."
             );
         }
 
-        /*
-            Khởi tạo đúng thư viện.
+        try {
+            await startBackCameraExact();
 
-            Tham số thứ hai là mảng
-            các định dạng cần quét.
-        */
-        state.scanner =
-            new Html5Qrcode(
-                "barcodeReader",
-                [
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.UPC_E
-                ],
-                false
+        } catch (exactError) {
+            console.warn(
+                "Không mở được camera sau bằng exact:",
+                exactError
             );
 
-        await state.scanner.start(
-            selectedCamera.id,
-            {
-                fps: 10,
+            await clearScannerInstance();
 
-                qrbox: {
-                    width: 280,
-                    height: 120
-                },
+            try {
+                await startBackCameraIdeal();
 
-                aspectRatio:
-                    16 / 9,
+            } catch (idealError) {
+                console.warn(
+                    "Không mở được camera sau bằng ideal:",
+                    idealError
+                );
 
-                disableFlip:
-                    true
-            },
-            handleScanSuccess,
-            () => {
-                /*
-                    Không hiện lỗi mỗi khung hình
-                    khi chưa đọc được mã.
-                */
+                await clearScannerInstance();
+
+                await startCameraByDeviceList();
             }
-        );
-
-        state.scannerRunning = true;
+        }
 
         elements.scannerMessage.textContent =
-            "Camera đã mở. "
-            + "Giữ mã vạch cách camera khoảng 15–25 cm.";
+            "Camera sau đã mở. "
+            + "Đưa mã vạch vào giữa khung.";
 
         setTimeout(() => {
             applyCameraSettings();
@@ -944,66 +997,29 @@ async function openScanner() {
 
     } catch (error) {
         console.error(
-            "Lỗi camera đầy đủ:",
+            "Lỗi mở camera:",
             error
         );
 
-        state.scannerRunning = false;
+        await clearScannerInstance();
 
         elements.scannerMessage.textContent =
             getCameraErrorMessage(error);
-
-        if (state.scanner) {
-            try {
-                await state.scanner.clear();
-            } catch (clearError) {
-                console.warn(clearError);
-            }
-        }
-
-        state.scanner = null;
     }
 }
 
-/*
-    Đóng camera.
-*/
 async function closeScanner() {
     state.scanLocked = false;
 
-    if (state.scanner) {
-        try {
-            if (state.scannerRunning) {
-                await state.scanner.stop();
-            }
-
-            await state.scanner.clear();
-
-        } catch (error) {
-            console.warn(
-                "Lỗi khi đóng camera:",
-                error
-            );
-        }
-    }
-
-    state.scannerRunning = false;
-    state.scanner = null;
+    await clearScannerInstance();
 
     elements.scannerModal.classList.add(
         "hidden"
     );
 
     elements.scannerMessage.textContent = "";
-
-    if (elements.barcodeReader) {
-        elements.barcodeReader.innerHTML = "";
-    }
 }
 
-/*
-    Xử lý sau khi quét được mã.
-*/
 async function handleScanSuccess(decodedText) {
     if (state.scanLocked) {
         return;
@@ -1017,9 +1033,17 @@ async function handleScanSuccess(decodedText) {
 
     const product =
         state.products.find((item) => {
+            const productBarcode =
+                String(item.barcode || "")
+                    .trim();
+
+            const productSku =
+                String(item.sku || "")
+                    .trim();
+
             return (
-                item.barcode === scannedCode
-                || item.sku === scannedCode
+                productBarcode === scannedCode
+                || productSku === scannedCode
             );
         });
 
@@ -1042,9 +1066,6 @@ async function handleScanSuccess(decodedText) {
     showScannedProduct(product);
 }
 
-/*
-    Mở form thêm sản phẩm.
-*/
 elements.openProductForm.addEventListener(
     "click",
     () => {
@@ -1052,17 +1073,11 @@ elements.openProductForm.addEventListener(
     }
 );
 
-/*
-    Mở camera quét mã.
-*/
 elements.openScannerButton.addEventListener(
     "click",
     openScanner
 );
 
-/*
-    Đóng form sản phẩm.
-*/
 document
     .querySelectorAll(
         "[data-close-product-modal]"
@@ -1074,9 +1089,6 @@ document
         );
     });
 
-/*
-    Đóng camera.
-*/
 document
     .querySelectorAll(
         "[data-close-scanner-modal]"
@@ -1088,9 +1100,6 @@ document
         );
     });
 
-/*
-    Lưu sản phẩm.
-*/
 elements.form.addEventListener(
     "submit",
     async (event) => {
@@ -1165,9 +1174,6 @@ elements.form.addEventListener(
     }
 );
 
-/*
-    Xử lý nút sửa và xóa sản phẩm.
-*/
 elements.productTable.addEventListener(
     "click",
     async (event) => {
@@ -1228,35 +1234,23 @@ elements.productTable.addEventListener(
     }
 );
 
-/*
-    Tìm kiếm sản phẩm.
-*/
 elements.searchInput.addEventListener(
     "input",
     renderProducts
 );
 
-/*
-    Lọc theo danh mục.
-*/
 elements.categoryFilter.addEventListener(
     "change",
     renderProducts
 );
 
-/*
-    Khi rời trang thì dừng camera.
-*/
 window.addEventListener(
     "pagehide",
     () => {
-        closeScanner();
+        clearScannerInstance();
     }
 );
 
-/*
-    Nhận dữ liệu sản phẩm từ Firebase.
-*/
 listenProducts((products) => {
     state.products = products;
 
