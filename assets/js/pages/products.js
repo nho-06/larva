@@ -651,6 +651,7 @@ function getCameraErrorMessage(error) {
     if (
         errorName === "NotReadableError"
         || errorName === "TrackStartError"
+                || errorName === "TrackStartError"
     ) {
         return (
             "Camera đang được ứng dụng khác sử dụng. "
@@ -749,25 +750,35 @@ async function applyCameraSettings() {
         const advancedSettings = {};
 
         if (
-            Array.isArray(
-                capabilities.focusMode
-            )
-            && capabilities.focusMode.includes(
-                "continuous"
-            )
+            Array.isArray(capabilities.focusMode)
+            && capabilities.focusMode.includes("continuous")
         ) {
-            advancedSettings.focusMode =
-                "continuous";
+            advancedSettings.focusMode = "continuous";
         }
 
         if (capabilities.zoom) {
-            const minimumZoom =
+            const minZoom =
                 Number(
-                    capabilities.zoom.min || 1
+                    capabilities.zoom.min ?? 1
                 );
 
+            const maxZoom =
+                Number(
+                    capabilities.zoom.max ?? 1
+                );
+
+            /*
+                Đưa camera về gần mức 1x.
+
+                Việc này giúp hạn chế một số điện thoại
+                tự chuyển sang camera góc siêu rộng 0.5x,
+                khiến mã vạch nhỏ và khó lấy nét.
+            */
             advancedSettings.zoom =
-                minimumZoom;
+                Math.min(
+                    maxZoom,
+                    Math.max(minZoom, 1)
+                );
         }
 
         if (
@@ -823,40 +834,90 @@ async function clearScannerInstance() {
     }
 }
 
-async function startBackCameraExact() {
-    state.scanner =
-        createScanner();
+async function getBackCameraDeviceId() {
+    /*
+        Xin quyền camera trước bằng getUserMedia.
+
+        facingMode environment yêu cầu trình duyệt
+        ưu tiên camera sau.
+
+        Sau đó lấy deviceId thật từ video track.
+        Cách này ổn định hơn việc đoán camera qua tên.
+    */
+    const stream =
+        await navigator.mediaDevices
+            .getUserMedia({
+                audio: false,
+
+                video: {
+                    facingMode: {
+                        ideal: "environment"
+                    },
+
+                    width: {
+                        ideal: 1280
+                    },
+
+                    height: {
+                        ideal: 720
+                    }
+                }
+            });
+
+    try {
+        const track =
+            stream.getVideoTracks()[0];
+
+        const settings =
+            track?.getSettings?.() || {};
+
+        if (settings.deviceId) {
+            return settings.deviceId;
+        }
+    } finally {
+        stream
+            .getTracks()
+            .forEach((track) => {
+                track.stop();
+            });
+    }
+
+    return "";
+}
+
+async function startCameraByDeviceId(
+    deviceId
+) {
+    state.scanner = createScanner();
 
     await state.scanner.start(
-        {
-            facingMode: {
-                exact: "environment"
-            }
-        },
+        deviceId,
         getScannerConfig(),
         handleScanSuccess,
         () => {
-            // Chờ đến khi đọc được mã.
+            /*
+                Không cần báo lỗi cho từng khung hình
+                chưa đọc được mã.
+            */
         }
     );
 
     state.scannerRunning = true;
 }
 
-async function startBackCameraIdeal() {
-    state.scanner =
-        createScanner();
+async function startBackCameraFacingMode() {
+    state.scanner = createScanner();
 
     await state.scanner.start(
         {
-            facingMode: {
-                ideal: "environment"
-            }
+            facingMode: "environment"
         },
         getScannerConfig(),
         handleScanSuccess,
         () => {
-            // Chờ đến khi đọc được mã.
+            /*
+                Tiếp tục chờ đến khi đọc được mã.
+            */
         }
     );
 
@@ -888,6 +949,14 @@ async function startCameraByDeviceList() {
             };
         });
 
+    /*
+        Chỉ ưu tiên những tên thể hiện rõ
+        đây là camera sau.
+
+        Không chủ động chọn từ khóa "wide",
+        "ultra wide" hoặc "0.5x" vì đó thường
+        là camera góc rộng khó lấy nét mã gần.
+    */
     const rearCamera =
         normalizedCameras.find(
             (camera) => {
@@ -897,34 +966,30 @@ async function startCameraByDeviceList() {
                 return (
                     label.includes("back")
                     || label.includes("rear")
-                    || label.includes("environment")
-                    || label.includes("camera sau")
-                    || label.includes("wide")
-                    || label.includes("0.5x")
-                    || label.includes("1x")
+                    || label.includes(
+                        "environment"
+                    )
+                    || label.includes(
+                        "camera sau"
+                    )
                 );
             }
         );
 
-    if (!rearCamera) {
-        throw new Error(
-            "Không xác định được camera sau."
-        );
-    }
+    /*
+        Một số điện thoại giấu tên camera.
+        Sau khi đã cấp quyền, camera sau thường
+        nằm gần cuối danh sách.
+    */
+    const selectedCamera =
+        rearCamera
+        || normalizedCameras[
+            normalizedCameras.length - 1
+        ];
 
-    state.scanner =
-        createScanner();
-
-    await state.scanner.start(
-        rearCamera.id,
-        getScannerConfig(),
-        handleScanSuccess,
-        () => {
-            // Chờ đến khi đọc được mã.
-        }
+    await startCameraByDeviceId(
+        selectedCamera.id
     );
-
-    state.scannerRunning = true;
 }
 
 async function openScanner() {
@@ -943,7 +1008,9 @@ async function openScanner() {
 
     try {
         if (
-            typeof Html5Qrcode === "undefined"
+            typeof Html5Qrcode
+                === "undefined"
+
             || typeof Html5QrcodeSupportedFormats
                 === "undefined"
         ) {
@@ -954,43 +1021,78 @@ async function openScanner() {
 
         if (
             !navigator.mediaDevices
-            || !navigator.mediaDevices.getUserMedia
+            || !navigator.mediaDevices
+                .getUserMedia
         ) {
             throw new Error(
                 "Trình duyệt không hỗ trợ camera."
             );
         }
 
-        try {
-            await startBackCameraExact();
+        let started = false;
 
-        } catch (exactError) {
+        /*
+            Cách 1:
+            Mở tạm camera sau bằng getUserMedia,
+            lấy deviceId thật rồi truyền deviceId
+            đó cho thư viện quét.
+        */
+        try {
+            const backCameraId =
+                await getBackCameraDeviceId();
+
+            if (backCameraId) {
+                await startCameraByDeviceId(
+                    backCameraId
+                );
+
+                started = true;
+            }
+        } catch (deviceIdError) {
             console.warn(
-                "Không mở được camera sau bằng exact:",
-                exactError
+                "Không lấy được deviceId camera sau:",
+                deviceIdError
             );
 
             await clearScannerInstance();
+        }
 
+        /*
+            Cách 2:
+            Yêu cầu trực tiếp camera environment.
+        */
+        if (!started) {
             try {
-                await startBackCameraIdeal();
+                await startBackCameraFacingMode();
 
-            } catch (idealError) {
+                started = true;
+            } catch (facingModeError) {
                 console.warn(
-                    "Không mở được camera sau bằng ideal:",
-                    idealError
+                    "Không mở được camera sau bằng facingMode:",
+                    facingModeError
                 );
 
                 await clearScannerInstance();
-
-                await startCameraByDeviceList();
             }
+        }
+
+        /*
+            Cách 3:
+            Lấy toàn bộ danh sách camera
+            rồi tìm camera có nhãn back/rear.
+        */
+        if (!started) {
+            await startCameraByDeviceList();
         }
 
         elements.scannerMessage.textContent =
             "Camera sau đã mở. "
             + "Đưa mã vạch vào giữa khung.";
 
+        /*
+            Đợi video chạy ổn định rồi mới đặt
+            focus liên tục và zoom 1x.
+        */
         setTimeout(() => {
             applyCameraSettings();
         }, 700);
@@ -1020,7 +1122,9 @@ async function closeScanner() {
     elements.scannerMessage.textContent = "";
 }
 
-async function handleScanSuccess(decodedText) {
+async function handleScanSuccess(
+    decodedText
+) {
     if (state.scanLocked) {
         return;
     }
@@ -1042,8 +1146,11 @@ async function handleScanSuccess(decodedText) {
                     .trim();
 
             return (
-                productBarcode === scannedCode
-                || productSku === scannedCode
+                productBarcode
+                    === scannedCode
+
+                || productSku
+                    === scannedCode
             );
         });
 
@@ -1115,10 +1222,12 @@ elements.form.addEventListener(
             state.products.some((item) => {
                 return (
                     normalizeText(item.sku)
-                    === normalizeText(product.sku)
+                        === normalizeText(
+                            product.sku
+                        )
 
                     && item.id
-                    !== productId
+                        !== productId
                 );
             });
 
@@ -1134,10 +1243,10 @@ elements.form.addEventListener(
             state.products.some((item) => {
                 return (
                     item.barcode
-                    === product.barcode
+                        === product.barcode
 
                     && item.id
-                    !== productId
+                        !== productId
                 );
             });
 
@@ -1195,9 +1304,12 @@ elements.productTable.addEventListener(
 
         if (editId) {
             const product =
-                state.products.find((item) => {
-                    return item.id === editId;
-                });
+                state.products.find(
+                    (item) => {
+                        return item.id
+                            === editId;
+                    }
+                );
 
             if (product) {
                 openProductModal(product);
@@ -1206,9 +1318,12 @@ elements.productTable.addEventListener(
 
         if (deleteId) {
             const product =
-                state.products.find((item) => {
-                    return item.id === deleteId;
-                });
+                state.products.find(
+                    (item) => {
+                        return item.id
+                            === deleteId;
+                    }
+                );
 
             const accepted =
                 confirm(
