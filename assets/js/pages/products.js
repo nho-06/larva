@@ -14,8 +14,12 @@ import {
 
 const state = {
     products: [],
+
     scanner: null,
-    scannerRunning: false
+
+    scannerRunning: false,
+
+    scanLocked: false
 };
 
 const elements = {
@@ -95,34 +99,77 @@ const elements = {
         document.querySelector("#scannedProductBox")
 };
 
-function generateBarcodeValue() {
-    const timePart = Date.now().toString();
+/*
+    Tạo giá trị mã vạch duy nhất.
 
-    const randomPart = Math.floor(
-        100 + Math.random() * 900
-    ).toString();
+    Ví dụ:
+    LRV-1783423123456-456
+*/
+function generateBarcodeValue() {
+    const timePart =
+        Date.now().toString();
+
+    const randomPart =
+        Math.floor(
+            100 + Math.random() * 900
+        ).toString();
 
     return `LRV-${timePart}-${randomPart}`;
 }
 
+/*
+    Vẽ mã vạch Code 128.
+
+    selector có thể là:
+    - chuỗi CSS
+    - phần tử SVG
+*/
 function renderBarcode(
     selector,
     barcodeValue,
     compact = false
 ) {
-    if (!barcodeValue || typeof JsBarcode === "undefined") {
+    if (
+        !barcodeValue
+        || typeof JsBarcode === "undefined"
+    ) {
         return;
     }
 
     try {
-        JsBarcode(selector, barcodeValue, {
-            format: "CODE128",
-            width: compact ? 1.2 : 1.8,
-            height: compact ? 36 : 70,
-            displayValue: true,
-            fontSize: compact ? 10 : 14,
-            margin: compact ? 2 : 8
-        });
+        JsBarcode(
+            selector,
+            barcodeValue,
+            {
+                format: "CODE128",
+
+                width:
+                    compact
+                        ? 1.2
+                        : 1.8,
+
+                height:
+                    compact
+                        ? 36
+                        : 70,
+
+                displayValue: true,
+
+                fontSize:
+                    compact
+                        ? 10
+                        : 14,
+
+                margin:
+                    compact
+                        ? 2
+                        : 8,
+
+                background: "#ffffff",
+
+                lineColor: "#111111"
+            }
+        );
     } catch (error) {
         console.error(
             "Không thể tạo mã vạch:",
@@ -131,6 +178,9 @@ function renderBarcode(
     }
 }
 
+/*
+    Mở form thêm hoặc sửa sản phẩm.
+*/
 function openProductModal(product = null) {
     elements.form.reset();
 
@@ -167,13 +217,19 @@ function openProductModal(product = null) {
             product.category || "";
 
         elements.quantity.value =
-            Number(product.quantity || 0);
+            Number(
+                product.quantity || 0
+            );
 
         elements.costPrice.value =
-            Number(product.costPrice || 0);
+            Number(
+                product.costPrice || 0
+            );
 
         elements.salePrice.value =
-            Number(product.salePrice || 0);
+            Number(
+                product.salePrice || 0
+            );
 
         elements.image.value =
             product.image || "";
@@ -200,12 +256,21 @@ function openProductModal(product = null) {
     );
 }
 
+/*
+    Đóng form sản phẩm.
+*/
 function closeProductModal() {
     elements.productModal.classList.add(
         "hidden"
     );
 }
 
+/*
+    Lấy dữ liệu trong form.
+
+    Nếu sản phẩm chưa có mã vạch,
+    hệ thống sẽ tự tạo mã mới.
+*/
 function getFormData() {
     const existingBarcode =
         elements.barcode.value.trim();
@@ -218,19 +283,26 @@ function getFormData() {
             elements.sku.value.trim(),
 
         barcode:
-            existingBarcode || generateBarcodeValue(),
+            existingBarcode
+            || generateBarcodeValue(),
 
         category:
             elements.category.value.trim(),
 
         quantity:
-            Number(elements.quantity.value || 0),
+            Number(
+                elements.quantity.value || 0
+            ),
 
         costPrice:
-            Number(elements.costPrice.value || 0),
+            Number(
+                elements.costPrice.value || 0
+            ),
 
         salePrice:
-            Number(elements.salePrice.value || 0),
+            Number(
+                elements.salePrice.value || 0
+            ),
 
         image:
             elements.image.value.trim(),
@@ -240,6 +312,9 @@ function getFormData() {
     };
 }
 
+/*
+    Hiển thị danh mục trong ô lọc.
+*/
 function renderCategoryFilter() {
     const selectedCategory =
         elements.categoryFilter.value;
@@ -253,7 +328,10 @@ function renderCategoryFilter() {
                 .filter(Boolean)
         )
     ].sort((a, b) => {
-        return a.localeCompare(b, "vi");
+        return a.localeCompare(
+            b,
+            "vi"
+        );
     });
 
     elements.categoryFilter.innerHTML = `
@@ -264,7 +342,9 @@ function renderCategoryFilter() {
         ${categories
             .map((category) => {
                 return `
-                    <option value="${escapeHtml(category)}">
+                    <option
+                        value="${escapeHtml(category)}"
+                    >
                         ${escapeHtml(category)}
                     </option>
                 `;
@@ -278,35 +358,57 @@ function renderCategoryFilter() {
             : "";
 }
 
+/*
+    Lọc danh sách sản phẩm.
+*/
 function getFilteredProducts() {
-    const keyword = normalizeText(
-        elements.searchInput.value
-    );
+    const keyword =
+        normalizeText(
+            elements.searchInput.value
+        );
 
     const selectedCategory =
         elements.categoryFilter.value;
 
-    return state.products.filter((product) => {
-        const matchesKeyword =
-            normalizeText(product.name).includes(keyword)
-            || normalizeText(product.sku).includes(keyword)
-            || normalizeText(product.barcode).includes(keyword);
+    return state.products.filter(
+        (product) => {
+            const matchesKeyword =
+                normalizeText(
+                    product.name
+                ).includes(keyword)
 
-        const matchesCategory =
-            !selectedCategory
-            || product.category === selectedCategory;
+                || normalizeText(
+                    product.sku
+                ).includes(keyword)
 
-        return matchesKeyword && matchesCategory;
-    });
+                || normalizeText(
+                    product.barcode
+                ).includes(keyword);
+
+            const matchesCategory =
+                !selectedCategory
+                || product.category
+                    === selectedCategory;
+
+            return (
+                matchesKeyword
+                && matchesCategory
+            );
+        }
+    );
 }
 
+/*
+    Hiển thị bảng sản phẩm.
+*/
 function renderProducts() {
-    const products = getFilteredProducts();
+    const products =
+        getFilteredProducts();
 
     elements.productTable.innerHTML =
         products
             .map((product) => {
-                const image =
+                const productImage =
                     product.image
                     || placeholderImage();
 
@@ -314,16 +416,18 @@ function renderProducts() {
                     <tr>
 
                         <td>
+
                             <div class="product-cell">
 
                                 <img
                                     class="product-image"
-                                    src="${escapeHtml(image)}"
+                                    src="${escapeHtml(productImage)}"
                                     alt="${escapeHtml(product.name)}"
                                     onerror="this.src='${placeholderImage()}'"
                                 >
 
                                 <div>
+
                                     <span class="product-name">
                                         ${escapeHtml(product.name)}
                                     </span>
@@ -334,9 +438,11 @@ function renderProducts() {
                                             || "Chưa có mô tả"
                                         )}
                                     </div>
+
                                 </div>
 
                             </div>
+
                         </td>
 
                         <td>
@@ -344,10 +450,12 @@ function renderProducts() {
                         </td>
 
                         <td>
+
                             ${
                                 product.barcode
                                     ? `
                                         <div class="table-barcode">
+
                                             <svg
                                                 class="product-barcode"
                                                 data-barcode="${escapeHtml(product.barcode)}"
@@ -356,6 +464,7 @@ function renderProducts() {
                                             <small>
                                                 ${escapeHtml(product.barcode)}
                                             </small>
+
                                         </div>
                                     `
                                     : `
@@ -364,6 +473,7 @@ function renderProducts() {
                                         </span>
                                     `
                             }
+
                         </td>
 
                         <td>
@@ -374,18 +484,25 @@ function renderProducts() {
                         </td>
 
                         <td>
-                            ${formatMoney(product.costPrice)}
+                            ${formatMoney(
+                                product.costPrice
+                            )}
                         </td>
 
                         <td>
-                            ${formatMoney(product.salePrice)}
+                            ${formatMoney(
+                                product.salePrice
+                            )}
                         </td>
 
                         <td>
-                            ${Number(product.quantity || 0)}
+                            ${Number(
+                                product.quantity || 0
+                            )}
                         </td>
 
                         <td>
+
                             <div class="actions">
 
                                 <button
@@ -405,6 +522,7 @@ function renderProducts() {
                                 </button>
 
                             </div>
+
                         </td>
 
                     </tr>
@@ -420,26 +538,35 @@ function renderProducts() {
     renderTableBarcodes();
 }
 
+/*
+    Vẽ các mã vạch trong bảng.
+*/
 function renderTableBarcodes() {
     const barcodeElements =
         document.querySelectorAll(
             ".product-barcode"
         );
 
-    barcodeElements.forEach((barcodeElement) => {
-        const barcodeValue =
-            barcodeElement.dataset.barcode;
+    barcodeElements.forEach(
+        (barcodeElement) => {
+            const barcodeValue =
+                barcodeElement.dataset.barcode;
 
-        renderBarcode(
-            barcodeElement,
-            barcodeValue,
-            true
-        );
-    });
+            renderBarcode(
+                barcodeElement,
+                barcodeValue,
+                true
+            );
+        }
+    );
 }
 
+/*
+    Hiển thị thông tin sản phẩm
+    sau khi quét mã thành công.
+*/
 function showScannedProduct(product) {
-    const image =
+    const productImage =
         product.image
         || placeholderImage();
 
@@ -448,7 +575,7 @@ function showScannedProduct(product) {
 
             <img
                 class="scanned-product-image"
-                src="${escapeHtml(image)}"
+                src="${escapeHtml(productImage)}"
                 alt="${escapeHtml(product.name)}"
                 onerror="this.src='${placeholderImage()}'"
             >
@@ -465,22 +592,39 @@ function showScannedProduct(product) {
 
                 <p>
                     Mã sản phẩm:
+
                     <strong>
                         ${escapeHtml(product.sku)}
                     </strong>
                 </p>
 
                 <p>
-                    Giá bán:
+                    Mã vạch:
+
                     <strong>
-                        ${formatMoney(product.salePrice)}
+                        ${escapeHtml(
+                            product.barcode || ""
+                        )}
+                    </strong>
+                </p>
+
+                <p>
+                    Giá bán:
+
+                    <strong>
+                        ${formatMoney(
+                            product.salePrice
+                        )}
                     </strong>
                 </p>
 
                 <p>
                     Tồn kho:
+
                     <strong>
-                        ${Number(product.quantity || 0)}
+                        ${Number(
+                            product.quantity || 0
+                        )}
                     </strong>
                 </p>
 
@@ -502,15 +646,109 @@ function showScannedProduct(product) {
     );
 
     document
-        .querySelector("#closeScannedProduct")
-        ?.addEventListener("click", () => {
-            elements.scannedProductBox.classList.add(
-                "hidden"
-            );
-        });
+        .querySelector(
+            "#closeScannedProduct"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+                elements.scannedProductBox.classList.add(
+                    "hidden"
+                );
+            }
+        );
+
+    elements.scannedProductBox.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
 }
 
+/*
+    Đưa camera về mức zoom thấp nhất
+    và bật lấy nét liên tục nếu điện thoại hỗ trợ.
+*/
+async function applyCameraSettings() {
+    if (
+        !state.scanner
+        || !state.scannerRunning
+    ) {
+        return;
+    }
+
+    try {
+        const capabilities =
+            state.scanner
+                .getRunningTrackCameraCapabilities();
+
+        const settings = {};
+
+        /*
+            Một số trình duyệt trả về focusMode
+            dưới dạng mảng.
+        */
+        if (
+            Array.isArray(
+                capabilities.focusMode
+            )
+            && capabilities.focusMode.includes(
+                "continuous"
+            )
+        ) {
+            settings.focusMode =
+                "continuous";
+        }
+
+        /*
+            Đưa zoom về giá trị nhỏ nhất.
+
+            Thường là 1.
+        */
+        if (capabilities.zoom) {
+            const minimumZoom =
+                Number(
+                    capabilities.zoom.min || 1
+                );
+
+            settings.zoom =
+                minimumZoom;
+        }
+
+        if (
+            Object.keys(settings).length > 0
+        ) {
+            await state.scanner
+                .applyVideoConstraints({
+                    advanced: [
+                        settings
+                    ]
+                });
+        }
+    } catch (error) {
+        /*
+            Không phải điện thoại nào cũng hỗ trợ
+            chỉnh zoom hoặc focus bằng trình duyệt.
+        */
+        console.warn(
+            "Thiết bị không hỗ trợ chỉnh zoom hoặc lấy nét:",
+            error
+        );
+    }
+}
+
+/*
+    Mở camera quét mã.
+
+    Không lấy camera cuối danh sách nữa,
+    vì camera cuối có thể là camera tele.
+*/
 async function openScanner() {
+    if (state.scannerRunning) {
+        return;
+    }
+
+    state.scanLocked = false;
+
     elements.scannerModal.classList.remove(
         "hidden"
     );
@@ -518,7 +756,10 @@ async function openScanner() {
     elements.scannerMessage.textContent =
         "Đang mở camera...";
 
-    if (typeof Html5Qrcode === "undefined") {
+    if (
+        typeof Html5Qrcode
+        === "undefined"
+    ) {
         elements.scannerMessage.textContent =
             "Không tải được thư viện quét mã.";
 
@@ -526,36 +767,46 @@ async function openScanner() {
     }
 
     try {
-        state.scanner =
-            state.scanner
-            || new Html5Qrcode("barcodeReader");
-
-        const cameras =
-            await Html5Qrcode.getCameras();
-
-        if (!cameras.length) {
-            throw new Error(
-                "Không tìm thấy camera."
-            );
+        /*
+            Tạo trình quét một lần.
+        */
+        if (!state.scanner) {
+            state.scanner =
+                new Html5Qrcode(
+                    "barcodeReader",
+                    {
+                        verbose: false
+                    }
+                );
         }
 
-        const backCamera =
-            cameras.find((camera) => {
-                return /back|rear|environment/i.test(
-                    camera.label
-                );
-            })
-            || cameras[cameras.length - 1];
+        /*
+            facingMode environment giúp trình duyệt
+            tự chọn camera sau chính.
 
+            Không dùng cameras[cameras.length - 1]
+            vì có thể chọn nhầm camera tele.
+        */
         await state.scanner.start(
-            backCamera.id,
             {
-                fps: 10,
+                facingMode: {
+                    ideal: "environment"
+                }
+            },
+            {
+                fps: 12,
+
                 qrbox: {
-                    width: 280,
-                    height: 140
+                    width: 300,
+                    height: 120
                 },
-                aspectRatio: 1.5,
+
+                aspectRatio:
+                    16 / 9,
+
+                disableFlip:
+                    true,
+
                 formatsToSupport: [
                     Html5QrcodeSupportedFormats.CODE_128,
                     Html5QrcodeSupportedFormats.CODE_39,
@@ -567,22 +818,41 @@ async function openScanner() {
             },
             handleScanSuccess,
             () => {
-                // Không cần hiện lỗi liên tục khi chưa quét trúng.
+                /*
+                    Không hiện lỗi liên tục
+                    khi camera chưa bắt được mã.
+                */
             }
         );
 
         state.scannerRunning = true;
 
         elements.scannerMessage.textContent =
-            "Đưa mã vạch vào giữa khung.";
+            "Giữ điện thoại cách mã khoảng 15–25 cm và giữ yên.";
+
+        /*
+            Chờ camera ổn định rồi mới áp dụng zoom/focus.
+        */
+        setTimeout(() => {
+            applyCameraSettings();
+        }, 500);
+
     } catch (error) {
-        console.error(error);
+        console.error(
+            "Lỗi mở camera:",
+            error
+        );
+
+        state.scannerRunning = false;
 
         elements.scannerMessage.textContent =
             "Không mở được camera. Hãy cho phép trình duyệt sử dụng camera.";
     }
 }
 
+/*
+    Đóng camera.
+*/
 async function closeScanner() {
     if (
         state.scanner
@@ -590,29 +860,58 @@ async function closeScanner() {
     ) {
         try {
             await state.scanner.stop();
+
+            await state.scanner.clear();
         } catch (error) {
-            console.warn(error);
+            console.warn(
+                "Không thể dừng camera:",
+                error
+            );
         }
     }
 
     state.scannerRunning = false;
+    state.scanLocked = false;
 
     elements.scannerModal.classList.add(
         "hidden"
     );
 
     elements.scannerMessage.textContent = "";
+
+    elements.barcodeReader.innerHTML = "";
+
+    /*
+        Sau clear, tạo lại đối tượng khi quét lần sau.
+    */
+    state.scanner = null;
 }
 
-async function handleScanSuccess(decodedText) {
+/*
+    Xử lý khi quét được mã.
+*/
+async function handleScanSuccess(
+    decodedText
+) {
+    if (state.scanLocked) {
+        return;
+    }
+
+    state.scanLocked = true;
+
     const scannedCode =
-        String(decodedText || "").trim();
+        String(decodedText || "")
+            .trim();
 
     const product =
-        state.products.find((item) => {
-            return item.barcode === scannedCode
-                || item.sku === scannedCode;
-        });
+        state.products.find(
+            (item) => {
+                return (
+                    item.barcode === scannedCode
+                    || item.sku === scannedCode
+                );
+            }
+        );
 
     await closeScanner();
 
@@ -625,12 +924,17 @@ async function handleScanSuccess(decodedText) {
     }
 
     elements.searchInput.value =
-        product.barcode || product.sku;
+        product.barcode
+        || product.sku;
 
     renderProducts();
+
     showScannedProduct(product);
 }
 
+/*
+    Mở form thêm sản phẩm.
+*/
 elements.openProductForm.addEventListener(
     "click",
     () => {
@@ -638,11 +942,17 @@ elements.openProductForm.addEventListener(
     }
 );
 
+/*
+    Mở camera.
+*/
 elements.openScannerButton.addEventListener(
     "click",
     openScanner
 );
 
+/*
+    Đóng form sản phẩm.
+*/
 document
     .querySelectorAll(
         "[data-close-product-modal]"
@@ -654,6 +964,9 @@ document
         );
     });
 
+/*
+    Đóng camera.
+*/
 document
     .querySelectorAll(
         "[data-close-scanner-modal]"
@@ -665,6 +978,9 @@ document
         );
     });
 
+/*
+    Lưu sản phẩm.
+*/
 elements.form.addEventListener(
     "submit",
     async (event) => {
@@ -677,15 +993,42 @@ elements.form.addEventListener(
             elements.productId.value;
 
         const duplicatedSku =
-            state.products.some((item) => {
-                return normalizeText(item.sku)
-                    === normalizeText(product.sku)
-                    && item.id !== productId;
-            });
+            state.products.some(
+                (item) => {
+                    return (
+                        normalizeText(item.sku)
+                        === normalizeText(product.sku)
+
+                        && item.id
+                        !== productId
+                    );
+                }
+            );
 
         if (duplicatedSku) {
             alert(
                 "Mã sản phẩm đã tồn tại."
+            );
+
+            return;
+        }
+
+        const duplicatedBarcode =
+            state.products.some(
+                (item) => {
+                    return (
+                        item.barcode
+                        === product.barcode
+
+                        && item.id
+                        !== productId
+                    );
+                }
+            );
+
+        if (duplicatedBarcode) {
+            alert(
+                "Mã vạch đã tồn tại."
             );
 
             return;
@@ -698,10 +1041,13 @@ elements.form.addEventListener(
                     product
                 );
             } else {
-                await createProduct(product);
+                await createProduct(
+                    product
+                );
             }
 
             closeProductModal();
+
         } catch (error) {
             console.error(error);
 
@@ -713,14 +1059,21 @@ elements.form.addEventListener(
     }
 );
 
+/*
+    Xử lý nút sửa và xóa.
+*/
 elements.productTable.addEventListener(
     "click",
     async (event) => {
         const editButton =
-            event.target.closest("[data-edit]");
+            event.target.closest(
+                "[data-edit]"
+            );
 
         const deleteButton =
-            event.target.closest("[data-delete]");
+            event.target.closest(
+                "[data-delete]"
+            );
 
         const editId =
             editButton?.dataset.edit;
@@ -730,9 +1083,11 @@ elements.productTable.addEventListener(
 
         if (editId) {
             const product =
-                state.products.find((item) => {
-                    return item.id === editId;
-                });
+                state.products.find(
+                    (item) => {
+                        return item.id === editId;
+                    }
+                );
 
             if (product) {
                 openProductModal(product);
@@ -741,20 +1096,25 @@ elements.productTable.addEventListener(
 
         if (deleteId) {
             const product =
-                state.products.find((item) => {
-                    return item.id === deleteId;
-                });
+                state.products.find(
+                    (item) => {
+                        return item.id === deleteId;
+                    }
+                );
 
-            const accepted = confirm(
-                `Xóa sản phẩm "${product?.name || ""}"?`
-            );
+            const accepted =
+                confirm(
+                    `Xóa sản phẩm "${product?.name || ""}"?`
+                );
 
             if (!accepted) {
                 return;
             }
 
             try {
-                await deleteProduct(deleteId);
+                await deleteProduct(
+                    deleteId
+                );
             } catch (error) {
                 console.error(error);
 
@@ -766,16 +1126,36 @@ elements.productTable.addEventListener(
     }
 );
 
+/*
+    Tìm kiếm sản phẩm.
+*/
 elements.searchInput.addEventListener(
     "input",
     renderProducts
 );
 
+/*
+    Lọc danh mục.
+*/
 elements.categoryFilter.addEventListener(
     "change",
     renderProducts
 );
 
+/*
+    Khi rời khỏi trang hoặc chuyển tab,
+    dừng camera để tránh camera tiếp tục chạy.
+*/
+window.addEventListener(
+    "pagehide",
+    () => {
+        closeScanner();
+    }
+);
+
+/*
+    Nhận danh sách sản phẩm từ Firebase.
+*/
 listenProducts((products) => {
     state.products = products;
 
