@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Larva | Bán hàng tại quầy</title>
+
+    <link
+        rel="stylesheet"
+        href="./assets/css/main.css"
+    >
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"
+    ></script>
+</head>
+
+<body>
+
+<div class="app-layout">
+    <div id="sidebarContainer"></div>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">
+                    BÁN HÀNG
+                </p>
+
+                <h1>
+                    Bán hàng tại quầy
+                </h1>
+            </div>
+
+            <div class="page-actions">
+                <button
+                    class="button button-light"
+                    id="clearCartButton"
+                    type="button"
+                >
+                    Xóa giỏ hàng
+                </button>
+
+                <button
+                    class="button"
+                    id="openScannerButton"
+                    type="button"
+                >
+                    Quét mã sản phẩm
+                </button>
+            </div>
+        </header>
+
+        <div class="pos-layout">
+            <section class="panel pos-products-panel">
+                <div class="toolbar">
+                    <input
+                        id="productSearchInput"
+                        class="input"
+                        type="search"
+                        placeholder="Tìm tên, mã sản phẩm hoặc mã vạch"
+                    >
+                </div>
+
+                <p
+                    id="saleMessage"
+                    class="pos-message hidden"
+                ></p>
+
+                <div
+                    id="saleProductGrid"
+                    class="sale-product-grid"
+                ></div>
+
+                <p
+                    id="emptyProductState"
+                    class="empty-state hidden"
+                >
+                    Không tìm thấy sản phẩm.
+                </p>
+            </section>
+
+            <aside class="panel cart-panel">
+                <div class="cart-heading">
+                    <div>
+                        <p class="eyebrow">
+                            HÓA ĐƠN
+                        </p>
+
+                        <h2>
+                            Giỏ hàng
+                        </h2>
+                    </div>
+
+                    <span
+                        id="cartCount"
+                        class="cart-count"
+                    >
+                        0
+                    </span>
+                </div>
+
+                <div
+                    id="cartItems"
+                    class="cart-items"
+                ></div>
+
+                <p
+                    id="emptyCartState"
+                    class="empty-state"
+                >
+                    Chưa có sản phẩm trong giỏ.
+                </p>
+
+                <div class="cart-summary">
+                    <div class="summary-row total-row">
+                        <span>
+                            Tổng thanh toán
+                        </span>
+
+                        <strong id="cartTotal">
+                            0 ₫
+                        </strong>
+                    </div>
+                </div>
+
+                <button
+                    id="openPaymentButton"
+                    class="button checkout-button"
+                    type="button"
+                    disabled
+                >
+                    Thanh toán
+                </button>
+            </aside>
+        </div>
+    </main>
+</div>
+
+<div
+    class="modal hidden"
+    id="scannerModal"
+>
+    <div
+        class="modal-backdrop"
+        data-close-scanner-modal
+    ></div>
+
+    <section class="modal-card scanner-card">
+        <div class="modal-header">
+            <div>
+                <p class="eyebrow">
+                    CAMERA
+                </p>
+
+                <h2>
+                    Quét mã sản phẩm
+                </h2>
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-scanner-modal
+            >
+                ×
+            </button>
+        </div>
+
+        <p class="scanner-help">
+            Quét lại cùng một mã để tăng số lượng trong giỏ.
+        </p>
+
+        <div id="barcodeReader"></div>
+
+        <p
+            id="scannerMessage"
+            class="scanner-message"
+        ></p>
+    </section>
+</div>
+
+<div
+    class="modal hidden"
+    id="paymentModal"
+>
+    <div
+        class="modal-backdrop"
+        data-close-payment-modal
+    ></div>
+
+    <section class="modal-card payment-card">
+        <div class="modal-header">
+            <div>
+                <p class="eyebrow">
+                    THANH TOÁN
+                </p>
+
+                <h2>
+                    Hoàn tất hóa đơn
+                </h2>
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-payment-modal
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="payment-total-box">
+            <span>
+                Tổng tiền
+            </span>
+
+            <strong id="paymentTotal">
+                0 ₫
+            </strong>
+        </div>
+
+        <div class="payment-methods">
+            <label class="payment-method-option">
+                <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="cash"
+                    checked
+                >
+
+                <span>
+                    Tiền mặt
+                </span>
+            </label>
+
+            <label class="payment-method-option">
+                <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="transfer"
+                >
+
+                <span>
+                    Chuyển khoản
+                </span>
+            </label>
+        </div>
+
+        <label id="paidAmountWrap">
+            Khách đưa
+
+            <input
+                id="paidAmountInput"
+                class="input"
+                type="number"
+                min="0"
+                step="1000"
+                placeholder="Nhập số tiền khách đưa"
+            >
+        </label>
+
+        <div class="change-box">
+            <span>
+                Tiền thừa
+            </span>
+
+            <strong id="changeAmount">
+                0 ₫
+            </strong>
+        </div>
+
+        <p
+            id="paymentError"
+            class="form-error hidden"
+        ></p>
+
+        <div class="form-actions">
+            <button
+                class="button button-light"
+                type="button"
+                data-close-payment-modal
+            >
+                Quay lại
+            </button>
+
+            <button
+                class="button"
+                id="confirmPaymentButton"
+                type="button"
+            >
+                Xác nhận thanh toán
+            </button>
+        </div>
+    </section>
+</div>
+
+<div
+    class="modal hidden"
+    id="receiptModal"
+>
+    <div
+        class="modal-backdrop"
+        data-close-receipt-modal
+    ></div>
+
+    <section class="modal-card receipt-card">
+        <div class="modal-header receipt-modal-header">
+            <div>
+                <p class="eyebrow">
+                    HÓA ĐƠN
+                </p>
+
+                <h2>
+                    Thanh toán thành công
+                </h2>
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-receipt-modal
+            >
+                ×
+            </button>
+        </div>
+
+        <div id="receiptContent"></div>
+
+        <div class="form-actions receipt-actions">
+            <button
+                class="button button-light"
+                id="printReceiptButton"
+                type="button"
+            >
+                In hóa đơn
+            </button>
+
+            <button
+                class="button"
+                type="button"
+                data-close-receipt-modal
+            >
+                Bán đơn mới
+            </button>
+        </div>
+    </section>
+</div>
+
+<script
+    type="module"
+    src="./assets/js/sidebar.js"
+></script>
+
+<script
+    type="module"
+    src="./assets/js/pages/sales.js"
+></script>
+
+</body>
+</html>
