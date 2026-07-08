@@ -19,139 +19,169 @@ const state = {
     scanner: null,
     scannerRunning: false,
     scanLocked: false,
-    isPaying: false
+    isPaying: false,
+    audioContext: null
 };
 
 const elements = {
     productSearchInput:
-        document.querySelector(
-            "#productSearchInput"
-        ),
+        document.querySelector("#productSearchInput"),
 
     saleProductGrid:
-        document.querySelector(
-            "#saleProductGrid"
-        ),
+        document.querySelector("#saleProductGrid"),
 
     emptyProductState:
-        document.querySelector(
-            "#emptyProductState"
-        ),
+        document.querySelector("#emptyProductState"),
 
     saleMessage:
-        document.querySelector(
-            "#saleMessage"
-        ),
+        document.querySelector("#saleMessage"),
 
     cartItems:
-        document.querySelector(
-            "#cartItems"
-        ),
+        document.querySelector("#cartItems"),
 
     emptyCartState:
-        document.querySelector(
-            "#emptyCartState"
-        ),
+        document.querySelector("#emptyCartState"),
 
     cartCount:
-        document.querySelector(
-            "#cartCount"
-        ),
+        document.querySelector("#cartCount"),
 
     cartTotal:
-        document.querySelector(
-            "#cartTotal"
-        ),
+        document.querySelector("#cartTotal"),
 
     clearCartButton:
-        document.querySelector(
-            "#clearCartButton"
-        ),
+        document.querySelector("#clearCartButton"),
 
     openScannerButton:
-        document.querySelector(
-            "#openScannerButton"
-        ),
+        document.querySelector("#openScannerButton"),
 
     openPaymentButton:
-        document.querySelector(
-            "#openPaymentButton"
-        ),
+        document.querySelector("#openPaymentButton"),
 
     scannerModal:
-        document.querySelector(
-            "#scannerModal"
-        ),
+        document.querySelector("#scannerModal"),
 
     barcodeReader:
-        document.querySelector(
-            "#barcodeReader"
-        ),
+        document.querySelector("#barcodeReader"),
 
     scannerMessage:
-        document.querySelector(
-            "#scannerMessage"
-        ),
+        document.querySelector("#scannerMessage"),
 
     paymentModal:
-        document.querySelector(
-            "#paymentModal"
-        ),
+        document.querySelector("#paymentModal"),
 
     paymentTotal:
-        document.querySelector(
-            "#paymentTotal"
-        ),
+        document.querySelector("#paymentTotal"),
 
     paidAmountWrap:
-        document.querySelector(
-            "#paidAmountWrap"
-        ),
+        document.querySelector("#paidAmountWrap"),
 
     paidAmountInput:
-        document.querySelector(
-            "#paidAmountInput"
-        ),
+        document.querySelector("#paidAmountInput"),
 
     changeAmount:
-        document.querySelector(
-            "#changeAmount"
-        ),
+        document.querySelector("#changeAmount"),
 
     paymentError:
-        document.querySelector(
-            "#paymentError"
-        ),
+        document.querySelector("#paymentError"),
 
     confirmPaymentButton:
-        document.querySelector(
-            "#confirmPaymentButton"
-        ),
+        document.querySelector("#confirmPaymentButton"),
 
     receiptModal:
-        document.querySelector(
-            "#receiptModal"
-        ),
+        document.querySelector("#receiptModal"),
 
     receiptContent:
-        document.querySelector(
-            "#receiptContent"
-        ),
+        document.querySelector("#receiptContent"),
 
     printReceiptButton:
-        document.querySelector(
-            "#printReceiptButton"
-        )
+        document.querySelector("#printReceiptButton")
 };
+
+async function prepareScanSound() {
+    try {
+        const AudioContextClass =
+            window.AudioContext
+            || window.webkitAudioContext;
+
+        if (!AudioContextClass) {
+            return;
+        }
+
+        if (!state.audioContext) {
+            state.audioContext =
+                new AudioContextClass();
+        }
+
+        if (
+            state.audioContext.state
+            === "suspended"
+        ) {
+            await state.audioContext.resume();
+        }
+    } catch (error) {
+        console.warn(
+            "Không thể chuẩn bị âm thanh:",
+            error
+        );
+    }
+}
+
+async function playScanSound() {
+    try {
+        await prepareScanSound();
+
+        const audioContext =
+            state.audioContext;
+
+        if (!audioContext) {
+            return;
+        }
+
+        const oscillator =
+            audioContext.createOscillator();
+
+        const gainNode =
+            audioContext.createGain();
+
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(
+            1050,
+            audioContext.currentTime
+        );
+
+        gainNode.gain.setValueAtTime(
+            0.18,
+            audioContext.currentTime
+        );
+
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioContext.currentTime + 0.14
+        );
+
+        oscillator.connect(gainNode);
+        gainNode.connect(
+            audioContext.destination
+        );
+
+        oscillator.start();
+        oscillator.stop(
+            audioContext.currentTime + 0.14
+        );
+    } catch (error) {
+        console.warn(
+            "Không phát được âm thanh quét mã:",
+            error
+        );
+    }
+}
 
 function getCartTotal() {
     return state.cart.reduce(
         (total, item) => {
-            return (
-                total
+            return total
                 + Number(item.price || 0)
-                * Number(item.quantity || 0)
-            );
+                * Number(item.quantity || 0);
         },
         0
     );
@@ -160,10 +190,8 @@ function getCartTotal() {
 function getCartQuantity() {
     return state.cart.reduce(
         (total, item) => {
-            return (
-                total
-                + Number(item.quantity || 0)
-            );
+            return total
+                + Number(item.quantity || 0);
         },
         0
     );
@@ -240,12 +268,11 @@ function renderProducts() {
 
                 return `
                     <article
-                        class="
-                            sale-product-card
-                            ${isOutOfStock
+                        class="sale-product-card ${
+                            isOutOfStock
                                 ? "out-of-stock"
-                                : ""}
-                        "
+                                : ""
+                        }"
                     >
                         <img
                             class="sale-product-image"
@@ -427,10 +454,12 @@ function addProductToCart(
     }
 
     const currentItem =
-        state.cart.find((item) => {
-            return item.productId
-                === product.id;
-        });
+        state.cart.find(
+            (item) => {
+                return item.productId
+                    === product.id;
+            }
+        );
 
     const currentQuantity =
         Number(
@@ -493,10 +522,12 @@ function updateCartQuantity(
     change
 ) {
     const item =
-        state.cart.find((cartItem) => {
-            return cartItem.productId
-                === productId;
-        });
+        state.cart.find(
+            (cartItem) => {
+                return cartItem.productId
+                    === productId;
+            }
+        );
 
     if (!item) {
         return;
@@ -551,10 +582,12 @@ function updateCartQuantity(
 
 function removeCartItem(productId) {
     state.cart =
-        state.cart.filter((item) => {
-            return item.productId
-                !== productId;
-        });
+        state.cart.filter(
+            (item) => {
+                return item.productId
+                    !== productId;
+            }
+        );
 
     renderCart();
 }
@@ -592,22 +625,19 @@ function getScannerConfig() {
             320
         );
 
-    const scanWidth =
-        Math.min(
-            360,
-            Math.max(
-                260,
-                screenWidth - 40
-            )
-        );
-
     return {
         fps:
             20,
 
         qrbox: {
             width:
-                scanWidth,
+                Math.min(
+                    360,
+                    Math.max(
+                        260,
+                        screenWidth - 40
+                    )
+                ),
 
             height:
                 150
@@ -731,8 +761,7 @@ async function clearScannerInstance() {
     state.scanner = null;
 
     if (elements.barcodeReader) {
-        elements.barcodeReader.innerHTML =
-            "";
+        elements.barcodeReader.innerHTML = "";
     }
 }
 
@@ -740,23 +769,19 @@ async function getBackCameraDeviceId() {
     const stream =
         await navigator.mediaDevices
             .getUserMedia({
-                audio:
-                    false,
+                audio: false,
 
                 video: {
                     facingMode: {
-                        ideal:
-                            "environment"
+                        ideal: "environment"
                     },
 
                     width: {
-                        ideal:
-                            1280
+                        ideal: 1280
                     },
 
                     height: {
-                        ideal:
-                            720
+                        ideal: 720
                     }
                 }
             });
@@ -895,9 +920,7 @@ function getCameraErrorMessage(error) {
         errorName === "NotFoundError"
         || lowerMessage.includes("not found")
     ) {
-        return (
-            "Không tìm thấy camera."
-        );
+        return "Không tìm thấy camera.";
     }
 
     if (
@@ -919,6 +942,8 @@ async function openScanner() {
     if (state.scannerRunning) {
         return;
     }
+
+    await prepareScanSound();
 
     state.scanLocked =
         false;
@@ -1068,6 +1093,8 @@ async function handleScanSuccess(
         );
 
     if (added) {
+        await playScanSound();
+
         elements.scannerMessage.textContent =
             `Đã thêm ${product.name}. Quét tiếp sản phẩm khác.`;
     }
