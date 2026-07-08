@@ -144,6 +144,7 @@ async function playScanSound() {
             audioContext.createGain();
 
         oscillator.type = "sine";
+
         oscillator.frequency.setValueAtTime(
             1050,
             audioContext.currentTime
@@ -160,11 +161,13 @@ async function playScanSound() {
         );
 
         oscillator.connect(gainNode);
+
         gainNode.connect(
             audioContext.destination
         );
 
         oscillator.start();
+
         oscillator.stop(
             audioContext.currentTime + 0.14
         );
@@ -179,9 +182,11 @@ async function playScanSound() {
 function getCartTotal() {
     return state.cart.reduce(
         (total, item) => {
-            return total
+            return (
+                total
                 + Number(item.price || 0)
-                * Number(item.quantity || 0);
+                * Number(item.quantity || 0)
+            );
         },
         0
     );
@@ -190,8 +195,10 @@ function getCartTotal() {
 function getCartQuantity() {
     return state.cart.reduce(
         (total, item) => {
-            return total
-                + Number(item.quantity || 0);
+            return (
+                total
+                + Number(item.quantity || 0)
+            );
         },
         0
     );
@@ -626,8 +633,7 @@ function getScannerConfig() {
         );
 
     return {
-        fps:
-            20,
+        fps: 20,
 
         qrbox: {
             width:
@@ -639,15 +645,12 @@ function getScannerConfig() {
                     )
                 ),
 
-            height:
-                150
+            height: 150
         },
 
-        aspectRatio:
-            16 / 9,
+        aspectRatio: 16 / 9,
 
-        disableFlip:
-            true,
+        disableFlip: true,
 
         formatsToSupport: [
             Html5QrcodeSupportedFormats.CODE_128,
@@ -816,8 +819,7 @@ async function startCameraByDeviceId(
         () => {}
     );
 
-    state.scannerRunning =
-        true;
+    state.scannerRunning = true;
 }
 
 async function startBackCameraFacingMode() {
@@ -826,16 +828,14 @@ async function startBackCameraFacingMode() {
 
     await state.scanner.start(
         {
-            facingMode:
-                "environment"
+            facingMode: "environment"
         },
         getScannerConfig(),
         handleScanSuccess,
         () => {}
     );
 
-    state.scannerRunning =
-        true;
+    state.scannerRunning = true;
 }
 
 async function startCameraByDeviceList() {
@@ -945,8 +945,7 @@ async function openScanner() {
 
     await prepareScanSound();
 
-    state.scanLocked =
-        false;
+    state.scanLocked = false;
 
     elements.scannerModal
         .classList.remove("hidden");
@@ -956,18 +955,15 @@ async function openScanner() {
 
     try {
         if (
-            typeof Html5Qrcode
-                === "undefined"
-            || typeof Html5QrcodeSupportedFormats
-                === "undefined"
+            typeof Html5Qrcode === "undefined"
+            || typeof Html5QrcodeSupportedFormats === "undefined"
         ) {
             throw new Error(
                 "Thư viện quét mã chưa tải được."
             );
         }
 
-        let started =
-            false;
+        let started = false;
 
         try {
             const backCameraId =
@@ -978,8 +974,7 @@ async function openScanner() {
                     backCameraId
                 );
 
-                started =
-                    true;
+                started = true;
             }
         } catch (error) {
             console.warn(
@@ -994,8 +989,7 @@ async function openScanner() {
             try {
                 await startBackCameraFacingMode();
 
-                started =
-                    true;
+                started = true;
             } catch (error) {
                 console.warn(
                     "Không mở được camera sau:",
@@ -1028,16 +1022,14 @@ async function openScanner() {
 }
 
 async function closeScanner() {
-    state.scanLocked =
-        false;
-
     await clearScannerInstance();
 
     elements.scannerModal
         .classList.add("hidden");
 
-    elements.scannerMessage.textContent =
-        "";
+    elements.scannerMessage.textContent = "";
+
+    state.scanLocked = false;
 }
 
 async function handleScanSuccess(
@@ -1055,8 +1047,7 @@ async function handleScanSuccess(
         return;
     }
 
-    state.scanLocked =
-        true;
+    state.scanLocked = true;
 
     const product =
         state.products.find((item) => {
@@ -1077,11 +1068,12 @@ async function handleScanSuccess(
         });
 
     if (!product) {
-        state.scanLocked =
-            false;
-
         elements.scannerMessage.textContent =
             `Không tìm thấy mã ${scannedCode}.`;
+
+        setTimeout(() => {
+            state.scanLocked = false;
+        }, 900);
 
         return;
     }
@@ -1092,17 +1084,26 @@ async function handleScanSuccess(
             true
         );
 
-    if (added) {
-        await playScanSound();
+    if (!added) {
+        setTimeout(() => {
+            state.scanLocked = false;
+        }, 900);
 
-        elements.scannerMessage.textContent =
-            `Đã thêm ${product.name}. Quét tiếp sản phẩm khác.`;
+        return;
     }
 
-    setTimeout(() => {
-        state.scanLocked =
-            false;
-    }, 700);
+    await playScanSound();
+
+    elements.scannerMessage.textContent =
+        `Đã thêm ${product.name} vào giỏ.`;
+
+    setTimeout(async () => {
+        await closeScanner();
+
+        showSaleMessage(
+            `Đã thêm ${product.name} vào giỏ.`
+        );
+    }, 350);
 }
 
 function getSelectedPaymentMethod() {
@@ -1331,8 +1332,7 @@ async function confirmPayment() {
         return;
     }
 
-    state.isPaying =
-        true;
+    state.isPaying = true;
 
     elements.confirmPaymentButton.disabled =
         true;
@@ -1353,8 +1353,7 @@ async function confirmPayment() {
                 totalAmount
             });
 
-        state.cart =
-            [];
+        state.cart = [];
 
         renderCart();
 
@@ -1377,8 +1376,7 @@ async function confirmPayment() {
             .classList.remove("hidden");
 
     } finally {
-        state.isPaying =
-            false;
+        state.isPaying = false;
 
         elements.confirmPaymentButton.disabled =
             false;
@@ -1561,8 +1559,7 @@ window.addEventListener(
 );
 
 listenProducts((products) => {
-    state.products =
-        products;
+    state.products = products;
 
     state.cart.forEach((cartItem) => {
         const product =
