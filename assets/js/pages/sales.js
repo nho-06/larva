@@ -13,6 +13,13 @@ import {
     placeholderImage
 } from "../utils.js";
 
+const BANK_CONFIG = {
+    bank: "MB",
+    accountNumber: "0384343705",
+    accountHolder: "TRAN THI TAM",
+    storeName: "LARVA"
+};
+
 const state = {
     products: [],
     cart: [],
@@ -20,81 +27,185 @@ const state = {
     scannerRunning: false,
     scanLocked: false,
     isPaying: false,
-    audioContext: null
+    audioContext: null,
+    transferCode: ""
 };
 
 const elements = {
     productSearchInput:
-        document.querySelector("#productSearchInput"),
+        document.querySelector(
+            "#productSearchInput"
+        ),
 
     saleProductGrid:
-        document.querySelector("#saleProductGrid"),
+        document.querySelector(
+            "#saleProductGrid"
+        ),
 
     emptyProductState:
-        document.querySelector("#emptyProductState"),
+        document.querySelector(
+            "#emptyProductState"
+        ),
 
     saleMessage:
-        document.querySelector("#saleMessage"),
+        document.querySelector(
+            "#saleMessage"
+        ),
 
     cartItems:
-        document.querySelector("#cartItems"),
+        document.querySelector(
+            "#cartItems"
+        ),
 
     emptyCartState:
-        document.querySelector("#emptyCartState"),
+        document.querySelector(
+            "#emptyCartState"
+        ),
 
     cartCount:
-        document.querySelector("#cartCount"),
+        document.querySelector(
+            "#cartCount"
+        ),
 
     cartTotal:
-        document.querySelector("#cartTotal"),
+        document.querySelector(
+            "#cartTotal"
+        ),
 
     clearCartButton:
-        document.querySelector("#clearCartButton"),
+        document.querySelector(
+            "#clearCartButton"
+        ),
 
     openScannerButton:
-        document.querySelector("#openScannerButton"),
+        document.querySelector(
+            "#openScannerButton"
+        ),
 
     openPaymentButton:
-        document.querySelector("#openPaymentButton"),
+        document.querySelector(
+            "#openPaymentButton"
+        ),
 
     scannerModal:
-        document.querySelector("#scannerModal"),
+        document.querySelector(
+            "#scannerModal"
+        ),
 
     barcodeReader:
-        document.querySelector("#barcodeReader"),
+        document.querySelector(
+            "#barcodeReader"
+        ),
 
     scannerMessage:
-        document.querySelector("#scannerMessage"),
+        document.querySelector(
+            "#scannerMessage"
+        ),
 
     paymentModal:
-        document.querySelector("#paymentModal"),
+        document.querySelector(
+            "#paymentModal"
+        ),
 
     paymentTotal:
-        document.querySelector("#paymentTotal"),
+        document.querySelector(
+            "#paymentTotal"
+        ),
+
+    cashPaymentBox:
+        document.querySelector(
+            "#cashPaymentBox"
+        ),
 
     paidAmountWrap:
-        document.querySelector("#paidAmountWrap"),
+        document.querySelector(
+            "#paidAmountWrap"
+        ),
 
     paidAmountInput:
-        document.querySelector("#paidAmountInput"),
+        document.querySelector(
+            "#paidAmountInput"
+        ),
 
     changeAmount:
-        document.querySelector("#changeAmount"),
+        document.querySelector(
+            "#changeAmount"
+        ),
+
+    bankTransferBox:
+        document.querySelector(
+            "#bankTransferBox"
+        ),
+
+    createQrButton:
+        document.querySelector(
+            "#createQrButton"
+        ),
+
+    paymentQrBox:
+        document.querySelector(
+            "#paymentQrBox"
+        ),
+
+    paymentQrImage:
+        document.querySelector(
+            "#paymentQrImage"
+        ),
+
+    qrBankName:
+        document.querySelector(
+            "#qrBankName"
+        ),
+
+    qrAccountNumber:
+        document.querySelector(
+            "#qrAccountNumber"
+        ),
+
+    qrAccountHolder:
+        document.querySelector(
+            "#qrAccountHolder"
+        ),
+
+    qrAmount:
+        document.querySelector(
+            "#qrAmount"
+        ),
+
+    transferContent:
+        document.querySelector(
+            "#transferContent"
+        ),
+
+    confirmReceivedButton:
+        document.querySelector(
+            "#confirmReceivedButton"
+        ),
 
     paymentError:
-        document.querySelector("#paymentError"),
+        document.querySelector(
+            "#paymentError"
+        ),
 
     confirmPaymentButton:
-        document.querySelector("#confirmPaymentButton"),
+        document.querySelector(
+            "#confirmPaymentButton"
+        ),
 
     receiptModal:
-        document.querySelector("#receiptModal"),
+        document.querySelector(
+            "#receiptModal"
+        ),
 
     receiptContent:
-        document.querySelector("#receiptContent"),
+        document.querySelector(
+            "#receiptContent"
+        ),
 
     printReceiptButton:
-        document.querySelector("#printReceiptButton")
+        document.querySelector(
+            "#printReceiptButton"
+        )
 };
 
 async function prepareScanSound() {
@@ -143,7 +254,8 @@ async function playScanSound() {
         const gainNode =
             audioContext.createGain();
 
-        oscillator.type = "sine";
+        oscillator.type =
+            "sine";
 
         oscillator.frequency.setValueAtTime(
             1050,
@@ -160,7 +272,9 @@ async function playScanSound() {
             audioContext.currentTime + 0.14
         );
 
-        oscillator.connect(gainNode);
+        oscillator.connect(
+            gainNode
+        );
 
         gainNode.connect(
             audioContext.destination
@@ -223,6 +337,22 @@ function showSaleMessage(
             elements.saleMessage
                 .classList.add("hidden");
         }, 2200);
+}
+
+function showPaymentError(message) {
+    elements.paymentError.textContent =
+        message;
+
+    elements.paymentError
+        .classList.remove("hidden");
+}
+
+function hidePaymentError() {
+    elements.paymentError
+        .classList.add("hidden");
+
+    elements.paymentError.textContent =
+        "";
 }
 
 function getFilteredProducts() {
@@ -317,13 +447,17 @@ function renderProducts() {
                                 class="button sale-add-button"
                                 type="button"
                                 data-add-product="${product.id}"
-                                ${isOutOfStock
-                                    ? "disabled"
-                                    : ""}
+                                ${
+                                    isOutOfStock
+                                        ? "disabled"
+                                        : ""
+                                }
                             >
-                                ${isOutOfStock
-                                    ? "Hết hàng"
-                                    : "Thêm vào giỏ"}
+                                ${
+                                    isOutOfStock
+                                        ? "Hết hàng"
+                                        : "Thêm vào giỏ"
+                                }
                             </button>
                         </div>
                     </article>
@@ -632,34 +766,32 @@ function getScannerConfig() {
             320
         );
 
+    const scanWidth =
+        Math.min(
+            380,
+            Math.max(
+                280,
+                screenWidth - 24
+            )
+        );
+
     return {
-        fps: 20,
+        fps:
+            30,
 
         qrbox: {
             width:
-                Math.min(
-                    360,
-                    Math.max(
-                        260,
-                        screenWidth - 40
-                    )
-                ),
+                scanWidth,
 
-            height: 150
+            height:
+                190
         },
 
-        aspectRatio: 16 / 9,
+        aspectRatio:
+            16 / 9,
 
-        disableFlip: true,
-
-        formatsToSupport: [
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E
-        ],
+        disableFlip:
+            true,
 
         experimentalFeatures: {
             useBarCodeDetectorIfSupported:
@@ -710,7 +842,7 @@ async function applyCameraSettings() {
                     maxZoom,
                     Math.max(
                         minZoom,
-                        1
+                        1.2
                     )
                 );
         }
@@ -764,7 +896,8 @@ async function clearScannerInstance() {
     state.scanner = null;
 
     if (elements.barcodeReader) {
-        elements.barcodeReader.innerHTML = "";
+        elements.barcodeReader.innerHTML =
+            "";
     }
 }
 
@@ -772,19 +905,23 @@ async function getBackCameraDeviceId() {
     const stream =
         await navigator.mediaDevices
             .getUserMedia({
-                audio: false,
+                audio:
+                    false,
 
                 video: {
                     facingMode: {
-                        ideal: "environment"
+                        ideal:
+                            "environment"
                     },
 
                     width: {
-                        ideal: 1280
+                        ideal:
+                            1280
                     },
 
                     height: {
-                        ideal: 720
+                        ideal:
+                            720
                     }
                 }
             });
@@ -819,7 +956,8 @@ async function startCameraByDeviceId(
         () => {}
     );
 
-    state.scannerRunning = true;
+    state.scannerRunning =
+        true;
 }
 
 async function startBackCameraFacingMode() {
@@ -828,14 +966,16 @@ async function startBackCameraFacingMode() {
 
     await state.scanner.start(
         {
-            facingMode: "environment"
+            facingMode:
+                "environment"
         },
         getScannerConfig(),
         handleScanSuccess,
         () => {}
     );
 
-    state.scannerRunning = true;
+    state.scannerRunning =
+        true;
 }
 
 async function startCameraByDeviceList() {
@@ -945,7 +1085,8 @@ async function openScanner() {
 
     await prepareScanSound();
 
-    state.scanLocked = false;
+    state.scanLocked =
+        false;
 
     elements.scannerModal
         .classList.remove("hidden");
@@ -955,15 +1096,18 @@ async function openScanner() {
 
     try {
         if (
-            typeof Html5Qrcode === "undefined"
-            || typeof Html5QrcodeSupportedFormats === "undefined"
+            typeof Html5Qrcode
+                === "undefined"
+            || typeof Html5QrcodeSupportedFormats
+                === "undefined"
         ) {
             throw new Error(
                 "Thư viện quét mã chưa tải được."
             );
         }
 
-        let started = false;
+        let started =
+            false;
 
         try {
             const backCameraId =
@@ -974,7 +1118,8 @@ async function openScanner() {
                     backCameraId
                 );
 
-                started = true;
+                started =
+                    true;
             }
         } catch (error) {
             console.warn(
@@ -989,7 +1134,8 @@ async function openScanner() {
             try {
                 await startBackCameraFacingMode();
 
-                started = true;
+                started =
+                    true;
             } catch (error) {
                 console.warn(
                     "Không mở được camera sau:",
@@ -1027,9 +1173,11 @@ async function closeScanner() {
     elements.scannerModal
         .classList.add("hidden");
 
-    elements.scannerMessage.textContent = "";
+    elements.scannerMessage.textContent =
+        "";
 
-    state.scanLocked = false;
+    state.scanLocked =
+        false;
 }
 
 async function handleScanSuccess(
@@ -1047,7 +1195,8 @@ async function handleScanSuccess(
         return;
     }
 
-    state.scanLocked = true;
+    state.scanLocked =
+        true;
 
     const product =
         state.products.find((item) => {
@@ -1072,7 +1221,8 @@ async function handleScanSuccess(
             `Không tìm thấy mã ${scannedCode}.`;
 
         setTimeout(() => {
-            state.scanLocked = false;
+            state.scanLocked =
+                false;
         }, 900);
 
         return;
@@ -1086,7 +1236,8 @@ async function handleScanSuccess(
 
     if (!added) {
         setTimeout(() => {
-            state.scanLocked = false;
+            state.scanLocked =
+                false;
         }, 900);
 
         return;
@@ -1115,6 +1266,150 @@ function getSelectedPaymentMethod() {
     );
 }
 
+function generateTransferCode() {
+    const now =
+        new Date();
+
+    const year =
+        now.getFullYear();
+
+    const month =
+        String(
+            now.getMonth() + 1
+        ).padStart(2, "0");
+
+    const day =
+        String(
+            now.getDate()
+        ).padStart(2, "0");
+
+    const hour =
+        String(
+            now.getHours()
+        ).padStart(2, "0");
+
+    const minute =
+        String(
+            now.getMinutes()
+        ).padStart(2, "0");
+
+    const second =
+        String(
+            now.getSeconds()
+        ).padStart(2, "0");
+
+    return (
+        `LARVA`
+        + `${year}${month}${day}`
+        + `${hour}${minute}${second}`
+    );
+}
+
+function resetPaymentQr() {
+    state.transferCode =
+        "";
+
+    elements.paymentQrImage.src =
+        "";
+
+    elements.transferContent.textContent =
+        "";
+
+    elements.qrBankName.textContent =
+        "";
+
+    elements.qrAccountNumber.textContent =
+        "";
+
+    elements.qrAccountHolder.textContent =
+        "";
+
+    elements.qrAmount.textContent =
+        "";
+
+    elements.paymentQrBox
+        .classList.add("hidden");
+}
+
+function createPaymentQr() {
+    hidePaymentError();
+
+    const total =
+        getCartTotal();
+
+    if (total <= 0) {
+        showPaymentError(
+            "Giỏ hàng đang trống."
+        );
+
+        return;
+    }
+
+    if (
+        !BANK_CONFIG.accountNumber
+        || BANK_CONFIG.accountNumber
+            === "NHAP_SO_TAI_KHOAN"
+    ) {
+        showPaymentError(
+            "Bạn chưa nhập số tài khoản trong BANK_CONFIG."
+        );
+
+        return;
+    }
+
+    if (!BANK_CONFIG.bank) {
+        showPaymentError(
+            "Bạn chưa nhập mã ngân hàng trong BANK_CONFIG."
+        );
+
+        return;
+    }
+
+    const transferCode =
+        generateTransferCode();
+
+    const parameters =
+        new URLSearchParams({
+            acc:
+                BANK_CONFIG.accountNumber,
+
+            bank:
+                BANK_CONFIG.bank,
+
+            amount:
+                String(
+                    Math.round(total)
+                ),
+
+            des:
+                transferCode
+        });
+
+    elements.paymentQrImage.src =
+        `https://qr.sepay.vn/img?${parameters.toString()}`;
+
+    elements.qrBankName.textContent =
+        BANK_CONFIG.bank;
+
+    elements.qrAccountNumber.textContent =
+        BANK_CONFIG.accountNumber;
+
+    elements.qrAccountHolder.textContent =
+        BANK_CONFIG.accountHolder;
+
+    elements.qrAmount.textContent =
+        formatMoney(total);
+
+    elements.transferContent.textContent =
+        transferCode;
+
+    elements.paymentQrBox
+        .classList.remove("hidden");
+
+    state.transferCode =
+        transferCode;
+}
+
 function updatePaymentView() {
     const total =
         getCartTotal();
@@ -1141,14 +1436,29 @@ function updatePaymentView() {
     elements.changeAmount.textContent =
         formatMoney(change);
 
-    elements.paidAmountWrap
+    elements.cashPaymentBox
         .classList.toggle(
             "hidden",
             method !== "cash"
         );
 
-    elements.paymentError
-        .classList.add("hidden");
+    elements.bankTransferBox
+        .classList.toggle(
+            "hidden",
+            method !== "transfer"
+        );
+
+    elements.confirmPaymentButton
+        .classList.toggle(
+            "hidden",
+            method === "transfer"
+        );
+
+    if (method !== "transfer") {
+        resetPaymentQr();
+    }
+
+    hidePaymentError();
 }
 
 function openPaymentModal() {
@@ -1158,6 +1468,8 @@ function openPaymentModal() {
 
     const total =
         getCartTotal();
+
+    resetPaymentQr();
 
     elements.paymentModal
         .classList.remove("hidden");
@@ -1179,8 +1491,8 @@ function closePaymentModal() {
     elements.paymentModal
         .classList.add("hidden");
 
-    elements.paymentError
-        .classList.add("hidden");
+    resetPaymentQr();
+    hidePaymentError();
 }
 
 function renderReceipt(sale) {
@@ -1204,6 +1516,7 @@ function renderReceipt(sale) {
             <div class="receipt-meta">
                 <p>
                     Mã hóa đơn:
+
                     <strong>
                         ${escapeHtml(sale.saleId)}
                     </strong>
@@ -1211,10 +1524,27 @@ function renderReceipt(sale) {
 
                 <p>
                     Thời gian:
+
                     <strong>
                         ${escapeHtml(createdDate)}
                     </strong>
                 </p>
+
+                ${
+                    sale.transferCode
+                        ? `
+                            <p>
+                                Nội dung chuyển khoản:
+
+                                <strong>
+                                    ${escapeHtml(
+                                        sale.transferCode
+                                    )}
+                                </strong>
+                            </p>
+                        `
+                        : ""
+                }
             </div>
 
             <div class="receipt-items">
@@ -1247,7 +1577,9 @@ function renderReceipt(sale) {
 
             <div class="receipt-summary">
                 <div>
-                    <span>Tổng tiền</span>
+                    <span>
+                        Tổng tiền
+                    </span>
 
                     <strong>
                         ${formatMoney(
@@ -1257,7 +1589,9 @@ function renderReceipt(sale) {
                 </div>
 
                 <div>
-                    <span>Thanh toán</span>
+                    <span>
+                        Thanh toán
+                    </span>
 
                     <strong>
                         ${methodText}
@@ -1268,7 +1602,9 @@ function renderReceipt(sale) {
                     sale.paymentMethod === "cash"
                         ? `
                             <div>
-                                <span>Khách đưa</span>
+                                <span>
+                                    Khách đưa
+                                </span>
 
                                 <strong>
                                     ${formatMoney(
@@ -1278,7 +1614,9 @@ function renderReceipt(sale) {
                             </div>
 
                             <div>
-                                <span>Tiền thừa</span>
+                                <span>
+                                    Tiền thừa
+                                </span>
 
                                 <strong>
                                     ${formatMoney(
@@ -1298,7 +1636,9 @@ function renderReceipt(sale) {
     `;
 }
 
-async function confirmPayment() {
+async function confirmPayment(
+    forcedMethod = null
+) {
     if (
         state.isPaying
         || state.cart.length === 0
@@ -1310,7 +1650,8 @@ async function confirmPayment() {
         getCartTotal();
 
     const paymentMethod =
-        getSelectedPaymentMethod();
+        forcedMethod
+        || getSelectedPaymentMethod();
 
     const paidAmount =
         paymentMethod === "cash"
@@ -1323,22 +1664,38 @@ async function confirmPayment() {
         paymentMethod === "cash"
         && paidAmount < totalAmount
     ) {
-        elements.paymentError.textContent =
-            "Số tiền khách đưa chưa đủ.";
-
-        elements.paymentError
-            .classList.remove("hidden");
+        showPaymentError(
+            "Số tiền khách đưa chưa đủ."
+        );
 
         return;
     }
 
-    state.isPaying = true;
+    if (
+        paymentMethod === "transfer"
+        && !state.transferCode
+    ) {
+        showPaymentError(
+            "Hãy tạo mã QR trước khi xác nhận."
+        );
+
+        return;
+    }
+
+    state.isPaying =
+        true;
 
     elements.confirmPaymentButton.disabled =
         true;
 
+    elements.confirmReceivedButton.disabled =
+        true;
+
     elements.confirmPaymentButton.textContent =
         "Đang thanh toán...";
+
+    elements.confirmReceivedButton.textContent =
+        "Đang lưu hóa đơn...";
 
     try {
         const sale =
@@ -1353,12 +1710,20 @@ async function confirmPayment() {
                 totalAmount
             });
 
-        state.cart = [];
+        sale.transferCode =
+            paymentMethod === "transfer"
+                ? state.transferCode
+                : "";
+
+        state.cart =
+            [];
 
         renderCart();
 
         elements.paymentModal
             .classList.add("hidden");
+
+        resetPaymentQr();
 
         renderReceipt(sale);
 
@@ -1368,21 +1733,26 @@ async function confirmPayment() {
     } catch (error) {
         console.error(error);
 
-        elements.paymentError.textContent =
+        showPaymentError(
             error.message
-            || "Không thể thanh toán.";
-
-        elements.paymentError
-            .classList.remove("hidden");
+            || "Không thể thanh toán."
+        );
 
     } finally {
-        state.isPaying = false;
+        state.isPaying =
+            false;
 
         elements.confirmPaymentButton.disabled =
             false;
 
+        elements.confirmReceivedButton.disabled =
+            false;
+
         elements.confirmPaymentButton.textContent =
             "Xác nhận thanh toán";
+
+        elements.confirmReceivedButton.textContent =
+            "Đã nhận được tiền";
     }
 }
 
@@ -1492,7 +1862,23 @@ elements.openPaymentButton
 elements.confirmPaymentButton
     .addEventListener(
         "click",
-        confirmPayment
+        () => {
+            confirmPayment("cash");
+        }
+    );
+
+elements.createQrButton
+    .addEventListener(
+        "click",
+        createPaymentQr
+    );
+
+elements.confirmReceivedButton
+    .addEventListener(
+        "click",
+        () => {
+            confirmPayment("transfer");
+        }
     );
 
 elements.paidAmountInput
@@ -1559,7 +1945,8 @@ window.addEventListener(
 );
 
 listenProducts((products) => {
-    state.products = products;
+    state.products =
+        products;
 
     state.cart.forEach((cartItem) => {
         const product =

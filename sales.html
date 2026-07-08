@@ -174,7 +174,7 @@
         </div>
 
         <p class="scanner-help">
-            Quét lại cùng một mã để tăng số lượng trong giỏ.
+            Quét thành công sẽ tự thêm sản phẩm vào giỏ và đóng camera.
         </p>
 
         <div id="barcodeReader"></div>
@@ -254,27 +254,102 @@
             </label>
         </div>
 
-        <label id="paidAmountWrap">
-            Khách đưa
+        <div id="cashPaymentBox">
+            <label id="paidAmountWrap">
+                Khách đưa
 
-            <input
-                id="paidAmountInput"
-                class="input"
-                type="number"
-                min="0"
-                step="1000"
-                placeholder="Nhập số tiền khách đưa"
+                <input
+                    id="paidAmountInput"
+                    class="input"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    placeholder="Nhập số tiền khách đưa"
+                >
+            </label>
+
+            <div class="change-box">
+                <span>
+                    Tiền thừa
+                </span>
+
+                <strong id="changeAmount">
+                    0 ₫
+                </strong>
+            </div>
+        </div>
+
+        <div
+            id="bankTransferBox"
+            class="bank-transfer-box hidden"
+        >
+            <div class="bank-transfer-note">
+                <strong>
+                    Thanh toán bằng chuyển khoản
+                </strong>
+
+                <p>
+                    Nhấn tạo QR, cho khách quét rồi kiểm tra ứng dụng ngân hàng trước khi xác nhận.
+                </p>
+            </div>
+
+            <button
+                id="createQrButton"
+                class="button create-qr-button"
+                type="button"
             >
-        </label>
+                Tạo mã QR thanh toán
+            </button>
 
-        <div class="change-box">
-            <span>
-                Tiền thừa
-            </span>
+            <div
+                id="paymentQrBox"
+                class="payment-qr-box hidden"
+            >
+                <img
+                    id="paymentQrImage"
+                    class="payment-qr-image"
+                    alt="Mã QR thanh toán"
+                >
 
-            <strong id="changeAmount">
-                0 ₫
-            </strong>
+                <div class="payment-bank-info">
+                    <p>
+                        Ngân hàng:
+                        <strong id="qrBankName"></strong>
+                    </p>
+
+                    <p>
+                        Số tài khoản:
+                        <strong id="qrAccountNumber"></strong>
+                    </p>
+
+                    <p>
+                        Chủ tài khoản:
+                        <strong id="qrAccountHolder"></strong>
+                    </p>
+
+                    <p>
+                        Số tiền:
+                        <strong id="qrAmount"></strong>
+                    </p>
+
+                    <p>
+                        Nội dung:
+                        <strong id="transferContent"></strong>
+                    </p>
+                </div>
+
+                <p class="manual-payment-warning">
+                    Web không tự kiểm tra tiền vào. Hãy mở ứng dụng ngân hàng và kiểm tra trước khi nhấn nút bên dưới.
+                </p>
+
+                <button
+                    id="confirmReceivedButton"
+                    class="button confirm-received-button"
+                    type="button"
+                >
+                    Đã nhận được tiền
+                </button>
+            </div>
         </div>
 
         <p
