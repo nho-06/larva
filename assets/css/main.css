@@ -2565,3 +2565,313 @@ th {
         text-align: left;
     }
 }
+/* =========================================================
+   FORM ẢNH SẢN PHẨM
+   ========================================================= */
+
+.product-form-modal {
+    width: min(94vw, 820px);
+}
+
+.product-image-section {
+    padding: 16px;
+    border: 1px solid #e7e7e7;
+    border-radius: 16px;
+    background: #fafafa;
+}
+
+.product-image-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+
+.product-image-heading strong {
+    display: block;
+    color: #222222;
+    font-size: 15px;
+}
+
+.product-image-heading p {
+    margin: 5px 0 0;
+    color: #777777;
+    font-size: 13px;
+}
+
+.image-remove-button {
+    flex-shrink: 0;
+}
+
+.image-source-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.image-source-button {
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid #dcdcdc;
+    border-radius: 11px;
+    color: #444444;
+    background: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+.image-source-button:hover {
+    border-color: #bdbdbd;
+    background: #f5f5f5;
+}
+
+.image-source-button.active {
+    border-color: #181818;
+    color: #ffffff;
+    background: #181818;
+}
+
+.image-source-box {
+    width: 100%;
+}
+
+.image-upload-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    min-height: 150px;
+    padding: 24px;
+    border: 2px dashed #cfcfcf;
+    border-radius: 14px;
+    color: #4b4b4b;
+    background: #ffffff;
+    text-align: center;
+    cursor: pointer;
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+.image-upload-area:hover {
+    border-color: #8f8f8f;
+    background: #f8f8f8;
+}
+
+.image-upload-icon {
+    margin-bottom: 8px;
+    font-size: 34px;
+}
+
+.image-upload-area strong {
+    color: #262626;
+    font-size: 14px;
+}
+
+.image-upload-area small {
+    margin-top: 6px;
+    color: #7d7d7d;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.hidden-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.image-upload-status {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.image-upload-status.loading {
+    border: 1px solid #cbdff8;
+    color: #1f5f9f;
+    background: #eef6ff;
+}
+
+.image-upload-status.success {
+    border: 1px solid #bfe5ca;
+    color: #25733d;
+    background: #eefbf2;
+}
+
+.image-upload-status.error {
+    border: 1px solid #ffcaca;
+    color: #a32424;
+    background: #fff1f1;
+}
+
+.image-preview-box {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid #e4e4e4;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.product-form-image-preview {
+    display: block;
+    width: 150px;
+    height: 150px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: #f1f1f1;
+}
+
+.image-preview-information {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.image-preview-information strong {
+    overflow: hidden;
+    color: #242424;
+    font-size: 14px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.image-preview-information span {
+    margin-top: 6px;
+    color: #7b7b7b;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.barcode-preview-box {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid #e8e8e8;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.barcode-preview-box span {
+    color: #555555;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.barcode-preview-box svg {
+    max-width: 100%;
+}
+
+
+/* =========================================================
+   SẢN PHẨM SAU KHI QUÉT
+   ========================================================= */
+
+.scanned-product-box {
+    margin-bottom: 20px;
+}
+
+.scanned-product-content {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: center;
+    padding: 18px;
+    border: 1px solid #dcebdc;
+    border-radius: 16px;
+    background: #f5fff5;
+}
+
+.scanned-product-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 13px;
+    object-fit: cover;
+    background: #efefef;
+}
+
+.scanned-product-info {
+    min-width: 0;
+}
+
+.scanned-product-info h2 {
+    margin: 6px 0 12px;
+    color: #222222;
+}
+
+.scanned-product-info p {
+    margin: 5px 0;
+    color: #5e5e5e;
+    font-size: 13px;
+}
+
+.scanned-product-info strong {
+    color: #1f1f1f;
+}
+
+.scan-success {
+    color: #228445;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 700px) {
+    .image-source-tabs {
+        grid-template-columns: 1fr;
+    }
+
+    .product-image-heading {
+        flex-direction: column;
+    }
+
+    .image-remove-button {
+        width: 100%;
+    }
+
+    .image-preview-box {
+        grid-template-columns: 1fr;
+    }
+
+    .product-form-image-preview {
+        width: 100%;
+        height: 240px;
+    }
+
+    .scanned-product-content {
+        grid-template-columns: 1fr;
+    }
+
+    .scanned-product-image {
+        width: 100%;
+        height: 260px;
+    }
+
+    .scanned-product-content > .button {
+        width: 100%;
+    }
+}

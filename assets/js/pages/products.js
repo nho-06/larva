@@ -6,6 +6,12 @@ import {
 } from "../services/product-service.js";
 
 import {
+    createLocalImagePreview,
+    releaseLocalImagePreview,
+    uploadProductImage
+} from "../services/image-service.js";
+
+import {
     escapeHtml,
     formatMoney,
     normalizeText,
@@ -14,9 +20,17 @@ import {
 
 const state = {
     products: [],
+
     scanner: null,
     scannerRunning: false,
-    scanLocked: false
+    scanLocked: false,
+
+    imageMode: "url",
+    selectedImageFile: null,
+    localPreviewUrl: "",
+    uploadedImageUrl: "",
+    uploadedImagePath: "",
+    isUploadingImage: false
 };
 
 const elements = {
@@ -93,7 +107,46 @@ const elements = {
         document.querySelector("#scannerMessage"),
 
     scannedProductBox:
-        document.querySelector("#scannedProductBox")
+        document.querySelector("#scannedProductBox"),
+
+    imageUrlBox:
+        document.querySelector("#imageUrlBox"),
+
+    imageFileBox:
+        document.querySelector("#imageFileBox"),
+
+    imageCameraBox:
+        document.querySelector("#imageCameraBox"),
+
+    imageFileInput:
+        document.querySelector("#imageFileInput"),
+
+    imageCameraInput:
+        document.querySelector("#imageCameraInput"),
+
+    imageUploadStatus:
+        document.querySelector("#imageUploadStatus"),
+
+    imagePreviewBox:
+        document.querySelector("#imagePreviewBox"),
+
+    imagePreview:
+        document.querySelector("#imagePreview"),
+
+    imagePreviewName:
+        document.querySelector("#imagePreviewName"),
+
+    imagePreviewType:
+        document.querySelector("#imagePreviewType"),
+
+    removeSelectedImageButton:
+        document.querySelector("#removeSelectedImageButton"),
+
+    saveProductButton:
+        document.querySelector("#saveProductButton"),
+
+    productFormError:
+        document.querySelector("#productFormError")
 };
 
 function generateBarcodeValue() {
@@ -106,6 +159,34 @@ function generateBarcodeValue() {
         ).toString();
 
     return `LRV-${timePart}-${randomPart}`;
+}
+
+function generateSku() {
+    const categoryText =
+        normalizeText(
+            elements.category.value
+            || elements.name.value
+            || "SP"
+        );
+
+    const prefix =
+        categoryText
+            .replace(/[^a-z0-9]/g, "")
+            .slice(0, 4)
+            .toUpperCase()
+        || "SP";
+
+    const timePart =
+        Date.now()
+            .toString()
+            .slice(-6);
+
+    const randomPart =
+        Math.floor(
+            10 + Math.random() * 90
+        );
+
+    return `${prefix}-${timePart}-${randomPart}`;
 }
 
 function renderBarcode(
@@ -164,19 +245,365 @@ function renderBarcode(
     }
 }
 
+function showFormError(message) {
+    elements.productFormError.textContent =
+        message;
+
+    elements.productFormError
+        .classList.remove("hidden");
+}
+
+function hideFormError() {
+    elements.productFormError.textContent =
+        "";
+
+    elements.productFormError
+        .classList.add("hidden");
+}
+
+function showImageStatus(
+    message,
+    type = "loading"
+) {
+    elements.imageUploadStatus.textContent =
+        message;
+
+    elements.imageUploadStatus.className =
+        `image-upload-status ${type}`;
+}
+
+function hideImageStatus() {
+    elements.imageUploadStatus.textContent =
+        "";
+
+    elements.imageUploadStatus.className =
+        "image-upload-status hidden";
+}
+
+function clearLocalPreview() {
+    if (state.localPreviewUrl) {
+        releaseLocalImagePreview(
+            state.localPreviewUrl
+        );
+    }
+
+    state.localPreviewUrl = "";
+}
+
+function showImagePreview({
+    url,
+    name = "Ảnh sản phẩm",
+    type = ""
+}) {
+    if (!url) {
+        elements.imagePreviewBox
+            .classList.add("hidden");
+
+        elements.removeSelectedImageButton
+            .classList.add("hidden");
+
+        elements.imagePreview.removeAttribute(
+            "src"
+        );
+
+        return;
+    }
+
+    elements.imagePreview.src =
+        url;
+
+    elements.imagePreviewName.textContent =
+        name;
+
+    elements.imagePreviewType.textContent =
+        type;
+
+    elements.imagePreviewBox
+        .classList.remove("hidden");
+
+    elements.removeSelectedImageButton
+        .classList.remove("hidden");
+}
+
+function resetImageState() {
+    clearLocalPreview();
+
+    state.imageMode =
+        "url";
+
+    state.selectedImageFile =
+        null;
+
+    state.uploadedImageUrl =
+        "";
+
+    state.uploadedImagePath =
+        "";
+
+    state.isUploadingImage =
+        false;
+
+    if (elements.imageFileInput) {
+        elements.imageFileInput.value =
+            "";
+    }
+
+    if (elements.imageCameraInput) {
+        elements.imageCameraInput.value =
+            "";
+    }
+
+    hideImageStatus();
+
+    showImagePreview({
+        url: ""
+    });
+}
+
+function setImageMode(mode) {
+    state.imageMode =
+        mode;
+
+    document
+        .querySelectorAll(
+            "[data-image-mode]"
+        )
+        .forEach((button) => {
+            button.classList.toggle(
+                "active",
+                button.dataset.imageMode
+                    === mode
+            );
+        });
+
+    elements.imageUrlBox
+        .classList.toggle(
+            "hidden",
+            mode !== "url"
+        );
+
+    elements.imageFileBox
+        .classList.toggle(
+            "hidden",
+            mode !== "file"
+        );
+
+    elements.imageCameraBox
+        .classList.toggle(
+            "hidden",
+            mode !== "camera"
+        );
+
+    hideImageStatus();
+}
+
+function handleImageUrlInput() {
+    if (state.imageMode !== "url") {
+        return;
+    }
+
+    const imageUrl =
+        elements.image.value.trim();
+
+    if (!imageUrl) {
+        showImagePreview({
+            url: ""
+        });
+
+        return;
+    }
+
+    showImagePreview({
+        url:
+            imageUrl,
+
+        name:
+            "Ảnh từ đường dẫn",
+
+        type:
+            "Link ảnh"
+    });
+}
+
+function handleSelectedImageFile(file) {
+    hideFormError();
+    hideImageStatus();
+
+    if (!file) {
+        return;
+    }
+
+    try {
+        clearLocalPreview();
+
+        state.selectedImageFile =
+            file;
+
+        state.uploadedImageUrl =
+            "";
+
+        state.uploadedImagePath =
+            "";
+
+        state.localPreviewUrl =
+            createLocalImagePreview(file);
+
+        showImagePreview({
+            url:
+                state.localPreviewUrl,
+
+            name:
+                file.name
+                || "Ảnh vừa chụp",
+
+            type:
+                `${file.type || "Ảnh"} · ${
+                    Math.round(
+                        file.size / 1024
+                    )
+                } KB`
+        });
+    } catch (error) {
+        console.error(error);
+
+        state.selectedImageFile =
+            null;
+
+        showFormError(
+            error.message
+            || "Không thể chọn ảnh."
+        );
+    }
+}
+
+function removeSelectedImage() {
+    clearLocalPreview();
+
+    state.selectedImageFile =
+        null;
+
+    state.uploadedImageUrl =
+        "";
+
+    state.uploadedImagePath =
+        "";
+
+    elements.image.value =
+        "";
+
+    if (elements.imageFileInput) {
+        elements.imageFileInput.value =
+            "";
+    }
+
+    if (elements.imageCameraInput) {
+        elements.imageCameraInput.value =
+            "";
+    }
+
+    hideImageStatus();
+
+    showImagePreview({
+        url: ""
+    });
+}
+
+async function uploadSelectedImageIfNeeded() {
+    if (!state.selectedImageFile) {
+        return (
+            state.uploadedImageUrl
+            || elements.image.value.trim()
+        );
+    }
+
+    state.isUploadingImage =
+        true;
+
+    elements.saveProductButton.disabled =
+        true;
+
+    elements.saveProductButton.textContent =
+        "Đang tải ảnh...";
+
+    try {
+        const result =
+            await uploadProductImage(
+                state.selectedImageFile,
+
+                (progress) => {
+                    showImageStatus(
+                        `Đang tải ảnh: ${progress}%`,
+                        "loading"
+                    );
+                }
+            );
+
+        state.uploadedImageUrl =
+            result.url;
+
+        state.uploadedImagePath =
+            result.path;
+
+        elements.image.value =
+            result.url;
+
+        showImageStatus(
+            "Tải ảnh thành công.",
+            "success"
+        );
+
+        showImagePreview({
+            url:
+                result.url,
+
+            name:
+                result.name
+                || "Ảnh sản phẩm",
+
+            type:
+                "Đã tải lên Firebase Storage"
+        });
+
+        return result.url;
+
+    } finally {
+        state.isUploadingImage =
+            false;
+
+        elements.saveProductButton.disabled =
+            false;
+
+        elements.saveProductButton.textContent =
+            "Lưu sản phẩm";
+    }
+}
+
 function openProductModal(product = null) {
     elements.form.reset();
 
-    elements.productId.value = "";
-    elements.barcode.value = "";
+    hideFormError();
 
-    elements.quantity.value = 0;
-    elements.costPrice.value = 0;
-    elements.salePrice.value = 0;
+    resetImageState();
 
-    elements.barcodePreviewBox.classList.add(
-        "hidden"
-    );
+    setImageMode("url");
+
+    elements.productId.value =
+        "";
+
+    elements.barcode.value =
+        "";
+
+    elements.quantity.value =
+        0;
+
+    elements.costPrice.value =
+        0;
+
+    elements.salePrice.value =
+        0;
+
+    elements.barcodePreviewBox
+        .classList.add("hidden");
 
     elements.formTitle.textContent =
         product
@@ -200,13 +627,19 @@ function openProductModal(product = null) {
             product.category || "";
 
         elements.quantity.value =
-            Number(product.quantity || 0);
+            Number(
+                product.quantity || 0
+            );
 
         elements.costPrice.value =
-            Number(product.costPrice || 0);
+            Number(
+                product.costPrice || 0
+            );
 
         elements.salePrice.value =
-            Number(product.salePrice || 0);
+            Number(
+                product.salePrice || 0
+            );
 
         elements.image.value =
             product.image || "";
@@ -214,10 +647,30 @@ function openProductModal(product = null) {
         elements.description.value =
             product.description || "";
 
+        state.uploadedImageUrl =
+            product.image || "";
+
+        state.uploadedImagePath =
+            product.imageStoragePath || "";
+
+        if (product.image) {
+            showImagePreview({
+                url:
+                    product.image,
+
+                name:
+                    "Ảnh hiện tại",
+
+                type:
+                    product.imageStoragePath
+                        ? "Firebase Storage"
+                        : "Link ảnh"
+            });
+        }
+
         if (product.barcode) {
-            elements.barcodePreviewBox.classList.remove(
-                "hidden"
-            );
+            elements.barcodePreviewBox
+                .classList.remove("hidden");
 
             setTimeout(() => {
                 renderBarcode(
@@ -226,33 +679,50 @@ function openProductModal(product = null) {
                 );
             }, 0);
         }
+    } else {
+        elements.barcode.value =
+            generateBarcodeValue();
     }
 
-    elements.productModal.classList.remove(
-        "hidden"
-    );
+    elements.productModal
+        .classList.remove("hidden");
 }
 
 function closeProductModal() {
-    elements.productModal.classList.add(
-        "hidden"
-    );
+    if (state.isUploadingImage) {
+        return;
+    }
+
+    resetImageState();
+
+    elements.productModal
+        .classList.add("hidden");
 }
 
-function getFormData() {
-    const currentBarcode =
+function getFormData(imageUrl) {
+    let sku =
+        elements.sku.value.trim();
+
+    if (!sku) {
+        sku =
+            generateSku();
+    }
+
+    let barcode =
         elements.barcode.value.trim();
+
+    if (!barcode) {
+        barcode =
+            generateBarcodeValue();
+    }
 
     return {
         name:
             elements.name.value.trim(),
 
-        sku:
-            elements.sku.value.trim(),
+        sku,
 
-        barcode:
-            currentBarcode
-            || generateBarcodeValue(),
+        barcode,
 
         category:
             elements.category.value.trim(),
@@ -273,7 +743,10 @@ function getFormData() {
             ),
 
         image:
-            elements.image.value.trim(),
+            imageUrl || "",
+
+        imageStoragePath:
+            state.uploadedImagePath || "",
 
         description:
             elements.description.value.trim()
@@ -318,7 +791,9 @@ function renderCategoryFilter() {
     `;
 
     elements.categoryFilter.value =
-        categories.includes(currentCategory)
+        categories.includes(
+            currentCategory
+        )
             ? currentCategory
             : "";
 }
@@ -359,7 +834,6 @@ function getFilteredProducts() {
         }
     );
 }
-
 function renderProducts() {
     const products =
         getFilteredProducts();
@@ -373,10 +847,8 @@ function renderProducts() {
 
                 return `
                     <tr>
-
                         <td>
                             <div class="product-cell">
-
                                 <img
                                     class="product-image"
                                     src="${escapeHtml(productImage)}"
@@ -385,7 +857,6 @@ function renderProducts() {
                                 >
 
                                 <div>
-
                                     <span class="product-name">
                                         ${escapeHtml(product.name)}
                                     </span>
@@ -396,14 +867,14 @@ function renderProducts() {
                                             || "Chưa có mô tả"
                                         )}
                                     </div>
-
                                 </div>
-
                             </div>
                         </td>
 
                         <td>
-                            ${escapeHtml(product.sku)}
+                            ${escapeHtml(
+                                product.sku || ""
+                            )}
                         </td>
 
                         <td>
@@ -411,16 +882,18 @@ function renderProducts() {
                                 product.barcode
                                     ? `
                                         <div class="table-barcode">
-
                                             <svg
                                                 class="product-barcode"
-                                                data-barcode="${escapeHtml(product.barcode)}"
+                                                data-barcode="${escapeHtml(
+                                                    product.barcode
+                                                )}"
                                             ></svg>
 
                                             <small>
-                                                ${escapeHtml(product.barcode)}
+                                                ${escapeHtml(
+                                                    product.barcode
+                                                )}
                                             </small>
-
                                         </div>
                                     `
                                     : `
@@ -458,7 +931,6 @@ function renderProducts() {
 
                         <td>
                             <div class="actions">
-
                                 <button
                                     class="button button-light"
                                     type="button"
@@ -474,19 +946,18 @@ function renderProducts() {
                                 >
                                     Xóa
                                 </button>
-
                             </div>
                         </td>
-
                     </tr>
                 `;
             })
             .join("");
 
-    elements.emptyState.classList.toggle(
-        "hidden",
-        products.length > 0
-    );
+    elements.emptyState
+        .classList.toggle(
+            "hidden",
+            products.length > 0
+        );
 
     renderTableBarcodes();
 }
@@ -518,7 +989,6 @@ function showScannedProduct(product) {
 
     elements.scannedProductBox.innerHTML = `
         <div class="scanned-product-content">
-
             <img
                 class="scanned-product-image"
                 src="${escapeHtml(productImage)}"
@@ -527,7 +997,6 @@ function showScannedProduct(product) {
             >
 
             <div class="scanned-product-info">
-
                 <span class="scan-success">
                     Đã tìm thấy sản phẩm
                 </span>
@@ -540,7 +1009,9 @@ function showScannedProduct(product) {
                     Mã sản phẩm:
 
                     <strong>
-                        ${escapeHtml(product.sku)}
+                        ${escapeHtml(
+                            product.sku || ""
+                        )}
                     </strong>
                 </p>
 
@@ -550,6 +1021,17 @@ function showScannedProduct(product) {
                     <strong>
                         ${escapeHtml(
                             product.barcode || ""
+                        )}
+                    </strong>
+                </p>
+
+                <p>
+                    Danh mục:
+
+                    <strong>
+                        ${escapeHtml(
+                            product.category
+                            || "Chưa phân loại"
                         )}
                     </strong>
                 </p>
@@ -573,7 +1055,6 @@ function showScannedProduct(product) {
                         )}
                     </strong>
                 </p>
-
             </div>
 
             <button
@@ -583,13 +1064,11 @@ function showScannedProduct(product) {
             >
                 Đóng
             </button>
-
         </div>
     `;
 
-    elements.scannedProductBox.classList.remove(
-        "hidden"
-    );
+    elements.scannedProductBox
+        .classList.remove("hidden");
 
     document
         .querySelector(
@@ -598,86 +1077,21 @@ function showScannedProduct(product) {
         ?.addEventListener(
             "click",
             () => {
-                elements.scannedProductBox.classList.add(
-                    "hidden"
-                );
+                elements.scannedProductBox
+                    .classList.add("hidden");
 
-                elements.searchInput.value = "";
+                elements.searchInput.value =
+                    "";
 
                 renderProducts();
             }
         );
 
-    elements.scannedProductBox.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-    });
-}
-function getCameraErrorMessage(error) {
-    const errorName =
-        error?.name || "";
-
-    const errorMessage =
-        error?.message
-        || String(error || "");
-
-    const lowerMessage =
-        errorMessage.toLowerCase();
-
-    if (
-        errorName === "NotAllowedError"
-        || errorName === "PermissionDeniedError"
-        || lowerMessage.includes("permission")
-        || lowerMessage.includes("denied")
-    ) {
-        return (
-            "Camera đang bị chặn. "
-            + "Hãy cho phép trang web sử dụng camera "
-            + "rồi tải lại trang."
-        );
-    }
-
-    if (
-        errorName === "NotFoundError"
-        || errorName === "DevicesNotFoundError"
-        || lowerMessage.includes("not found")
-    ) {
-        return "Không tìm thấy camera trên thiết bị.";
-    }
-
-    if (
-        errorName === "NotReadableError"
-        || errorName === "TrackStartError"
-    ) {
-        return (
-            "Camera đang được ứng dụng khác sử dụng. "
-            + "Hãy tắt Camera, Zalo, Meet hoặc ứng dụng gọi video."
-        );
-    }
-
-    if (
-        errorName === "OverconstrainedError"
-        || errorName === "ConstraintNotSatisfiedError"
-    ) {
-        return "Không thể chọn camera sau trên thiết bị này.";
-    }
-
-    if (errorName === "SecurityError") {
-        return "Trình duyệt không cho phép mở camera trên trang này.";
-    }
-
-    return "Không mở được camera: " + errorMessage;
-}
-
-function getSupportedBarcodeFormats() {
-    return [
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E
-    ];
+    elements.scannedProductBox
+        .scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
 }
 
 function createScanner() {
@@ -696,30 +1110,28 @@ function getScannerConfig() {
 
     const scanWidth =
         Math.min(
-            360,
+            380,
             Math.max(
-                260,
-                screenWidth - 40
+                280,
+                screenWidth - 24
             )
         );
 
     return {
-        fps: 20,
+        fps: 30,
 
         qrbox: {
             width: scanWidth,
-            height: 150
+            height: 190
         },
 
         aspectRatio: 16 / 9,
 
         disableFlip: true,
 
-        formatsToSupport:
-            getSupportedBarcodeFormats(),
-
         experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
+            useBarCodeDetectorIfSupported:
+                true
         }
     };
 }
@@ -740,10 +1152,15 @@ async function applyCameraSettings() {
         const advancedSettings = {};
 
         if (
-            Array.isArray(capabilities.focusMode)
-            && capabilities.focusMode.includes("continuous")
+            Array.isArray(
+                capabilities.focusMode
+            )
+            && capabilities.focusMode.includes(
+                "continuous"
+            )
         ) {
-            advancedSettings.focusMode = "continuous";
+            advancedSettings.focusMode =
+                "continuous";
         }
 
         if (capabilities.zoom) {
@@ -760,7 +1177,10 @@ async function applyCameraSettings() {
             advancedSettings.zoom =
                 Math.min(
                     maxZoom,
-                    Math.max(minZoom, 1)
+                    Math.max(
+                        minZoom,
+                        1.2
+                    )
                 );
         }
 
@@ -809,11 +1229,15 @@ async function clearScannerInstance() {
         );
     }
 
-    state.scannerRunning = false;
-    state.scanner = null;
+    state.scannerRunning =
+        false;
+
+    state.scanner =
+        null;
 
     if (elements.barcodeReader) {
-        elements.barcodeReader.innerHTML = "";
+        elements.barcodeReader.innerHTML =
+            "";
     }
 }
 
@@ -845,9 +1269,7 @@ async function getBackCameraDeviceId() {
         const settings =
             track?.getSettings?.() || {};
 
-        if (settings.deviceId) {
-            return settings.deviceId;
-        }
+        return settings.deviceId || "";
     } finally {
         stream
             .getTracks()
@@ -855,12 +1277,13 @@ async function getBackCameraDeviceId() {
                 track.stop();
             });
     }
-
-    return "";
 }
 
-async function startCameraByDeviceId(deviceId) {
-    state.scanner = createScanner();
+async function startCameraByDeviceId(
+    deviceId
+) {
+    state.scanner =
+        createScanner();
 
     await state.scanner.start(
         deviceId,
@@ -869,11 +1292,13 @@ async function startCameraByDeviceId(deviceId) {
         () => {}
     );
 
-    state.scannerRunning = true;
+    state.scannerRunning =
+        true;
 }
 
 async function startBackCameraFacingMode() {
-    state.scanner = createScanner();
+    state.scanner =
+        createScanner();
 
     await state.scanner.start(
         {
@@ -884,7 +1309,8 @@ async function startBackCameraFacingMode() {
         () => {}
     );
 
-    state.scannerRunning = true;
+    state.scannerRunning =
+        true;
 }
 
 async function startCameraByDeviceList() {
@@ -921,8 +1347,12 @@ async function startCameraByDeviceList() {
                 return (
                     label.includes("back")
                     || label.includes("rear")
-                    || label.includes("environment")
-                    || label.includes("camera sau")
+                    || label.includes(
+                        "environment"
+                    )
+                    || label.includes(
+                        "camera sau"
+                    )
                 );
             }
         );
@@ -938,24 +1368,71 @@ async function startCameraByDeviceList() {
     );
 }
 
+function getCameraErrorMessage(error) {
+    const errorName =
+        error?.name || "";
+
+    const errorMessage =
+        error?.message
+        || String(error || "");
+
+    const lowerMessage =
+        errorMessage.toLowerCase();
+
+    if (
+        errorName === "NotAllowedError"
+        || errorName === "PermissionDeniedError"
+        || lowerMessage.includes("permission")
+        || lowerMessage.includes("denied")
+    ) {
+        return (
+            "Camera đang bị chặn. "
+            + "Hãy cấp quyền camera rồi tải lại trang."
+        );
+    }
+
+    if (
+        errorName === "NotFoundError"
+        || lowerMessage.includes("not found")
+    ) {
+        return "Không tìm thấy camera.";
+    }
+
+    if (
+        errorName === "NotReadableError"
+        || errorName === "TrackStartError"
+    ) {
+        return (
+            "Camera đang được ứng dụng khác sử dụng."
+        );
+    }
+
+    return (
+        "Không mở được camera: "
+        + errorMessage
+    );
+}
+
 async function openScanner() {
     if (state.scannerRunning) {
         return;
     }
 
-    state.scanLocked = false;
+    state.scanLocked =
+        false;
 
-    elements.scannerModal.classList.remove(
-        "hidden"
-    );
+    elements.scannerModal
+        .classList.remove("hidden");
 
     elements.scannerMessage.textContent =
         "Đang mở camera sau...";
 
     try {
         if (
-            typeof Html5Qrcode === "undefined"
-            || typeof Html5QrcodeSupportedFormats === "undefined"
+            typeof Html5Qrcode
+                === "undefined"
+            || typeof Html5QrcodeSupportedFormats
+                === "undefined"
         ) {
             throw new Error(
                 "Thư viện quét mã chưa tải được."
@@ -964,14 +1441,16 @@ async function openScanner() {
 
         if (
             !navigator.mediaDevices
-            || !navigator.mediaDevices.getUserMedia
+            || !navigator.mediaDevices
+                .getUserMedia
         ) {
             throw new Error(
                 "Trình duyệt không hỗ trợ camera."
             );
         }
 
-        let started = false;
+        let started =
+            false;
 
         try {
             const backCameraId =
@@ -982,12 +1461,13 @@ async function openScanner() {
                     backCameraId
                 );
 
-                started = true;
+                started =
+                    true;
             }
-        } catch (deviceIdError) {
+        } catch (error) {
             console.warn(
-                "Không lấy được deviceId camera sau:",
-                deviceIdError
+                "Không lấy được camera sau:",
+                error
             );
 
             await clearScannerInstance();
@@ -997,11 +1477,12 @@ async function openScanner() {
             try {
                 await startBackCameraFacingMode();
 
-                started = true;
-            } catch (facingModeError) {
+                started =
+                    true;
+            } catch (error) {
                 console.warn(
-                    "Không mở được camera sau bằng facingMode:",
-                    facingModeError
+                    "Không mở được camera sau:",
+                    error
                 );
 
                 await clearScannerInstance();
@@ -1013,17 +1494,14 @@ async function openScanner() {
         }
 
         elements.scannerMessage.textContent =
-            "Camera sau đã mở. Đưa toàn bộ mã vạch vào giữa khung.";
+            "Đưa toàn bộ mã vạch vào giữa khung.";
 
         setTimeout(() => {
             applyCameraSettings();
         }, 700);
 
     } catch (error) {
-        console.error(
-            "Lỗi mở camera:",
-            error
-        );
+        console.error(error);
 
         await clearScannerInstance();
 
@@ -1033,15 +1511,16 @@ async function openScanner() {
 }
 
 async function closeScanner() {
-    state.scanLocked = false;
-
     await clearScannerInstance();
 
-    elements.scannerModal.classList.add(
-        "hidden"
-    );
+    elements.scannerModal
+        .classList.add("hidden");
 
-    elements.scannerMessage.textContent = "";
+    elements.scannerMessage.textContent =
+        "";
+
+    state.scanLocked =
+        false;
 }
 
 async function handleScanSuccess(
@@ -1059,21 +1538,24 @@ async function handleScanSuccess(
         return;
     }
 
-    state.scanLocked = true;
+    state.scanLocked =
+        true;
 
     const product =
         state.products.find((item) => {
-            const productBarcode =
-                String(item.barcode || "")
-                    .trim();
+            const barcode =
+                String(
+                    item.barcode || ""
+                ).trim();
 
-            const productSku =
-                String(item.sku || "")
-                    .trim();
+            const sku =
+                String(
+                    item.sku || ""
+                ).trim();
 
             return (
-                productBarcode === scannedCode
-                || productSku === scannedCode
+                barcode === scannedCode
+                || sku === scannedCode
             );
         });
 
@@ -1081,7 +1563,7 @@ async function handleScanSuccess(
 
     if (!product) {
         alert(
-            `Đã quét được mã ${scannedCode}, nhưng không tìm thấy sản phẩm.`
+            `Không tìm thấy sản phẩm có mã: ${scannedCode}`
         );
 
         return;
@@ -1095,18 +1577,68 @@ async function handleScanSuccess(
 
     showScannedProduct(product);
 }
+document
+    .querySelectorAll(
+        "[data-image-mode]"
+    )
+    .forEach((button) => {
+        button.addEventListener(
+            "click",
+            () => {
+                setImageMode(
+                    button.dataset.imageMode
+                );
+            }
+        );
+    });
 
-elements.openProductForm.addEventListener(
-    "click",
-    () => {
-        openProductModal();
-    }
-);
+elements.image
+    .addEventListener(
+        "input",
+        handleImageUrlInput
+    );
 
-elements.openScannerButton.addEventListener(
-    "click",
-    openScanner
-);
+elements.imageFileInput
+    .addEventListener(
+        "change",
+        (event) => {
+            const file =
+                event.target.files?.[0];
+
+            handleSelectedImageFile(file);
+        }
+    );
+
+elements.imageCameraInput
+    .addEventListener(
+        "change",
+        (event) => {
+            const file =
+                event.target.files?.[0];
+
+            handleSelectedImageFile(file);
+        }
+    );
+
+elements.removeSelectedImageButton
+    .addEventListener(
+        "click",
+        removeSelectedImage
+    );
+
+elements.openProductForm
+    .addEventListener(
+        "click",
+        () => {
+            openProductModal();
+        }
+    );
+
+elements.openScannerButton
+    .addEventListener(
+        "click",
+        openScanner
+    );
 
 document
     .querySelectorAll(
@@ -1130,159 +1662,225 @@ document
         );
     });
 
-elements.form.addEventListener(
-    "submit",
-    async (event) => {
-        event.preventDefault();
+elements.form
+    .addEventListener(
+        "submit",
+        async (event) => {
+            event.preventDefault();
 
-        const product =
-            getFormData();
-
-        const productId =
-            elements.productId.value;
-
-        const duplicatedSku =
-            state.products.some((item) => {
-                return (
-                    normalizeText(item.sku)
-                        === normalizeText(product.sku)
-
-                    && item.id !== productId
-                );
-            });
-
-        if (duplicatedSku) {
-            alert(
-                "Mã sản phẩm đã tồn tại."
-            );
-
-            return;
-        }
-
-        const duplicatedBarcode =
-            state.products.some((item) => {
-                return (
-                    item.barcode === product.barcode
-                    && item.id !== productId
-                );
-            });
-
-        if (duplicatedBarcode) {
-            alert(
-                "Mã vạch đã tồn tại."
-            );
-
-            return;
-        }
-
-        try {
-            if (productId) {
-                await updateProduct(
-                    productId,
-                    product
-                );
-            } else {
-                await createProduct(
-                    product
-                );
+            if (state.isUploadingImage) {
+                return;
             }
 
-            closeProductModal();
+            hideFormError();
 
-        } catch (error) {
-            console.error(error);
+            const productId =
+                elements.productId.value;
 
-            alert(
-                "Không thể lưu sản phẩm. "
-                + "Hãy kiểm tra kết nối Firebase."
-            );
-        }
-    }
-);
+            const productName =
+                elements.name.value.trim();
 
-elements.productTable.addEventListener(
-    "click",
-    async (event) => {
-        const editButton =
-            event.target.closest(
-                "[data-edit]"
-            );
-
-        const deleteButton =
-            event.target.closest(
-                "[data-delete]"
-            );
-
-        const editId =
-            editButton?.dataset.edit;
-
-        const deleteId =
-            deleteButton?.dataset.delete;
-
-        if (editId) {
-            const product =
-                state.products.find(
-                    (item) => {
-                        return item.id === editId;
-                    }
+            if (!productName) {
+                showFormError(
+                    "Hãy nhập tên sản phẩm."
                 );
 
-            if (product) {
-                openProductModal(product);
-            }
-        }
-
-        if (deleteId) {
-            const product =
-                state.products.find(
-                    (item) => {
-                        return item.id === deleteId;
-                    }
-                );
-
-            const accepted =
-                confirm(
-                    `Xóa sản phẩm "${product?.name || ""}"?`
-                );
-
-            if (!accepted) {
                 return;
             }
 
             try {
-                await deleteProduct(
-                    deleteId
-                );
+                const imageUrl =
+                    await uploadSelectedImageIfNeeded();
+
+                const product =
+                    getFormData(imageUrl);
+
+                if (!product.sku) {
+                    showFormError(
+                        "Không thể tạo mã sản phẩm."
+                    );
+
+                    return;
+                }
+
+                const duplicatedSku =
+                    state.products.some(
+                        (item) => {
+                            return (
+                                normalizeText(
+                                    item.sku
+                                )
+                                === normalizeText(
+                                    product.sku
+                                )
+                                && item.id
+                                !== productId
+                            );
+                        }
+                    );
+
+                if (duplicatedSku) {
+                    showFormError(
+                        "Mã sản phẩm đã tồn tại."
+                    );
+
+                    return;
+                }
+
+                const duplicatedBarcode =
+                    state.products.some(
+                        (item) => {
+                            return (
+                                String(
+                                    item.barcode || ""
+                                ).trim()
+                                === String(
+                                    product.barcode || ""
+                                ).trim()
+                                && item.id
+                                !== productId
+                            );
+                        }
+                    );
+
+                if (duplicatedBarcode) {
+                    showFormError(
+                        "Mã vạch đã tồn tại."
+                    );
+
+                    return;
+                }
+
+                elements.saveProductButton.disabled =
+                    true;
+
+                elements.saveProductButton.textContent =
+                    productId
+                        ? "Đang cập nhật..."
+                        : "Đang lưu...";
+
+                if (productId) {
+                    await updateProduct(
+                        productId,
+                        product
+                    );
+                } else {
+                    await createProduct(
+                        product
+                    );
+                }
+
+                closeProductModal();
+
             } catch (error) {
                 console.error(error);
 
-                alert(
-                    "Không thể xóa sản phẩm."
+                showFormError(
+                    error.message
+                    || "Không thể lưu sản phẩm."
                 );
+
+            } finally {
+                elements.saveProductButton.disabled =
+                    false;
+
+                elements.saveProductButton.textContent =
+                    "Lưu sản phẩm";
             }
         }
-    }
-);
+    );
 
-elements.searchInput.addEventListener(
-    "input",
-    renderProducts
-);
+elements.productTable
+    .addEventListener(
+        "click",
+        async (event) => {
+            const editButton =
+                event.target.closest(
+                    "[data-edit]"
+                );
 
-elements.categoryFilter.addEventListener(
-    "change",
-    renderProducts
-);
+            const deleteButton =
+                event.target.closest(
+                    "[data-delete]"
+                );
 
-window.addEventListener(
-    "pagehide",
-    () => {
-        clearScannerInstance();
-    }
-);
+            const editId =
+                editButton?.dataset.edit;
+
+            const deleteId =
+                deleteButton?.dataset.delete;
+
+            if (editId) {
+                const product =
+                    state.products.find(
+                        (item) => {
+                            return item.id
+                                === editId;
+                        }
+                    );
+
+                if (product) {
+                    openProductModal(product);
+                }
+            }
+
+            if (deleteId) {
+                const product =
+                    state.products.find(
+                        (item) => {
+                            return item.id
+                                === deleteId;
+                        }
+                    );
+
+                const accepted =
+                    confirm(
+                        `Xóa sản phẩm "${product?.name || ""}"?`
+                    );
+
+                if (!accepted) {
+                    return;
+                }
+
+                try {
+                    await deleteProduct(
+                        deleteId
+                    );
+                } catch (error) {
+                    console.error(error);
+
+                    alert(
+                        "Không thể xóa sản phẩm."
+                    );
+                }
+            }
+        }
+    );
+
+elements.searchInput
+    .addEventListener(
+        "input",
+        renderProducts
+    );
+
+elements.categoryFilter
+    .addEventListener(
+        "change",
+        renderProducts
+    );
+
+window
+    .addEventListener(
+        "pagehide",
+        () => {
+            clearScannerInstance();
+            clearLocalPreview();
+        }
+    );
 
 listenProducts((products) => {
-    state.products = products;
+    state.products =
+        products;
 
     renderCategoryFilter();
     renderProducts();

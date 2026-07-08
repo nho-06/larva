@@ -144,7 +144,7 @@
         data-close-product-modal
     ></div>
 
-    <section class="modal-card">
+    <section class="modal-card product-form-modal">
 
         <div class="modal-header">
 
@@ -191,7 +191,7 @@
                     class="input"
                     id="name"
                     type="text"
-                    placeholder="Nhập tên sản phẩm"
+                    placeholder="Ví dụ: Gấu bông màu nâu"
                     required
                 >
             </label>
@@ -203,7 +203,7 @@
                     class="input"
                     id="sku"
                     type="text"
-                    placeholder="Ví dụ: VAY001"
+                    placeholder="Ví dụ: GAU001"
                     required
                 >
             </label>
@@ -215,7 +215,7 @@
                     class="input"
                     id="category"
                     type="text"
-                    placeholder="Ví dụ: Váy, Áo, Quần"
+                    placeholder="Ví dụ: Gấu bông, Váy, Phụ kiện"
                 >
             </label>
 
@@ -257,16 +257,175 @@
                 >
             </label>
 
-            <label class="full-width">
-                Link ảnh
+            <!-- Khu vực nhập ảnh -->
+            <div class="product-image-section full-width">
 
-                <input
-                    class="input"
-                    id="image"
-                    type="url"
-                    placeholder="https://..."
+                <div class="product-image-heading">
+
+                    <div>
+                        <strong>
+                            Ảnh sản phẩm
+                        </strong>
+
+                        <p>
+                            Chọn một trong ba cách bên dưới.
+                        </p>
+                    </div>
+
+                    <button
+                        id="removeSelectedImageButton"
+                        class="button button-light image-remove-button hidden"
+                        type="button"
+                    >
+                        Xóa ảnh
+                    </button>
+
+                </div>
+
+                <div
+                    class="image-source-tabs"
+                    role="tablist"
                 >
-            </label>
+
+                    <button
+                        class="image-source-button active"
+                        type="button"
+                        data-image-mode="url"
+                    >
+                        Dán link ảnh
+                    </button>
+
+                    <button
+                        class="image-source-button"
+                        type="button"
+                        data-image-mode="file"
+                    >
+                        Chọn ảnh trong máy
+                    </button>
+
+                    <button
+                        class="image-source-button"
+                        type="button"
+                        data-image-mode="camera"
+                    >
+                        Chụp ảnh
+                    </button>
+
+                </div>
+
+                <!-- Chế độ dán link -->
+                <div
+                    id="imageUrlBox"
+                    class="image-source-box"
+                >
+                    <label>
+                        Link ảnh
+
+                        <input
+                            class="input"
+                            id="image"
+                            type="url"
+                            placeholder="https://..."
+                        >
+                    </label>
+                </div>
+
+                <!-- Chế độ chọn ảnh -->
+                <div
+                    id="imageFileBox"
+                    class="image-source-box hidden"
+                >
+
+                    <label
+                        class="image-upload-area"
+                        for="imageFileInput"
+                    >
+                        <span class="image-upload-icon">
+                            🖼️
+                        </span>
+
+                        <strong>
+                            Chọn ảnh từ máy
+                        </strong>
+
+                        <small>
+                            Hỗ trợ JPG, PNG hoặc WEBP. Tối đa 10 MB.
+                        </small>
+                    </label>
+
+                    <input
+                        id="imageFileInput"
+                        class="hidden-file-input"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                    >
+
+                </div>
+
+                <!-- Chế độ chụp ảnh -->
+                <div
+                    id="imageCameraBox"
+                    class="image-source-box hidden"
+                >
+
+                    <label
+                        class="image-upload-area"
+                        for="imageCameraInput"
+                    >
+                        <span class="image-upload-icon">
+                            📷
+                        </span>
+
+                        <strong>
+                            Mở camera chụp sản phẩm
+                        </strong>
+
+                        <small>
+                            Trên điện thoại sẽ ưu tiên camera sau.
+                        </small>
+                    </label>
+
+                    <input
+                        id="imageCameraInput"
+                        class="hidden-file-input"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                    >
+
+                </div>
+
+                <!-- Trạng thái tải ảnh -->
+                <div
+                    id="imageUploadStatus"
+                    class="image-upload-status hidden"
+                ></div>
+
+                <!-- Ảnh xem trước -->
+                <div
+                    id="imagePreviewBox"
+                    class="image-preview-box hidden"
+                >
+
+                    <img
+                        id="imagePreview"
+                        class="product-form-image-preview"
+                        alt="Ảnh sản phẩm xem trước"
+                    >
+
+                    <div class="image-preview-information">
+
+                        <strong id="imagePreviewName">
+                            Ảnh sản phẩm
+                        </strong>
+
+                        <span id="imagePreviewType"></span>
+
+                    </div>
+
+                </div>
+
+            </div>
 
             <label class="full-width">
                 Mô tả
@@ -283,12 +442,19 @@
                 id="barcodePreviewBox"
                 class="barcode-preview-box full-width hidden"
             >
+
                 <span>
                     Mã vạch sản phẩm
                 </span>
 
                 <svg id="barcodePreview"></svg>
+
             </div>
+
+            <p
+                id="productFormError"
+                class="form-error full-width hidden"
+            ></p>
 
             <div class="form-actions full-width">
 
@@ -302,6 +468,7 @@
 
                 <button
                     class="button"
+                    id="saveProductButton"
                     type="submit"
                 >
                     Lưu sản phẩm
@@ -352,7 +519,7 @@
         </div>
 
         <p class="scanner-help">
-            Đưa mã vạch vào giữa khung camera.
+            Đưa toàn bộ mã vạch vào giữa khung camera.
         </p>
 
         <div id="barcodeReader"></div>
