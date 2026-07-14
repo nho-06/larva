@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Larva | Doanh thu & Tiền lời</title>
+
+    <link
+        rel="stylesheet"
+        href="./assets/css/main.css"
+    >
+</head>
+
+<body>
+
+<div class="app-layout">
+    <div id="sidebarContainer"></div>
+
+    <main class="main-content">
+
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">
+                    BÁO CÁO
+                </p>
+
+                <h1>
+                    Doanh thu & Tiền lời
+                </h1>
+            </div>
+        </header>
+
+        <section class="panel statistics-filter-panel">
+            <div class="statistics-filter-grid">
+
+                <label>
+                    Từ ngày
+
+                    <input
+                        id="startDateInput"
+                        class="input"
+                        type="date"
+                    >
+                </label>
+
+                <label>
+                    Đến ngày
+
+                    <input
+                        id="endDateInput"
+                        class="input"
+                        type="date"
+                    >
+                </label>
+
+                <button
+                    id="applyFilterButton"
+                    class="button"
+                    type="button"
+                >
+                    Áp dụng
+                </button>
+
+                <button
+                    id="resetFilterButton"
+                    class="button button-light"
+                    type="button"
+                >
+                    Tháng này
+                </button>
+
+            </div>
+
+            <p
+                id="statisticsMessage"
+                class="statistics-message hidden"
+            ></p>
+        </section>
+
+        <section class="stats-grid statistics-summary-grid">
+
+            <article class="stat-card">
+                <span>
+                    Doanh thu hôm nay
+                </span>
+
+                <strong id="todayRevenue">
+                    0 ₫
+                </strong>
+            </article>
+
+            <article class="stat-card">
+                <span>
+                    Doanh thu khoảng chọn
+                </span>
+
+                <strong id="periodRevenue">
+                    0 ₫
+                </strong>
+            </article>
+
+            <article class="stat-card">
+                <span>
+                    Giá vốn khoảng chọn
+                </span>
+
+                <strong id="periodCost">
+                    0 ₫
+                </strong>
+            </article>
+
+            <article class="stat-card">
+                <span>
+                    Tiền lời khoảng chọn
+                </span>
+
+                <strong id="periodProfit">
+                    0 ₫
+                </strong>
+            </article>
+
+            <article class="stat-card">
+                <span>
+                    Tiền lời tháng này
+                </span>
+
+                <strong id="monthProfit">
+                    0 ₫
+                </strong>
+            </article>
+
+            <article class="stat-card">
+                <span>
+                    Tiền lời năm nay
+                </span>
+
+                <strong id="yearProfit">
+                    0 ₫
+                </strong>
+            </article>
+
+            <article class="stat-card">
+                <span>
+                    Tổng hóa đơn
+                </span>
+
+                <strong id="totalInvoices">
+                    0
+                </strong>
+            </article>
+
+            <article class="stat-card">
+                <span>
+                    Sản phẩm đã bán
+                </span>
+
+                <strong id="totalSoldQuantity">
+                    0
+                </strong>
+            </article>
+
+            <article class="stat-card">
+                <span>
+                    Doanh thu tiền mặt
+                </span>
+
+                <strong id="cashRevenue">
+                    0 ₫
+                </strong>
+            </article>
+
+            <article class="stat-card">
+                <span>
+                    Doanh thu chuyển khoản
+                </span>
+
+                <strong id="transferRevenue">
+                    0 ₫
+                </strong>
+            </article>
+
+        </section>
+
+        <section class="panel statistics-chart-panel">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">
+                        BIỂU ĐỒ
+                    </p>
+
+                    <h2>
+                        Doanh thu và tiền lời theo ngày
+                    </h2>
+                </div>
+            </div>
+
+            <div
+                id="dailyRevenueChart"
+                class="daily-revenue-chart"
+            ></div>
+
+            <p
+                id="emptyDailyRevenue"
+                class="empty-state hidden"
+            >
+                Chưa có doanh thu trong khoảng thời gian này.
+            </p>
+        </section>
+
+        <section class="statistics-two-column">
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">
+                            SẢN PHẨM
+                        </p>
+
+                        <h2>
+                            Bán chạy nhất
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Sản phẩm</th>
+                                <th>Đã bán</th>
+                                <th>Doanh thu</th>
+                                <th>Giá vốn</th>
+                                <th>Tiền lời</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="bestSellingTableBody"></tbody>
+                    </table>
+                </div>
+
+                <p
+                    id="emptyBestSelling"
+                    class="empty-state hidden"
+                >
+                    Chưa có sản phẩm bán ra.
+                </p>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">
+                            HÓA ĐƠN
+                        </p>
+
+                        <h2>
+                            Hóa đơn gần đây
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mã hóa đơn</th>
+                                <th>Thời gian</th>
+                                <th>Số lượng</th>
+                                <th>Thanh toán</th>
+                                <th>Doanh thu</th>
+                                <th>Giá vốn</th>
+                                <th>Tiền lời</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="recentSalesTableBody"></tbody>
+                    </table>
+                </div>
+
+                <p
+                    id="emptyRecentSales"
+                    class="empty-state hidden"
+                >
+                    Chưa có hóa đơn trong khoảng thời gian này.
+                </p>
+            </section>
+
+        </section>
+
+    </main>
+</div>
+
+<script
+    type="module"
+    src="./assets/js/sidebar.js"
+></script>
+
+<script
+    type="module"
+    src="./assets/js/pages/statistics.js"
+></script>
+
+</body>
+</html>

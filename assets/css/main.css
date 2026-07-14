@@ -2875,3 +2875,235 @@ th {
         width: 100%;
     }
 }
+/* =========================================================
+   DOANH THU & THỐNG KÊ
+   ========================================================= */
+
+.statistics-filter-panel {
+    margin-bottom: 24px;
+}
+
+.statistics-filter-grid {
+    display: grid;
+    grid-template-columns:
+        minmax(170px, 1fr)
+        minmax(170px, 1fr)
+        auto
+        auto;
+    gap: 14px;
+    align-items: end;
+}
+
+.statistics-filter-grid label {
+    display: grid;
+    gap: 7px;
+    color: #7a5666;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.statistics-message {
+    margin: 14px 0 0;
+    padding: 11px 14px;
+    border-radius: 11px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.statistics-message.error {
+    color: #a32323;
+    background: #fff0f0;
+    border: 1px solid #ffcaca;
+}
+
+.statistics-message.success {
+    color: #23703c;
+    background: #effbf3;
+    border: 1px solid #bde2c8;
+}
+
+.statistics-summary-grid {
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+}
+
+.statistics-chart-panel {
+    margin-bottom: 24px;
+}
+
+.statistics-two-column {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+/* BIỂU ĐỒ DOANH THU */
+
+.daily-revenue-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    min-height: 310px;
+    padding: 20px 8px 4px;
+    overflow-x: auto;
+}
+
+.daily-revenue-column {
+    display: grid;
+    grid-template-rows:
+        auto
+        220px
+        auto
+        auto;
+    gap: 7px;
+    min-width: 76px;
+    text-align: center;
+}
+
+.daily-revenue-value {
+    min-height: 34px;
+    overflow: hidden;
+    color: #7a5666;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+}
+
+.daily-revenue-bar-wrap {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    height: 220px;
+    padding: 0 12px;
+    background:
+        linear-gradient(
+            to top,
+            rgba(230, 165, 191, 0.08),
+            rgba(230, 165, 191, 0.02)
+        );
+    border-bottom: 1px solid var(--border);
+    border-radius: 10px 10px 0 0;
+}
+
+.daily-revenue-bar {
+    width: 100%;
+    min-height: 8px;
+    background:
+        linear-gradient(
+            180deg,
+            #e6a5bf 0%,
+            #d88bab 100%
+        );
+    border-radius: 9px 9px 3px 3px;
+    box-shadow:
+        0 6px 16px
+        rgba(216, 139, 171, 0.22);
+}
+
+.daily-revenue-date {
+    color: #7a5666;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.daily-revenue-column small {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+/* SẢN PHẨM BÁN CHẠY */
+
+.statistics-product-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 220px;
+}
+
+.statistics-product-image {
+    width: 48px;
+    height: 58px;
+    flex-shrink: 0;
+    object-fit: cover;
+    background: #f8e9ef;
+    border-radius: 9px;
+}
+
+.statistics-product-cell > div {
+    min-width: 0;
+}
+
+.statistics-product-cell strong {
+    display: block;
+    overflow: hidden;
+    color: #7a5666;
+    font-size: 13px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.statistics-product-cell small {
+    display: block;
+    margin-top: 5px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 11px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1100px) {
+    .statistics-two-column {
+        grid-template-columns: 1fr;
+    }
+
+    .statistics-summary-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .statistics-filter-grid {
+        grid-template-columns:
+            1fr
+            1fr;
+    }
+
+    .statistics-filter-grid .button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 520px) {
+    .statistics-filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .statistics-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .daily-revenue-chart {
+        min-height: 270px;
+    }
+
+    .daily-revenue-column {
+        grid-template-rows:
+            auto
+            180px
+            auto
+            auto;
+        min-width: 68px;
+    }
+
+    .daily-revenue-bar-wrap {
+        height: 180px;
+    }
+}

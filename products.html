@@ -25,6 +25,52 @@
     <script
         src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"
     ></script>
+
+    <style>
+        .category-field-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .category-field-row label {
+            min-width: 0;
+        }
+
+        .category-field-row .button {
+            min-height: 44px;
+            white-space: nowrap;
+        }
+
+        .readonly-input {
+            background: #f7f7f8;
+            cursor: not-allowed;
+        }
+
+        .category-modal-card {
+            width: min(
+                520px,
+                calc(100vw - 28px)
+            );
+        }
+
+        .category-prefix-note {
+            margin: 6px 0 0;
+            color: #777;
+            font-size: 13px;
+        }
+
+        @media (max-width: 640px) {
+            .category-field-row {
+                grid-template-columns: 1fr;
+            }
+
+            .category-field-row .button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -38,6 +84,7 @@
         <header class="page-header">
 
             <div>
+
                 <p class="eyebrow">
                     KHO HÀNG
                 </p>
@@ -45,6 +92,7 @@
                 <h1>
                     Quản lý sản phẩm
                 </h1>
+
             </div>
 
             <div class="page-actions">
@@ -102,16 +150,39 @@
                 <table>
 
                     <thead>
+
                     <tr>
                         <th>Sản phẩm</th>
-                        <th>Mã sản phẩm</th>
-                        <th>Mã vạch</th>
-                        <th>Danh mục</th>
-                        <th>Giá nhập</th>
-                        <th>Giá bán</th>
-                        <th>Tồn kho</th>
-                        <th>Thao tác</th>
+
+                        <th>
+                            Mã sản phẩm
+                        </th>
+
+                        <th>
+                            Mã vạch
+                        </th>
+
+                        <th>
+                            Danh mục
+                        </th>
+
+                        <th>
+                            Giá nhập
+                        </th>
+
+                        <th>
+                            Giá bán
+                        </th>
+
+                        <th>
+                            Tồn kho
+                        </th>
+
+                        <th>
+                            Thao tác
+                        </th>
                     </tr>
+
                     </thead>
 
                     <tbody id="productTable"></tbody>
@@ -149,6 +220,7 @@
         <div class="modal-header">
 
             <div>
+
                 <p class="eyebrow">
                     SẢN PHẨM
                 </p>
@@ -156,6 +228,7 @@
                 <h2 id="formTitle">
                     Thêm sản phẩm
                 </h2>
+
             </div>
 
             <button
@@ -185,41 +258,63 @@
             >
 
             <label>
+
                 Tên sản phẩm
 
                 <input
                     class="input"
                     id="name"
                     type="text"
-                    placeholder="Ví dụ: Gấu bông màu nâu"
+                    placeholder="Ví dụ: Bình nước trẻ em"
                     required
                 >
+
             </label>
 
             <label>
+
                 Mã sản phẩm
 
                 <input
-                    class="input"
+                    class="input readonly-input"
                     id="sku"
                     type="text"
-                    placeholder="Ví dụ: GAU001"
-                    required
+                    placeholder="Tự động tạo khi lưu"
+                    readonly
                 >
+
             </label>
 
-            <label>
-                Danh mục
+            <div class="category-field-row full-width">
 
-                <input
-                    class="input"
-                    id="category"
-                    type="text"
-                    placeholder="Ví dụ: Gấu bông, Váy, Phụ kiện"
+                <label>
+
+                    Danh mục
+
+                    <select
+                        class="input"
+                        id="category"
+                        required
+                    >
+                        <option value="">
+                            Chọn danh mục
+                        </option>
+                    </select>
+
+                </label>
+
+                <button
+                    id="openCategoryModalButton"
+                    class="button button-light"
+                    type="button"
                 >
-            </label>
+                    + Thêm danh mục
+                </button>
+
+            </div>
 
             <label>
+
                 Số lượng
 
                 <input
@@ -230,9 +325,11 @@
                     value="0"
                     required
                 >
+
             </label>
 
             <label>
+
                 Giá nhập
 
                 <input
@@ -242,9 +339,11 @@
                     min="0"
                     value="0"
                 >
+
             </label>
 
             <label>
+
                 Giá bán
 
                 <input
@@ -255,6 +354,7 @@
                     value="0"
                     required
                 >
+
             </label>
 
             <!-- Khu vực nhập ảnh -->
@@ -263,6 +363,7 @@
                 <div class="product-image-heading">
 
                     <div>
+
                         <strong>
                             Ảnh sản phẩm
                         </strong>
@@ -270,6 +371,7 @@
                         <p>
                             Chọn một trong ba cách bên dưới.
                         </p>
+
                     </div>
 
                     <button
@@ -313,12 +415,14 @@
 
                 </div>
 
-                <!-- Chế độ dán link -->
+                <!-- Chế độ dán link ảnh -->
                 <div
                     id="imageUrlBox"
                     class="image-source-box"
                 >
+
                     <label>
+
                         Link ảnh
 
                         <input
@@ -327,10 +431,12 @@
                             type="url"
                             placeholder="https://..."
                         >
+
                     </label>
+
                 </div>
 
-                <!-- Chế độ chọn ảnh -->
+                <!-- Chế độ chọn ảnh trong máy -->
                 <div
                     id="imageFileBox"
                     class="image-source-box hidden"
@@ -340,6 +446,7 @@
                         class="image-upload-area"
                         for="imageFileInput"
                     >
+
                         <span class="image-upload-icon">
                             🖼️
                         </span>
@@ -349,8 +456,10 @@
                         </strong>
 
                         <small>
-                            Hỗ trợ JPG, PNG hoặc WEBP. Tối đa 10 MB.
+                            Hỗ trợ JPG, PNG hoặc WEBP.
+                            Tối đa 10 MB.
                         </small>
+
                     </label>
 
                     <input
@@ -372,6 +481,7 @@
                         class="image-upload-area"
                         for="imageCameraInput"
                     >
+
                         <span class="image-upload-icon">
                             📷
                         </span>
@@ -383,6 +493,7 @@
                         <small>
                             Trên điện thoại sẽ ưu tiên camera sau.
                         </small>
+
                     </label>
 
                     <input
@@ -401,7 +512,7 @@
                     class="image-upload-status hidden"
                 ></div>
 
-                <!-- Ảnh xem trước -->
+                <!-- Xem trước ảnh -->
                 <div
                     id="imagePreviewBox"
                     class="image-preview-box hidden"
@@ -428,6 +539,7 @@
             </div>
 
             <label class="full-width">
+
                 Mô tả
 
                 <textarea
@@ -436,6 +548,7 @@
                     rows="4"
                     placeholder="Nhập mô tả sản phẩm"
                 ></textarea>
+
             </label>
 
             <div
@@ -482,6 +595,114 @@
 
 </div>
 
+<!-- Modal thêm danh mục -->
+<div
+    class="modal hidden"
+    id="categoryModal"
+>
+
+    <div
+        class="modal-backdrop"
+        data-close-category-modal
+    ></div>
+
+    <section class="modal-card category-modal-card">
+
+        <div class="modal-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    DANH MỤC
+                </p>
+
+                <h2>
+                    Thêm danh mục
+                </h2>
+
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-category-modal
+            >
+                ×
+            </button>
+
+        </div>
+
+        <form
+            id="categoryForm"
+            class="form-grid"
+        >
+
+            <label class="full-width">
+
+                Tên danh mục
+
+                <input
+                    id="categoryName"
+                    class="input"
+                    type="text"
+                    placeholder="Ví dụ: Bình nước"
+                    required
+                >
+
+            </label>
+
+            <label class="full-width">
+
+                Ký hiệu mã sản phẩm
+
+                <input
+                    id="categoryPrefix"
+                    class="input"
+                    type="text"
+                    maxlength="6"
+                    placeholder="Ví dụ: BN"
+                    required
+                >
+
+                <p class="category-prefix-note">
+                    Bình nước dùng BN → BN001.
+                    Gấu bông dùng GB → GB001.
+                </p>
+
+            </label>
+
+            <p
+                id="categoryFormError"
+                class="form-error full-width hidden"
+            ></p>
+
+            <div class="form-actions full-width">
+
+                <button
+                    class="button button-light"
+                    type="button"
+                    data-close-category-modal
+                >
+                    Hủy
+                </button>
+
+                <button
+                    class="button"
+                    id="saveCategoryButton"
+                    type="submit"
+                >
+                    Lưu danh mục
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+</div>
+
 <!-- Modal camera quét mã -->
 <div
     class="modal hidden"
@@ -498,6 +719,7 @@
         <div class="modal-header">
 
             <div>
+
                 <p class="eyebrow">
                     CAMERA
                 </p>
@@ -505,6 +727,7 @@
                 <h2>
                     Quét mã sản phẩm
                 </h2>
+
             </div>
 
             <button

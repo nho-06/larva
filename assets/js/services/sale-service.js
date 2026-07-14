@@ -10,11 +10,30 @@ import {
 } from "../firebase-config.js";
 
 /**
+ * Lấy giá nhập của sản phẩm.
+ *
+ * Hỗ trợ nhiều tên trường để tránh sai nếu project
+ * đang lưu giá nhập bằng tên khác nhau.
+ */
+function getProductCostPrice(product) {
+    return Number(
+        product.purchasePrice
+        ?? product.costPrice
+        ?? product.importPrice
+        ?? product.buyPrice
+        ?? product.entryPrice
+        ?? 0
+    );
+}
+
+/**
  * Thanh toán hóa đơn:
- * - Kiểm tra tồn kho mới nhất trên Firebase.
+ * - Lấy sản phẩm mới nhất từ Firebase.
+ * - Kiểm tra tồn kho.
+ * - Lấy giá nhập của sản phẩm.
+ * - Tính giá vốn và tiền lời.
  * - Trừ tồn kho.
  * - Lưu hóa đơn vào sales.
- * - Cập nhật tất cả trong một lần update.
  */
 export async function checkoutSale({
     items,
@@ -43,16 +62,20 @@ export async function checkoutSale({
                     ).trim(),
 
                 name:
-                    item.name || "Sản phẩm",
+                    item.name
+                    || "Sản phẩm",
 
                 sku:
-                    item.sku || "",
+                    item.sku
+                    || "",
 
                 barcode:
-                    item.barcode || "",
+                    item.barcode
+                    || "",
 
                 image:
-                    item.image || "",
+                    item.image
+                    || "",
 
                 price:
                     Number(
@@ -63,7 +86,8 @@ export async function checkoutSale({
 
                 quantity:
                     Number(
-                        item.quantity || 0
+                        item.quantity
+                        || 0
                     )
             };
         });
@@ -80,6 +104,12 @@ export async function checkoutSale({
                 `Số lượng của "${item.name}" không hợp lệ.`
             );
         }
+
+        if (item.price < 0) {
+            throw new Error(
+                `Giá bán của "${item.name}" không hợp lệ.`
+            );
+        }
     }
 
     /*
@@ -91,14 +121,20 @@ export async function checkoutSale({
         );
 
     const products =
-        productsSnapshot.val() || {};
+        productsSnapshot.val()
+        || {};
 
     const updates = {};
-    const now = Date.now();
+
+    const now =
+        Date.now();
 
     /*
-        Kiểm tra tồn kho từng sản phẩm.
+        Tạo danh sách sản phẩm bán ra,
+        đồng thời lấy giá nhập từ Firebase.
     */
+    const saleItems = [];
+
     for (const item of normalizedItems) {
         const product =
             products[item.productId];
@@ -111,17 +147,76 @@ export async function checkoutSale({
 
         const currentStock =
             Number(
-                product.quantity || 0
+                product.quantity
+                || 0
             );
 
-        if (currentStock < item.quantity) {
+        if (
+            currentStock
+            < item.quantity
+        ) {
             throw new Error(
                 `"${item.name}" chỉ còn ${currentStock} sản phẩm.`
             );
         }
 
+        const costPrice =
+            getProductCostPrice(
+                product
+            );
+
+        const lineTotal =
+            item.price
+            * item.quantity;
+
+        const lineCost =
+            costPrice
+            * item.quantity;
+
+        const lineProfit =
+            lineTotal
+            - lineCost;
+
+        saleItems.push({
+            productId:
+                item.productId,
+
+            name:
+                item.name,
+
+            sku:
+                item.sku,
+
+            barcode:
+                item.barcode,
+
+            image:
+                item.image,
+
+            price:
+                item.price,
+
+            salePrice:
+                item.price,
+
+            costPrice,
+
+            purchasePrice:
+                costPrice,
+
+            quantity:
+                item.quantity,
+
+            lineTotal,
+
+            lineCost,
+
+            lineProfit
+        });
+
         const newStock =
-            currentStock - item.quantity;
+            currentStock
+            - item.quantity;
 
         updates[
             `products/${item.productId}/quantity`
@@ -146,41 +241,82 @@ export async function checkoutSale({
         );
     }
 
+    /*
+        Tính tổng doanh thu theo dữ liệu thực tế
+        của các sản phẩm trong hóa đơn.
+    */
+    const calculatedTotal =
+        saleItems.reduce(
+            (total, item) => {
+                return (
+                    total
+                    + Number(
+                        item.lineTotal
+                        || 0
+                    )
+                );
+            },
+            0
+        );
+
+    /*
+        Tổng giá vốn.
+    */
+    const totalCost =
+        saleItems.reduce(
+            (total, item) => {
+                return (
+                    total
+                    + Number(
+                        item.lineCost
+                        || 0
+                    )
+                );
+            },
+            0
+        );
+
+    /*
+        Lợi nhuận gộp trước thuế và chi phí khác.
+    */
+    const grossProfit =
+        calculatedTotal
+        - totalCost;
+
+    /*
+        Hiện tại chưa nhập thuế khi thanh toán,
+        nên mặc định bằng 0.
+    */
+    const taxAmount =
+        0;
+
+    const otherCost =
+        0;
+
+    /*
+        Lợi nhuận thực.
+    */
+    const netProfit =
+        grossProfit
+        - taxAmount
+        - otherCost;
+
     const finalTotal =
-        Number(totalAmount || 0);
+        calculatedTotal
+        || Number(
+            totalAmount
+            || 0
+        );
 
     const finalPaidAmount =
-        Number(paidAmount || 0);
+        Number(
+            paidAmount
+            || 0
+        );
 
-    const saleItems =
-        normalizedItems.map((item) => {
-            return {
-                productId:
-                    item.productId,
-
-                name:
-                    item.name,
-
-                sku:
-                    item.sku,
-
-                barcode:
-                    item.barcode,
-
-                image:
-                    item.image,
-
-                price:
-                    item.price,
-
-                quantity:
-                    item.quantity,
-
-                lineTotal:
-                    item.price
-                    * item.quantity
-            };
-        });
+    const finalPaymentMethod =
+        paymentMethod
+        || "cash";
 
     const saleData = {
         id:
@@ -194,14 +330,31 @@ export async function checkoutSale({
         totalAmount:
             finalTotal,
 
+        totalRevenue:
+            finalTotal,
+
+        totalCost,
+
+        grossProfit,
+
+        taxAmount,
+
+        otherCost,
+
+        totalProfit:
+            netProfit,
+
+        netProfit,
+
         paymentMethod:
-            paymentMethod || "cash",
+            finalPaymentMethod,
 
         paidAmount:
             finalPaidAmount,
 
         changeAmount:
-            paymentMethod === "cash"
+            finalPaymentMethod
+            === "cash"
                 ? Math.max(
                     0,
                     finalPaidAmount
@@ -210,17 +363,22 @@ export async function checkoutSale({
                 : 0,
 
         transferCode:
-            transferCode || "",
+            transferCode
+            || "",
 
         status:
             "paid",
 
         createdAt:
+            now,
+
+        updatedAt:
             now
     };
 
     /*
-        Lưu hóa đơn và trừ kho cùng một lần.
+        Lưu hóa đơn và cập nhật tồn kho
+        trong cùng một lần update.
     */
     updates[
         `sales/${saleId}`

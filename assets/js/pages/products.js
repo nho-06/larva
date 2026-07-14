@@ -6,6 +6,12 @@ import {
 } from "../services/product-service.js";
 
 import {
+    createCategory,
+    generateNextSku,
+    listenCategories
+} from "../services/category-service.js";
+
+import {
     createLocalImagePreview,
     releaseLocalImagePreview,
     uploadProductImage
@@ -18,8 +24,14 @@ import {
     placeholderImage
 } from "../utils.js";
 
+
+/* =========================================================
+   STATE
+========================================================= */
+
 const state = {
     products: [],
+    categories: [],
 
     scanner: null,
     scannerRunning: false,
@@ -33,15 +45,26 @@ const state = {
     isUploadingImage: false
 };
 
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
 const elements = {
     productModal:
         document.querySelector("#productModal"),
 
+    categoryModal:
+        document.querySelector("#categoryModal"),
+
     scannerModal:
         document.querySelector("#scannerModal"),
 
-    form:
+    productForm:
         document.querySelector("#productForm"),
+
+    categoryForm:
+        document.querySelector("#categoryForm"),
 
     formTitle:
         document.querySelector("#formTitle"),
@@ -75,6 +98,21 @@ const elements = {
 
     description:
         document.querySelector("#description"),
+
+    categoryName:
+        document.querySelector("#categoryName"),
+
+    categoryPrefix:
+        document.querySelector("#categoryPrefix"),
+
+    categoryFormError:
+        document.querySelector("#categoryFormError"),
+
+    saveCategoryButton:
+        document.querySelector("#saveCategoryButton"),
+
+    openCategoryModalButton:
+        document.querySelector("#openCategoryModalButton"),
 
     searchInput:
         document.querySelector("#searchInput"),
@@ -149,44 +187,21 @@ const elements = {
         document.querySelector("#productFormError")
 };
 
+
+/* =========================================================
+   MÃ VẠCH
+========================================================= */
+
 function generateBarcodeValue() {
     const timePart =
-        Date.now().toString();
+        Date.now();
 
     const randomPart =
         Math.floor(
             100 + Math.random() * 900
-        ).toString();
+        );
 
     return `LRV-${timePart}-${randomPart}`;
-}
-
-function generateSku() {
-    const categoryText =
-        normalizeText(
-            elements.category.value
-            || elements.name.value
-            || "SP"
-        );
-
-    const prefix =
-        categoryText
-            .replace(/[^a-z0-9]/g, "")
-            .slice(0, 4)
-            .toUpperCase()
-        || "SP";
-
-    const timePart =
-        Date.now()
-            .toString()
-            .slice(-6);
-
-    const randomPart =
-        Math.floor(
-            10 + Math.random() * 90
-        );
-
-    return `${prefix}-${timePart}-${randomPart}`;
 }
 
 function renderBarcode(
@@ -245,7 +260,12 @@ function renderBarcode(
     }
 }
 
-function showFormError(message) {
+
+/* =========================================================
+   THÔNG BÁO LỖI
+========================================================= */
+
+function showProductError(message) {
     elements.productFormError.textContent =
         message;
 
@@ -253,13 +273,34 @@ function showFormError(message) {
         .classList.remove("hidden");
 }
 
-function hideFormError() {
+function hideProductError() {
     elements.productFormError.textContent =
         "";
 
     elements.productFormError
         .classList.add("hidden");
 }
+
+function showCategoryError(message) {
+    elements.categoryFormError.textContent =
+        message;
+
+    elements.categoryFormError
+        .classList.remove("hidden");
+}
+
+function hideCategoryError() {
+    elements.categoryFormError.textContent =
+        "";
+
+    elements.categoryFormError
+        .classList.add("hidden");
+}
+
+
+/* =========================================================
+   TRẠNG THÁI ẢNH
+========================================================= */
 
 function showImageStatus(
     message,
@@ -287,7 +328,8 @@ function clearLocalPreview() {
         );
     }
 
-    state.localPreviewUrl = "";
+    state.localPreviewUrl =
+        "";
 }
 
 function showImagePreview({
@@ -302,9 +344,8 @@ function showImagePreview({
         elements.removeSelectedImageButton
             .classList.add("hidden");
 
-        elements.imagePreview.removeAttribute(
-            "src"
-        );
+        elements.imagePreview
+            .removeAttribute("src");
 
         return;
     }
@@ -398,7 +439,9 @@ function setImageMode(mode) {
 }
 
 function handleImageUrlInput() {
-    if (state.imageMode !== "url") {
+    if (
+        state.imageMode !== "url"
+    ) {
         return;
     }
 
@@ -426,7 +469,7 @@ function handleImageUrlInput() {
 }
 
 function handleSelectedImageFile(file) {
-    hideFormError();
+    hideProductError();
     hideImageStatus();
 
     if (!file) {
@@ -446,7 +489,9 @@ function handleSelectedImageFile(file) {
             "";
 
         state.localPreviewUrl =
-            createLocalImagePreview(file);
+            createLocalImagePreview(
+                file
+            );
 
         showImagePreview({
             url:
@@ -457,7 +502,9 @@ function handleSelectedImageFile(file) {
                 || "Ảnh vừa chụp",
 
             type:
-                `${file.type || "Ảnh"} · ${
+                `${
+                    file.type || "Ảnh"
+                } · ${
                     Math.round(
                         file.size / 1024
                     )
@@ -469,7 +516,7 @@ function handleSelectedImageFile(file) {
         state.selectedImageFile =
             null;
 
-        showFormError(
+        showProductError(
             error.message
             || "Không thể chọn ảnh."
         );
@@ -491,15 +538,11 @@ function removeSelectedImage() {
     elements.image.value =
         "";
 
-    if (elements.imageFileInput) {
-        elements.imageFileInput.value =
-            "";
-    }
+    elements.imageFileInput.value =
+        "";
 
-    if (elements.imageCameraInput) {
-        elements.imageCameraInput.value =
-            "";
-    }
+    elements.imageCameraInput.value =
+        "";
 
     hideImageStatus();
 
@@ -547,6 +590,9 @@ async function uploadSelectedImageIfNeeded() {
         elements.image.value =
             result.url;
 
+        state.selectedImageFile =
+            null;
+
         showImageStatus(
             "Tải ảnh thành công.",
             "success"
@@ -565,7 +611,6 @@ async function uploadSelectedImageIfNeeded() {
         });
 
         return result.url;
-
     } finally {
         state.isUploadingImage =
             false;
@@ -578,10 +623,122 @@ async function uploadSelectedImageIfNeeded() {
     }
 }
 
-function openProductModal(product = null) {
-    elements.form.reset();
 
-    hideFormError();
+/* =========================================================
+   DANH MỤC
+========================================================= */
+
+function findCategoryById(categoryId) {
+    return state.categories.find(
+        (category) => {
+            return category.id === categoryId;
+        }
+    ) || null;
+}
+
+function renderCategoryOptions() {
+    const currentFormValue =
+        elements.category.value;
+
+    const currentFilterValue =
+        elements.categoryFilter.value;
+
+    elements.category.innerHTML = `
+        <option value="">
+            Chọn danh mục
+        </option>
+
+        ${state.categories
+            .map((category) => {
+                return `
+                    <option
+                        value="${escapeHtml(category.id)}"
+                    >
+                        ${escapeHtml(category.name)}
+                    </option>
+                `;
+            })
+            .join("")}
+    `;
+
+    elements.categoryFilter.innerHTML = `
+        <option value="">
+            Tất cả danh mục
+        </option>
+
+        ${state.categories
+            .map((category) => {
+                return `
+                    <option
+                        value="${escapeHtml(category.id)}"
+                    >
+                        ${escapeHtml(category.name)}
+                    </option>
+                `;
+            })
+            .join("")}
+    `;
+
+    const formCategoryExists =
+        state.categories.some(
+            (category) => {
+                return (
+                    category.id
+                    === currentFormValue
+                );
+            }
+        );
+
+    if (formCategoryExists) {
+        elements.category.value =
+            currentFormValue;
+    }
+
+    const filterCategoryExists =
+        state.categories.some(
+            (category) => {
+                return (
+                    category.id
+                    === currentFilterValue
+                );
+            }
+        );
+
+    if (filterCategoryExists) {
+        elements.categoryFilter.value =
+            currentFilterValue;
+    }
+}
+
+function openCategoryModal() {
+    elements.categoryForm.reset();
+
+    hideCategoryError();
+
+    elements.categoryModal
+        .classList.remove("hidden");
+
+    setTimeout(() => {
+        elements.categoryName.focus();
+    }, 0);
+}
+
+function closeCategoryModal() {
+    elements.categoryModal
+        .classList.add("hidden");
+
+    hideCategoryError();
+}
+
+
+/* =========================================================
+   MODAL SẢN PHẨM
+========================================================= */
+
+function openProductModal(product = null) {
+    elements.productForm.reset();
+
+    hideProductError();
 
     resetImageState();
 
@@ -591,6 +748,9 @@ function openProductModal(product = null) {
         "";
 
     elements.barcode.value =
+        "";
+
+    elements.sku.value =
         "";
 
     elements.quantity.value =
@@ -610,6 +770,8 @@ function openProductModal(product = null) {
             ? "Sửa sản phẩm"
             : "Thêm sản phẩm";
 
+    renderCategoryOptions();
+
     if (product) {
         elements.productId.value =
             product.id;
@@ -624,7 +786,7 @@ function openProductModal(product = null) {
             product.sku || "";
 
         elements.category.value =
-            product.category || "";
+            product.categoryId || "";
 
         elements.quantity.value =
             Number(
@@ -699,13 +861,51 @@ function closeProductModal() {
         .classList.add("hidden");
 }
 
-function getFormData(imageUrl) {
+
+/* =========================================================
+   LẤY DỮ LIỆU FORM SẢN PHẨM
+========================================================= */
+
+async function getProductFormData(imageUrl) {
+    const productId =
+        elements.productId.value;
+
+    const selectedCategory =
+        findCategoryById(
+            elements.category.value
+        );
+
+    if (!selectedCategory) {
+        throw new Error(
+            "Hãy chọn danh mục."
+        );
+    }
+
     let sku =
         elements.sku.value.trim();
 
-    if (!sku) {
+    /*
+        Chỉ tự tạo mã khi thêm sản phẩm mới.
+
+        Khi sửa sản phẩm, giữ nguyên mã cũ.
+    */
+    if (
+        !productId
+        && !sku
+    ) {
         sku =
-            generateSku();
+            await generateNextSku(
+                selectedCategory.prefix
+            );
+
+        elements.sku.value =
+            sku;
+    }
+
+    if (!sku) {
+        throw new Error(
+            "Không thể tạo mã sản phẩm."
+        );
     }
 
     let barcode =
@@ -724,79 +924,49 @@ function getFormData(imageUrl) {
 
         barcode,
 
+        categoryId:
+            selectedCategory.id,
+
         category:
-            elements.category.value.trim(),
+            selectedCategory.name,
+
+        categoryPrefix:
+            selectedCategory.prefix,
 
         quantity:
             Number(
-                elements.quantity.value || 0
+                elements.quantity.value
+                || 0
             ),
 
         costPrice:
             Number(
-                elements.costPrice.value || 0
+                elements.costPrice.value
+                || 0
             ),
 
         salePrice:
             Number(
-                elements.salePrice.value || 0
+                elements.salePrice.value
+                || 0
             ),
 
         image:
             imageUrl || "",
 
         imageStoragePath:
-            state.uploadedImagePath || "",
+            state.uploadedImagePath
+            || "",
 
         description:
             elements.description.value.trim()
     };
 }
 
-function renderCategoryFilter() {
-    const currentCategory =
-        elements.categoryFilter.value;
 
-    const categories = [
-        ...new Set(
-            state.products
-                .map((product) => {
-                    return product.category?.trim();
-                })
-                .filter(Boolean)
-        )
-    ].sort((a, b) => {
-        return a.localeCompare(
-            b,
-            "vi"
-        );
-    });
-
-    elements.categoryFilter.innerHTML = `
-        <option value="">
-            Tất cả danh mục
-        </option>
-
-        ${categories
-            .map((category) => {
-                return `
-                    <option
-                        value="${escapeHtml(category)}"
-                    >
-                        ${escapeHtml(category)}
-                    </option>
-                `;
-            })
-            .join("")}
-    `;
-
-    elements.categoryFilter.value =
-        categories.includes(
-            currentCategory
-        )
-            ? currentCategory
-            : "";
-}
+/* =========================================================
+   LỌC VÀ HIỂN THỊ SẢN PHẨM
+========================================================= */
 
 function getFilteredProducts() {
     const keyword =
@@ -804,7 +974,7 @@ function getFilteredProducts() {
             elements.searchInput.value
         );
 
-    const selectedCategory =
+    const selectedCategoryId =
         elements.categoryFilter.value;
 
     return state.products.filter(
@@ -823,9 +993,9 @@ function getFilteredProducts() {
                 ).includes(keyword);
 
             const matchesCategory =
-                !selectedCategory
-                || product.category
-                    === selectedCategory;
+                !selectedCategoryId
+                || product.categoryId
+                    === selectedCategoryId;
 
             return (
                 matchesKeyword
@@ -834,6 +1004,7 @@ function getFilteredProducts() {
         }
     );
 }
+
 function renderProducts() {
     const products =
         getFilteredProducts();
@@ -847,8 +1018,11 @@ function renderProducts() {
 
                 return `
                     <tr>
+
                         <td>
+
                             <div class="product-cell">
+
                                 <img
                                     class="product-image"
                                     src="${escapeHtml(productImage)}"
@@ -857,18 +1031,26 @@ function renderProducts() {
                                 >
 
                                 <div>
+
                                     <span class="product-name">
-                                        ${escapeHtml(product.name)}
+                                        ${escapeHtml(
+                                            product.name
+                                        )}
                                     </span>
 
                                     <div class="product-description">
+
                                         ${escapeHtml(
                                             product.description
                                             || "Chưa có mô tả"
                                         )}
+
                                     </div>
+
                                 </div>
+
                             </div>
+
                         </td>
 
                         <td>
@@ -878,10 +1060,12 @@ function renderProducts() {
                         </td>
 
                         <td>
+
                             ${
                                 product.barcode
                                     ? `
                                         <div class="table-barcode">
+
                                             <svg
                                                 class="product-barcode"
                                                 data-barcode="${escapeHtml(
@@ -894,6 +1078,7 @@ function renderProducts() {
                                                     product.barcode
                                                 )}
                                             </small>
+
                                         </div>
                                     `
                                     : `
@@ -902,35 +1087,46 @@ function renderProducts() {
                                         </span>
                                     `
                             }
+
                         </td>
 
                         <td>
+
                             ${escapeHtml(
                                 product.category
                                 || "Chưa phân loại"
                             )}
+
                         </td>
 
                         <td>
+
                             ${formatMoney(
                                 product.costPrice
                             )}
+
                         </td>
 
                         <td>
+
                             ${formatMoney(
                                 product.salePrice
                             )}
+
                         </td>
 
                         <td>
+
                             ${Number(
                                 product.quantity || 0
                             )}
+
                         </td>
 
                         <td>
+
                             <div class="actions">
+
                                 <button
                                     class="button button-light"
                                     type="button"
@@ -946,8 +1142,11 @@ function renderProducts() {
                                 >
                                     Xóa
                                 </button>
+
                             </div>
+
                         </td>
+
                     </tr>
                 `;
             })
@@ -963,24 +1162,30 @@ function renderProducts() {
 }
 
 function renderTableBarcodes() {
-    const barcodeElements =
-        document.querySelectorAll(
+    document
+        .querySelectorAll(
             ".product-barcode"
+        )
+        .forEach(
+            (barcodeElement) => {
+                const barcodeValue =
+                    barcodeElement
+                        .dataset
+                        .barcode;
+
+                renderBarcode(
+                    barcodeElement,
+                    barcodeValue,
+                    true
+                );
+            }
         );
-
-    barcodeElements.forEach(
-        (barcodeElement) => {
-            const barcodeValue =
-                barcodeElement.dataset.barcode;
-
-            renderBarcode(
-                barcodeElement,
-                barcodeValue,
-                true
-            );
-        }
-    );
 }
+
+
+/* =========================================================
+   HIỂN THỊ SẢN PHẨM SAU KHI QUÉT
+========================================================= */
 
 function showScannedProduct(product) {
     const productImage =
@@ -989,6 +1194,7 @@ function showScannedProduct(product) {
 
     elements.scannedProductBox.innerHTML = `
         <div class="scanned-product-content">
+
             <img
                 class="scanned-product-image"
                 src="${escapeHtml(productImage)}"
@@ -997,6 +1203,7 @@ function showScannedProduct(product) {
             >
 
             <div class="scanned-product-info">
+
                 <span class="scan-success">
                     Đã tìm thấy sản phẩm
                 </span>
@@ -1055,6 +1262,7 @@ function showScannedProduct(product) {
                         )}
                     </strong>
                 </p>
+
             </div>
 
             <button
@@ -1064,6 +1272,7 @@ function showScannedProduct(product) {
             >
                 Đóng
             </button>
+
         </div>
     `;
 
@@ -1094,6 +1303,11 @@ function showScannedProduct(product) {
         });
 }
 
+
+/* =========================================================
+   CAMERA QUÉT MÃ
+========================================================= */
+
 function createScanner() {
     return new Html5Qrcode(
         "barcodeReader",
@@ -1118,90 +1332,27 @@ function getScannerConfig() {
         );
 
     return {
-        fps: 30,
+        fps: 20,
 
         qrbox: {
-            width: scanWidth,
-            height: 190
+            width:
+                scanWidth,
+
+            height:
+                190
         },
 
-        aspectRatio: 16 / 9,
+        aspectRatio:
+            16 / 9,
 
-        disableFlip: true,
+        disableFlip:
+            true,
 
         experimentalFeatures: {
             useBarCodeDetectorIfSupported:
                 true
         }
     };
-}
-
-async function applyCameraSettings() {
-    if (
-        !state.scanner
-        || !state.scannerRunning
-    ) {
-        return;
-    }
-
-    try {
-        const capabilities =
-            state.scanner
-                .getRunningTrackCameraCapabilities();
-
-        const advancedSettings = {};
-
-        if (
-            Array.isArray(
-                capabilities.focusMode
-            )
-            && capabilities.focusMode.includes(
-                "continuous"
-            )
-        ) {
-            advancedSettings.focusMode =
-                "continuous";
-        }
-
-        if (capabilities.zoom) {
-            const minZoom =
-                Number(
-                    capabilities.zoom.min ?? 1
-                );
-
-            const maxZoom =
-                Number(
-                    capabilities.zoom.max ?? 1
-                );
-
-            advancedSettings.zoom =
-                Math.min(
-                    maxZoom,
-                    Math.max(
-                        minZoom,
-                        1.2
-                    )
-                );
-        }
-
-        if (
-            Object.keys(
-                advancedSettings
-            ).length > 0
-        ) {
-            await state.scanner
-                .applyVideoConstraints({
-                    advanced: [
-                        advancedSettings
-                    ]
-                });
-        }
-    } catch (error) {
-        console.warn(
-            "Không thể chỉnh focus hoặc zoom:",
-            error
-        );
-    }
 }
 
 async function clearScannerInstance() {
@@ -1241,131 +1392,33 @@ async function clearScannerInstance() {
     }
 }
 
-async function getBackCameraDeviceId() {
-    const stream =
-        await navigator.mediaDevices
-            .getUserMedia({
-                audio: false,
-
-                video: {
-                    facingMode: {
-                        ideal: "environment"
-                    },
-
-                    width: {
-                        ideal: 1280
-                    },
-
-                    height: {
-                        ideal: 720
-                    }
-                }
-            });
-
-    try {
-        const track =
-            stream.getVideoTracks()[0];
-
-        const settings =
-            track?.getSettings?.() || {};
-
-        return settings.deviceId || "";
-    } finally {
-        stream
-            .getTracks()
-            .forEach((track) => {
-                track.stop();
-            });
-    }
-}
-
-async function startCameraByDeviceId(
-    deviceId
-) {
+async function startScanner() {
     state.scanner =
         createScanner();
 
-    await state.scanner.start(
-        deviceId,
-        getScannerConfig(),
-        handleScanSuccess,
-        () => {}
-    );
-
-    state.scannerRunning =
-        true;
-}
-
-async function startBackCameraFacingMode() {
-    state.scanner =
-        createScanner();
-
+    /*
+        Ưu tiên camera sau.
+    */
     await state.scanner.start(
         {
-            facingMode: "environment"
+            facingMode:
+                "environment"
         },
+
         getScannerConfig(),
+
         handleScanSuccess,
-        () => {}
+
+        () => {
+            /*
+                Không hiển thị lỗi mỗi khung hình
+                khi chưa quét thấy mã.
+            */
+        }
     );
 
     state.scannerRunning =
         true;
-}
-
-async function startCameraByDeviceList() {
-    const cameras =
-        await Html5Qrcode.getCameras();
-
-    if (
-        !Array.isArray(cameras)
-        || !cameras.length
-    ) {
-        throw new Error(
-            "Không tìm thấy camera."
-        );
-    }
-
-    const normalizedCameras =
-        cameras.map((camera) => {
-            return {
-                ...camera,
-
-                normalizedLabel:
-                    String(
-                        camera.label || ""
-                    ).toLowerCase()
-            };
-        });
-
-    const rearCamera =
-        normalizedCameras.find(
-            (camera) => {
-                const label =
-                    camera.normalizedLabel;
-
-                return (
-                    label.includes("back")
-                    || label.includes("rear")
-                    || label.includes(
-                        "environment"
-                    )
-                    || label.includes(
-                        "camera sau"
-                    )
-                );
-            }
-        );
-
-    const selectedCamera =
-        rearCamera
-        || normalizedCameras[
-            normalizedCameras.length - 1
-        ];
-
-    await startCameraByDeviceId(
-        selectedCamera.id
-    );
 }
 
 function getCameraErrorMessage(error) {
@@ -1376,14 +1429,18 @@ function getCameraErrorMessage(error) {
         error?.message
         || String(error || "");
 
-    const lowerMessage =
+    const normalizedMessage =
         errorMessage.toLowerCase();
 
     if (
         errorName === "NotAllowedError"
         || errorName === "PermissionDeniedError"
-        || lowerMessage.includes("permission")
-        || lowerMessage.includes("denied")
+        || normalizedMessage.includes(
+            "permission"
+        )
+        || normalizedMessage.includes(
+            "denied"
+        )
     ) {
         return (
             "Camera đang bị chặn. "
@@ -1393,9 +1450,13 @@ function getCameraErrorMessage(error) {
 
     if (
         errorName === "NotFoundError"
-        || lowerMessage.includes("not found")
+        || normalizedMessage.includes(
+            "not found"
+        )
     ) {
-        return "Không tìm thấy camera.";
+        return (
+            "Không tìm thấy camera trên thiết bị."
+        );
     }
 
     if (
@@ -1430,9 +1491,7 @@ async function openScanner() {
     try {
         if (
             typeof Html5Qrcode
-                === "undefined"
-            || typeof Html5QrcodeSupportedFormats
-                === "undefined"
+            === "undefined"
         ) {
             throw new Error(
                 "Thư viện quét mã chưa tải được."
@@ -1449,57 +1508,10 @@ async function openScanner() {
             );
         }
 
-        let started =
-            false;
-
-        try {
-            const backCameraId =
-                await getBackCameraDeviceId();
-
-            if (backCameraId) {
-                await startCameraByDeviceId(
-                    backCameraId
-                );
-
-                started =
-                    true;
-            }
-        } catch (error) {
-            console.warn(
-                "Không lấy được camera sau:",
-                error
-            );
-
-            await clearScannerInstance();
-        }
-
-        if (!started) {
-            try {
-                await startBackCameraFacingMode();
-
-                started =
-                    true;
-            } catch (error) {
-                console.warn(
-                    "Không mở được camera sau:",
-                    error
-                );
-
-                await clearScannerInstance();
-            }
-        }
-
-        if (!started) {
-            await startCameraByDeviceList();
-        }
+        await startScanner();
 
         elements.scannerMessage.textContent =
             "Đưa toàn bộ mã vạch vào giữa khung.";
-
-        setTimeout(() => {
-            applyCameraSettings();
-        }, 700);
-
     } catch (error) {
         console.error(error);
 
@@ -1523,9 +1535,7 @@ async function closeScanner() {
         false;
 }
 
-async function handleScanSuccess(
-    decodedText
-) {
+async function handleScanSuccess(decodedText) {
     if (state.scanLocked) {
         return;
     }
@@ -1542,22 +1552,24 @@ async function handleScanSuccess(
         true;
 
     const product =
-        state.products.find((item) => {
-            const barcode =
-                String(
-                    item.barcode || ""
-                ).trim();
+        state.products.find(
+            (item) => {
+                const barcode =
+                    String(
+                        item.barcode || ""
+                    ).trim();
 
-            const sku =
-                String(
-                    item.sku || ""
-                ).trim();
+                const sku =
+                    String(
+                        item.sku || ""
+                    ).trim();
 
-            return (
-                barcode === scannedCode
-                || sku === scannedCode
-            );
-        });
+                return (
+                    barcode === scannedCode
+                    || sku === scannedCode
+                );
+            }
+        );
 
     await closeScanner();
 
@@ -1575,8 +1587,16 @@ async function handleScanSuccess(
 
     renderProducts();
 
-    showScannedProduct(product);
+    showScannedProduct(
+        product
+    );
 }
+
+
+/* =========================================================
+   SỰ KIỆN CHỌN KIỂU ẢNH
+========================================================= */
+
 document
     .querySelectorAll(
         "[data-image-mode]"
@@ -1592,39 +1612,45 @@ document
         );
     });
 
-elements.image
-    .addEventListener(
-        "input",
-        handleImageUrlInput
-    );
+elements.image.addEventListener(
+    "input",
+    handleImageUrlInput
+);
 
-elements.imageFileInput
-    .addEventListener(
-        "change",
-        (event) => {
-            const file =
-                event.target.files?.[0];
+elements.imageFileInput.addEventListener(
+    "change",
+    (event) => {
+        const file =
+            event.target.files?.[0];
 
-            handleSelectedImageFile(file);
-        }
-    );
+        handleSelectedImageFile(
+            file
+        );
+    }
+);
 
-elements.imageCameraInput
-    .addEventListener(
-        "change",
-        (event) => {
-            const file =
-                event.target.files?.[0];
+elements.imageCameraInput.addEventListener(
+    "change",
+    (event) => {
+        const file =
+            event.target.files?.[0];
 
-            handleSelectedImageFile(file);
-        }
-    );
+        handleSelectedImageFile(
+            file
+        );
+    }
+);
 
 elements.removeSelectedImageButton
     .addEventListener(
         "click",
         removeSelectedImage
     );
+
+
+/* =========================================================
+   SỰ KIỆN MỞ MODAL
+========================================================= */
 
 elements.openProductForm
     .addEventListener(
@@ -1634,11 +1660,22 @@ elements.openProductForm
         }
     );
 
+elements.openCategoryModalButton
+    .addEventListener(
+        "click",
+        openCategoryModal
+    );
+
 elements.openScannerButton
     .addEventListener(
         "click",
         openScanner
     );
+
+
+/* =========================================================
+   SỰ KIỆN ĐÓNG MODAL
+========================================================= */
 
 document
     .querySelectorAll(
@@ -1653,6 +1690,17 @@ document
 
 document
     .querySelectorAll(
+        "[data-close-category-modal]"
+    )
+    .forEach((button) => {
+        button.addEventListener(
+            "click",
+            closeCategoryModal
+        );
+    });
+
+document
+    .querySelectorAll(
         "[data-close-scanner-modal]"
     )
     .forEach((button) => {
@@ -1662,226 +1710,429 @@ document
         );
     });
 
-elements.form
-    .addEventListener(
-        "submit",
-        async (event) => {
-            event.preventDefault();
 
-            if (state.isUploadingImage) {
-                return;
-            }
+/* =========================================================
+   THÊM DANH MỤC
+========================================================= */
 
-            hideFormError();
+elements.categoryForm.addEventListener(
+    "submit",
 
-            const productId =
-                elements.productId.value;
+    async (event) => {
+        event.preventDefault();
 
-            const productName =
-                elements.name.value.trim();
+        hideCategoryError();
 
-            if (!productName) {
-                showFormError(
-                    "Hãy nhập tên sản phẩm."
+        const categoryName =
+            elements.categoryName
+                .value
+                .trim();
+
+        const categoryPrefix =
+            elements.categoryPrefix
+                .value
+                .trim();
+
+        if (!categoryName) {
+            showCategoryError(
+                "Hãy nhập tên danh mục."
+            );
+
+            return;
+        }
+
+        if (!categoryPrefix) {
+            showCategoryError(
+                "Hãy nhập ký hiệu mã sản phẩm."
+            );
+
+            return;
+        }
+
+        const normalizedPrefix =
+            categoryPrefix
+                .replace(
+                    /[^a-zA-Z0-9]/g,
+                    ""
+                )
+                .toUpperCase();
+
+        const duplicatedName =
+            state.categories.some(
+                (category) => {
+                    return (
+                        normalizeText(
+                            category.name
+                        )
+                        === normalizeText(
+                            categoryName
+                        )
+                    );
+                }
+            );
+
+        if (duplicatedName) {
+            showCategoryError(
+                "Tên danh mục đã tồn tại."
+            );
+
+            return;
+        }
+
+        const duplicatedPrefix =
+            state.categories.some(
+                (category) => {
+                    return (
+                        String(
+                            category.prefix || ""
+                        ).toUpperCase()
+                        === normalizedPrefix
+                    );
+                }
+            );
+
+        if (duplicatedPrefix) {
+            showCategoryError(
+                "Ký hiệu mã sản phẩm đã được sử dụng."
+            );
+
+            return;
+        }
+
+        elements.saveCategoryButton.disabled =
+            true;
+
+        elements.saveCategoryButton.textContent =
+            "Đang lưu...";
+
+        try {
+            const newCategory =
+                await createCategory({
+                    name:
+                        categoryName,
+
+                    prefix:
+                        normalizedPrefix
+                });
+
+            closeCategoryModal();
+
+            /*
+                Chờ listener Firebase cập nhật danh mục
+                rồi tự chọn danh mục vừa tạo.
+            */
+            setTimeout(() => {
+                renderCategoryOptions();
+
+                elements.category.value =
+                    newCategory.id;
+            }, 150);
+        } catch (error) {
+            console.error(error);
+
+            showCategoryError(
+                error.message
+                || "Không thể lưu danh mục."
+            );
+        } finally {
+            elements.saveCategoryButton.disabled =
+                false;
+
+            elements.saveCategoryButton.textContent =
+                "Lưu danh mục";
+        }
+    }
+);
+
+
+/* =========================================================
+   THÊM / SỬA SẢN PHẨM
+========================================================= */
+
+elements.productForm.addEventListener(
+    "submit",
+
+    async (event) => {
+        event.preventDefault();
+
+        if (state.isUploadingImage) {
+            return;
+        }
+
+        hideProductError();
+
+        const productId =
+            elements.productId.value;
+
+        const productName =
+            elements.name.value.trim();
+
+        if (!productName) {
+            showProductError(
+                "Hãy nhập tên sản phẩm."
+            );
+
+            return;
+        }
+
+        if (!elements.category.value) {
+            showProductError(
+                "Hãy chọn danh mục."
+            );
+
+            return;
+        }
+
+        if (
+            Number(
+                elements.quantity.value
+            ) < 0
+        ) {
+            showProductError(
+                "Số lượng không được nhỏ hơn 0."
+            );
+
+            return;
+        }
+
+        if (
+            Number(
+                elements.costPrice.value
+            ) < 0
+        ) {
+            showProductError(
+                "Giá nhập không được nhỏ hơn 0."
+            );
+
+            return;
+        }
+
+        if (
+            Number(
+                elements.salePrice.value
+            ) < 0
+        ) {
+            showProductError(
+                "Giá bán không được nhỏ hơn 0."
+            );
+
+            return;
+        }
+
+        elements.saveProductButton.disabled =
+            true;
+
+        elements.saveProductButton.textContent =
+            productId
+                ? "Đang cập nhật..."
+                : "Đang lưu...";
+
+        try {
+            const imageUrl =
+                await uploadSelectedImageIfNeeded();
+
+            const product =
+                await getProductFormData(
+                    imageUrl
                 );
 
+            const duplicatedSku =
+                state.products.some(
+                    (item) => {
+                        return (
+                            normalizeText(
+                                item.sku
+                            )
+                            === normalizeText(
+                                product.sku
+                            )
+                            && item.id
+                            !== productId
+                        );
+                    }
+                );
+
+            if (duplicatedSku) {
+                throw new Error(
+                    "Mã sản phẩm đã tồn tại."
+                );
+            }
+
+            const duplicatedBarcode =
+                state.products.some(
+                    (item) => {
+                        return (
+                            String(
+                                item.barcode || ""
+                            ).trim()
+                            === String(
+                                product.barcode || ""
+                            ).trim()
+                            && item.id
+                            !== productId
+                        );
+                    }
+                );
+
+            if (duplicatedBarcode) {
+                throw new Error(
+                    "Mã vạch đã tồn tại."
+                );
+            }
+
+            if (productId) {
+                await updateProduct(
+                    productId,
+                    product
+                );
+            } else {
+                await createProduct(
+                    product
+                );
+            }
+
+            closeProductModal();
+        } catch (error) {
+            console.error(error);
+
+            showProductError(
+                error.message
+                || "Không thể lưu sản phẩm."
+            );
+        } finally {
+            elements.saveProductButton.disabled =
+                false;
+
+            elements.saveProductButton.textContent =
+                "Lưu sản phẩm";
+        }
+    }
+);
+
+
+/* =========================================================
+   SỬA / XÓA SẢN PHẨM TRONG BẢNG
+========================================================= */
+
+elements.productTable.addEventListener(
+    "click",
+
+    async (event) => {
+        const editButton =
+            event.target.closest(
+                "[data-edit]"
+            );
+
+        const deleteButton =
+            event.target.closest(
+                "[data-delete]"
+            );
+
+        const editId =
+            editButton?.dataset.edit;
+
+        const deleteId =
+            deleteButton?.dataset.delete;
+
+        if (editId) {
+            const product =
+                state.products.find(
+                    (item) => {
+                        return item.id === editId;
+                    }
+                );
+
+            if (product) {
+                openProductModal(
+                    product
+                );
+            }
+        }
+
+        if (deleteId) {
+            const product =
+                state.products.find(
+                    (item) => {
+                        return item.id === deleteId;
+                    }
+                );
+
+            const accepted =
+                confirm(
+                    `Xóa sản phẩm "${
+                        product?.name || ""
+                    }"?`
+                );
+
+            if (!accepted) {
                 return;
             }
 
             try {
-                const imageUrl =
-                    await uploadSelectedImageIfNeeded();
-
-                const product =
-                    getFormData(imageUrl);
-
-                if (!product.sku) {
-                    showFormError(
-                        "Không thể tạo mã sản phẩm."
-                    );
-
-                    return;
-                }
-
-                const duplicatedSku =
-                    state.products.some(
-                        (item) => {
-                            return (
-                                normalizeText(
-                                    item.sku
-                                )
-                                === normalizeText(
-                                    product.sku
-                                )
-                                && item.id
-                                !== productId
-                            );
-                        }
-                    );
-
-                if (duplicatedSku) {
-                    showFormError(
-                        "Mã sản phẩm đã tồn tại."
-                    );
-
-                    return;
-                }
-
-                const duplicatedBarcode =
-                    state.products.some(
-                        (item) => {
-                            return (
-                                String(
-                                    item.barcode || ""
-                                ).trim()
-                                === String(
-                                    product.barcode || ""
-                                ).trim()
-                                && item.id
-                                !== productId
-                            );
-                        }
-                    );
-
-                if (duplicatedBarcode) {
-                    showFormError(
-                        "Mã vạch đã tồn tại."
-                    );
-
-                    return;
-                }
-
-                elements.saveProductButton.disabled =
-                    true;
-
-                elements.saveProductButton.textContent =
-                    productId
-                        ? "Đang cập nhật..."
-                        : "Đang lưu...";
-
-                if (productId) {
-                    await updateProduct(
-                        productId,
-                        product
-                    );
-                } else {
-                    await createProduct(
-                        product
-                    );
-                }
-
-                closeProductModal();
-
+                await deleteProduct(
+                    deleteId
+                );
             } catch (error) {
                 console.error(error);
 
-                showFormError(
+                alert(
                     error.message
-                    || "Không thể lưu sản phẩm."
+                    || "Không thể xóa sản phẩm."
                 );
-
-            } finally {
-                elements.saveProductButton.disabled =
-                    false;
-
-                elements.saveProductButton.textContent =
-                    "Lưu sản phẩm";
             }
         }
-    );
+    }
+);
 
-elements.productTable
-    .addEventListener(
-        "click",
-        async (event) => {
-            const editButton =
-                event.target.closest(
-                    "[data-edit]"
-                );
 
-            const deleteButton =
-                event.target.closest(
-                    "[data-delete]"
-                );
+/* =========================================================
+   TÌM KIẾM VÀ LỌC
+========================================================= */
 
-            const editId =
-                editButton?.dataset.edit;
+elements.searchInput.addEventListener(
+    "input",
+    renderProducts
+);
 
-            const deleteId =
-                deleteButton?.dataset.delete;
+elements.categoryFilter.addEventListener(
+    "change",
+    renderProducts
+);
 
-            if (editId) {
-                const product =
-                    state.products.find(
-                        (item) => {
-                            return item.id
-                                === editId;
-                        }
-                    );
 
-                if (product) {
-                    openProductModal(product);
-                }
-            }
+/* =========================================================
+   DỌN CAMERA KHI RỜI TRANG
+========================================================= */
 
-            if (deleteId) {
-                const product =
-                    state.products.find(
-                        (item) => {
-                            return item.id
-                                === deleteId;
-                        }
-                    );
+window.addEventListener(
+    "pagehide",
+    () => {
+        clearScannerInstance();
+        clearLocalPreview();
+    }
+);
 
-                const accepted =
-                    confirm(
-                        `Xóa sản phẩm "${product?.name || ""}"?`
-                    );
 
-                if (!accepted) {
-                    return;
-                }
+/* =========================================================
+   LẮNG NGHE FIREBASE
+========================================================= */
 
-                try {
-                    await deleteProduct(
-                        deleteId
-                    );
-                } catch (error) {
-                    console.error(error);
+listenCategories(
+    (categories) => {
+        state.categories =
+            categories;
 
-                    alert(
-                        "Không thể xóa sản phẩm."
-                    );
-                }
-            }
-        }
-    );
+        renderCategoryOptions();
 
-elements.searchInput
-    .addEventListener(
-        "input",
-        renderProducts
-    );
+        renderProducts();
+    }
+);
 
-elements.categoryFilter
-    .addEventListener(
-        "change",
-        renderProducts
-    );
+listenProducts(
+    (products) => {
+        state.products =
+            products;
 
-window
-    .addEventListener(
-        "pagehide",
-        () => {
-            clearScannerInstance();
-            clearLocalPreview();
-        }
-    );
-
-listenProducts((products) => {
-    state.products =
-        products;
-
-    renderCategoryFilter();
-    renderProducts();
-});
+        renderProducts();
+    }
+);
