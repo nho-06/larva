@@ -1,21 +1,60 @@
 export const BANK_CONFIG = {
-    bank: "MB",
-    accountNumber: "0384343705",
-    accountHolder: "TRAN THI TAM",
-    storeName: "LARVA"
+    bank:
+        "MB",
+
+    accountNumber:
+        "0384343705",
+
+    accountHolder:
+        "TRAN THI TAM",
+
+    storeName:
+        "LARVA"
 };
 
 export const state = {
-    products: [],
-    cart: [],
+    /*
+        Danh sách sản phẩm lấy từ Firebase.
+    */
+    products:
+        [],
 
-    scanner: null,
-    scannerRunning: false,
-    scanLocked: false,
+    /*
+        Danh sách danh mục lấy từ Firebase.
+    */
+    categories:
+        [],
 
-    isPaying: false,
+    /*
+        ID danh mục đang được chọn trên trang bán hàng.
 
-    audioContext: null,
+        Chuỗi rỗng nghĩa là:
+        Tất cả danh mục.
+    */
+    selectedCategoryId:
+        "",
 
-    transferCode: ""
+    /*
+        Danh sách sản phẩm trong giỏ hàng.
+    */
+    cart:
+        [],
+
+    scanner:
+        null,
+
+    scannerRunning:
+        false,
+
+    scanLocked:
+        false,
+
+    isPaying:
+        false,
+
+    audioContext:
+        null,
+
+    transferCode:
+        ""
 };

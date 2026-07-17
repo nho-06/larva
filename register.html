@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Larva | Đăng ký nhân viên</title>
+
+    <link
+        rel="preconnect"
+        href="https://www.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        rel="stylesheet"
+        href="./assets/css/main.css"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+            background:
+                linear-gradient(
+                    135deg,
+                    #fff7fa,
+                    #fbdce8
+                );
+            color: #60444f;
+        }
+
+        .register-page {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .register-card {
+            width: min(
+                470px,
+                100%
+            );
+            padding: 34px;
+            border: 1px solid #f0d8e2;
+            border-radius: 24px;
+            background: rgba(
+                255,
+                255,
+                255,
+                0.96
+            );
+            box-shadow:
+                0 24px 60px
+                rgba(
+                    166,
+                    91,
+                    122,
+                    0.16
+                );
+        }
+
+        .register-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 26px;
+        }
+
+        .register-brand img {
+            width: 58px;
+            height: 58px;
+            object-fit: contain;
+            padding: 7px;
+            border-radius: 16px;
+            background: #fff4f8;
+        }
+
+        .register-brand strong {
+            color: #bd6088;
+            font-size: 28px;
+            letter-spacing: 2px;
+        }
+
+        .register-heading {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .register-heading h1 {
+            margin: 0 0 8px;
+            color: #60444f;
+            font-size: 27px;
+        }
+
+        .register-heading p {
+            margin: 0;
+            color: #9c7785;
+            line-height: 1.5;
+        }
+
+        .register-form {
+            display: grid;
+            gap: 17px;
+        }
+
+        .register-form label {
+            display: grid;
+            gap: 8px;
+            color: #72535f;
+            font-weight: 700;
+        }
+
+        .register-input {
+            width: 100%;
+            min-height: 48px;
+            padding: 0 14px;
+            border: 1px solid #ead1dc;
+            border-radius: 12px;
+            background: #ffffff;
+            color: #513b43;
+            font-size: 16px;
+            outline: none;
+            transition:
+                border-color 0.2s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .register-input:focus {
+            border-color: #d68bad;
+            box-shadow:
+                0 0 0 4px
+                rgba(
+                    214,
+                    139,
+                    173,
+                    0.14
+                );
+        }
+
+        .password-wrap {
+            position: relative;
+        }
+
+        .password-wrap .register-input {
+            padding-right: 90px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            border: 0;
+            background: transparent;
+            color: #b25f83;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .register-button {
+            width: 100%;
+            min-height: 50px;
+            margin-top: 3px;
+            border: 0;
+            border-radius: 13px;
+            background: #d987ad;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition:
+                opacity 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .register-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .register-button:disabled {
+            opacity: 0.65;
+            cursor: wait;
+            transform: none;
+        }
+
+        .register-message {
+            margin: 0;
+            padding: 11px 13px;
+            border-radius: 11px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .register-message.error {
+            border: 1px solid #f0b9c7;
+            background: #fff1f4;
+            color: #b44260;
+        }
+
+        .register-message.success {
+            border: 1px solid #b9dfc7;
+            background: #f0fff5;
+            color: #31754a;
+        }
+
+        .register-footer {
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid #f1dce4;
+            text-align: center;
+        }
+
+        .register-footer p {
+            margin: 0 0 10px;
+            color: #9a7784;
+            font-size: 14px;
+        }
+
+        .register-footer a {
+            color: #b6537d;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .register-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .staff-note {
+            margin: 18px 0 0;
+            padding: 12px;
+            border-radius: 12px;
+            background: #fff6f9;
+            color: #916a79;
+            font-size: 13px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 520px) {
+            .register-page {
+                padding: 14px;
+            }
+
+            .register-card {
+                padding: 26px 20px;
+                border-radius: 19px;
+            }
+
+            .register-heading h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<main class="register-page">
+
+    <section class="register-card">
+
+        <div class="register-brand">
+
+            <img
+                src="./assets/images/larva-mascot.png"
+                alt="Larva"
+            >
+
+            <strong>
+                LARVA
+            </strong>
+
+        </div>
+
+        <div class="register-heading">
+
+            <h1>
+                Đăng ký nhân viên
+            </h1>
+
+
+
+        </div>
+
+        <form
+            id="registerForm"
+            class="register-form"
+        >
+
+            <label>
+
+                Tên nhân viên
+
+                <input
+                    id="displayNameInput"
+                    class="register-input"
+                    type="text"
+                    autocomplete="name"
+                    placeholder="Ví dụ: Nguyễn Văn An"
+                    required
+                >
+
+            </label>
+
+            <label>
+
+                Tên đăng nhập
+
+                <input
+                    id="usernameInput"
+                    class="register-input"
+                    type="text"
+                    autocomplete="username"
+                    placeholder="Ví dụ: nhan vien 01"
+                    required
+                >
+
+            </label>
+
+            <label>
+
+                Mật khẩu
+
+                <div class="password-wrap">
+
+                    <input
+                        id="passwordInput"
+                        class="register-input"
+                        type="password"
+                        autocomplete="new-password"
+                        minlength="6"
+                        placeholder="Tối thiểu 6 ký tự"
+                        required
+                    >
+
+                    <button
+                        id="togglePasswordButton"
+                        class="toggle-password"
+                        type="button"
+                    >
+                        Hiện
+                    </button>
+
+                </div>
+
+            </label>
+
+            <label>
+
+                Nhập lại mật khẩu
+
+                <div class="password-wrap">
+
+                    <input
+                        id="confirmPasswordInput"
+                        class="register-input"
+                        type="password"
+                        autocomplete="new-password"
+                        minlength="6"
+                        placeholder="Nhập lại mật khẩu"
+                        required
+                    >
+
+                    <button
+                        id="toggleConfirmPasswordButton"
+                        class="toggle-password"
+                        type="button"
+                    >
+                        Hiện
+                    </button>
+
+                </div>
+
+            </label>
+
+            <p
+                id="registerMessage"
+                class="register-message hidden"
+            ></p>
+
+            <button
+                id="registerButton"
+                class="register-button"
+                type="submit"
+            >
+                Đăng ký nhân viên
+            </button>
+
+        </form>
+
+        <div class="register-footer">
+
+            <p>
+                Đã có tài khoản?
+            </p>
+
+            <a href="./login.html">
+                Quay lại đăng nhập
+            </a>
+
+        </div>
+
+    </section>
+
+</main>
+
+<script
+    type="module"
+    src="./assets/js/pages/register.js"
+></script>
+
+</body>
+
+</html>

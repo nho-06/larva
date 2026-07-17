@@ -37,44 +37,62 @@ import {
 } from "./receipt.js";
 
 export function initializeSaleEvents() {
+    /*
+        Tìm kiếm sản phẩm.
+    */
     elements.productSearchInput
-        .addEventListener(
+        ?.addEventListener(
             "input",
             renderProducts
         );
 
+    /*
+        Lọc sản phẩm theo danh mục.
+    */
+    elements.saleCategoryFilter
+        ?.addEventListener(
+            "change",
+            handleCategoryChange
+        );
+
+    /*
+        Nhấn nút thêm sản phẩm vào giỏ.
+    */
     elements.saleProductGrid
-        .addEventListener(
+        ?.addEventListener(
             "click",
             handleProductGridClick
         );
 
+    /*
+        Các nút tăng, giảm, xóa trong giỏ hàng.
+    */
     elements.cartItems
-        .addEventListener(
+        ?.addEventListener(
             "click",
             handleCartClick
         );
 
     elements.clearCartButton
-        .addEventListener(
+        ?.addEventListener(
             "click",
             clearCart
         );
 
     elements.openScannerButton
-        .addEventListener(
+        ?.addEventListener(
             "click",
             openScanner
         );
 
     elements.openPaymentButton
-        .addEventListener(
+        ?.addEventListener(
             "click",
             openPaymentModal
         );
 
     elements.confirmPaymentButton
-        .addEventListener(
+        ?.addEventListener(
             "click",
             () => {
                 confirmPayment("cash");
@@ -82,13 +100,13 @@ export function initializeSaleEvents() {
         );
 
     elements.createQrButton
-        .addEventListener(
+        ?.addEventListener(
             "click",
             createPaymentQr
         );
 
     elements.confirmReceivedButton
-        .addEventListener(
+        ?.addEventListener(
             "click",
             () => {
                 confirmPayment("transfer");
@@ -96,7 +114,7 @@ export function initializeSaleEvents() {
         );
 
     elements.paidAmountInput
-        .addEventListener(
+        ?.addEventListener(
             "input",
             updatePaymentView
         );
@@ -146,15 +164,27 @@ export function initializeSaleEvents() {
         });
 
     elements.printReceiptButton
-        .addEventListener(
+        ?.addEventListener(
             "click",
             printReceipt
         );
 
+    /*
+        Khi rời trang thì dừng camera.
+    */
     window.addEventListener(
         "pagehide",
         clearScannerInstance
     );
+}
+
+function handleCategoryChange(event) {
+    state.selectedCategoryId =
+        String(
+            event.target.value || ""
+        );
+
+    renderProducts();
 }
 
 function handleProductGridClick(event) {
@@ -173,8 +203,10 @@ function handleProductGridClick(event) {
     const product =
         state.products.find(
             (item) => {
-                return item.id
-                    === productId;
+                return (
+                    String(item.id || "")
+                    === String(productId || "")
+                );
             }
         );
 

@@ -4,6 +4,14 @@ export const elements = {
             "#productSearchInput"
         ),
 
+    /*
+        Bộ lọc danh mục ở trang bán hàng.
+    */
+    saleCategoryFilter:
+        document.querySelector(
+            "#saleCategoryFilter"
+        ),
+
     saleProductGrid:
         document.querySelector(
             "#saleProductGrid"

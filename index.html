@@ -2,7 +2,7 @@
 <html lang="vi">
 
 <head>
-
+    
     <meta charset="UTF-8">
 
     <meta
@@ -10,15 +10,136 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>
-        Quản lý bán hàng
-    </title>
+    <title>Quản lý bán hàng</title>
+
+    <link
+        rel="preconnect"
+        href="https://www.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        rel="preconnect"
+        href="https://larva-5b230-default-rtdb.asia-southeast1.firebasedatabase.app"
+        crossorigin
+    >
 
     <link
         rel="stylesheet"
         href="./assets/css/main.css"
     >
 
+    
+    <style>
+        .clickable-stat-card {
+            cursor: pointer;
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .clickable-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(171, 93, 130, 0.14);
+        }
+
+        .clickable-stat-card:focus-visible {
+            outline: 3px solid rgba(206, 116, 158, 0.35);
+            outline-offset: 3px;
+        }
+
+        .stat-card-hint {
+            display: block;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #a3788c;
+        }
+
+        .low-stock-modal-card {
+            width: min(850px, calc(100vw - 28px));
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .low-stock-list {
+            display: grid;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .low-stock-item {
+            display: grid;
+            grid-template-columns: 58px minmax(0, 1fr) auto;
+            gap: 14px;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #f0dbe4;
+            border-radius: 14px;
+            background: #fffafb;
+        }
+
+        .low-stock-image {
+            width: 58px;
+            height: 58px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #f8edf2;
+        }
+
+        .low-stock-info {
+            min-width: 0;
+        }
+
+        .low-stock-info strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #60444f;
+        }
+
+        .low-stock-info span {
+            display: block;
+            color: #96717f;
+            font-size: 13px;
+        }
+
+        .low-stock-quantity {
+            min-width: 80px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #fde8f0;
+            color: #b6507c;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .low-stock-empty {
+            padding: 35px 15px;
+            text-align: center;
+            color: #95717f;
+        }
+
+        @media (max-width: 600px) {
+            .low-stock-item {
+                grid-template-columns: 50px minmax(0, 1fr);
+            }
+
+            .low-stock-image {
+                width: 50px;
+                height: 50px;
+            }
+
+            .low-stock-quantity {
+                grid-column: 1 / -1;
+                width: 100%;
+            }
+        }
+    </style>
+
+
+<script
+    type="module"
+    src="./assets/js/auth/auth-guard.js?v=50"
+></script>
 </head>
 
 <body>
@@ -71,7 +192,13 @@
 
             </article>
 
-            <article class="stat-card">
+            <article
+                id="lowStockCard"
+                class="stat-card clickable-stat-card"
+                role="button"
+                tabindex="0"
+                aria-label="Xem danh sách sản phẩm sắp hết"
+            >
 
                 <span>
                     Sản phẩm sắp hết
@@ -79,6 +206,22 @@
 
                 <strong id="lowStockCount">
                     0
+                </strong>
+
+                <small class="stat-card-hint">
+                    Nhấn để xem danh sách
+                </small>
+
+            </article>
+
+            <article class="stat-card">
+
+                <span>
+                    Tổng tiền vốn
+                </span>
+
+                <strong id="totalCapital">
+                    0 ₫
                 </strong>
 
             </article>
@@ -90,6 +233,18 @@
                 </span>
 
                 <strong id="inventoryValue">
+                    0 ₫
+                </strong>
+
+            </article>
+
+            <article class="stat-card">
+
+                <span>
+                    Lợi nhuận dự kiến
+                </span>
+
+                <strong id="expectedProfit">
                     0 ₫
                 </strong>
 
@@ -149,7 +304,81 @@
 
 </div>
 
-<script src="./assets/js/sidebar.js"></script>
+<!-- Modal sản phẩm sắp hết -->
+<div
+    id="lowStockModal"
+    class="modal hidden"
+    aria-hidden="true"
+>
+
+    <div
+        class="modal-backdrop"
+        data-close-low-stock-modal
+    ></div>
+
+    <section class="modal-card low-stock-modal-card">
+
+        <div class="modal-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    CẢNH BÁO TỒN KHO
+                </p>
+
+                <h2>
+                    Sản phẩm sắp hết
+                </h2>
+
+                <p>
+                    Các sản phẩm hiện còn từ 1 đến 5 sản phẩm.
+                </p>
+
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-low-stock-modal
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div
+            id="lowStockProductList"
+            class="low-stock-list"
+        ></div>
+
+        <div class="form-actions">
+
+            <a
+                class="button button-light"
+                href="./products.html"
+            >
+                Quản lý sản phẩm
+            </a>
+
+            <button
+                class="button"
+                type="button"
+                data-close-low-stock-modal
+            >
+                Đóng
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+<script
+    type="module"
+    src="./assets/js/sidebar.js?v=10"
+></script>
 
 <script
     type="module"

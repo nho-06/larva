@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
 
@@ -11,6 +12,18 @@
     <title>Larva | Bán hàng tại quầy</title>
 
     <link
+        rel="preconnect"
+        href="https://www.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        rel="preconnect"
+        href="https://larva-5b230-default-rtdb.asia-southeast1.firebasedatabase.app"
+        crossorigin
+    >
+
+    <link
         rel="stylesheet"
         href="./assets/css/main.css"
     >
@@ -18,16 +31,48 @@
     <script
         src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"
     ></script>
+
+    <style>
+        .sale-toolbar {
+            display: grid;
+            grid-template-columns:
+                minmax(240px, 1fr)
+                minmax(180px, 260px);
+            gap: 12px;
+            align-items: center;
+        }
+
+        .sale-category-filter {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        @media (max-width: 720px) {
+            .sale-toolbar {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+<script
+    type="module"
+    src="./assets/js/auth/auth-guard.js?v=50"
+></script>
+
 </head>
 
 <body>
 
 <div class="app-layout">
+
     <div id="sidebarContainer"></div>
 
     <main class="main-content">
+
         <header class="page-header">
+
             <div>
+
                 <p class="eyebrow">
                     BÁN HÀNG
                 </p>
@@ -35,9 +80,11 @@
                 <h1>
                     Bán hàng tại quầy
                 </h1>
+
             </div>
 
             <div class="page-actions">
+
                 <button
                     class="button button-light"
                     id="clearCartButton"
@@ -53,18 +100,35 @@
                 >
                     Quét mã sản phẩm
                 </button>
+
             </div>
+
         </header>
 
         <div class="pos-layout">
+
             <section class="panel pos-products-panel">
-                <div class="toolbar">
+
+                <div class="toolbar sale-toolbar">
+
                     <input
                         id="productSearchInput"
                         class="input"
                         type="search"
                         placeholder="Tìm tên, mã sản phẩm hoặc mã vạch"
+                        autocomplete="off"
                     >
+
+                    <select
+                        id="saleCategoryFilter"
+                        class="input sale-category-filter"
+                        aria-label="Lọc sản phẩm theo danh mục"
+                    >
+                        <option value="">
+                            Tất cả danh mục
+                        </option>
+                    </select>
+
                 </div>
 
                 <p
@@ -83,11 +147,15 @@
                 >
                     Không tìm thấy sản phẩm.
                 </p>
+
             </section>
 
             <aside class="panel cart-panel">
+
                 <div class="cart-heading">
+
                     <div>
+
                         <p class="eyebrow">
                             HÓA ĐƠN
                         </p>
@@ -95,6 +163,7 @@
                         <h2>
                             Giỏ hàng
                         </h2>
+
                     </div>
 
                     <span
@@ -103,6 +172,7 @@
                     >
                         0
                     </span>
+
                 </div>
 
                 <div
@@ -118,7 +188,9 @@
                 </p>
 
                 <div class="cart-summary">
+
                     <div class="summary-row total-row">
+
                         <span>
                             Tổng thanh toán
                         </span>
@@ -126,7 +198,9 @@
                         <strong id="cartTotal">
                             0 ₫
                         </strong>
+
                     </div>
+
                 </div>
 
                 <button
@@ -137,23 +211,32 @@
                 >
                     Thanh toán
                 </button>
+
             </aside>
+
         </div>
+
     </main>
+
 </div>
 
+<!-- Modal quét mã -->
 <div
     class="modal hidden"
     id="scannerModal"
 >
+
     <div
         class="modal-backdrop"
         data-close-scanner-modal
     ></div>
 
     <section class="modal-card scanner-card">
+
         <div class="modal-header">
+
             <div>
+
                 <p class="eyebrow">
                     CAMERA
                 </p>
@@ -161,6 +244,7 @@
                 <h2>
                     Quét mã sản phẩm
                 </h2>
+
             </div>
 
             <button
@@ -171,6 +255,7 @@
             >
                 ×
             </button>
+
         </div>
 
         <p class="scanner-help">
@@ -183,21 +268,28 @@
             id="scannerMessage"
             class="scanner-message"
         ></p>
+
     </section>
+
 </div>
 
+<!-- Modal thanh toán -->
 <div
     class="modal hidden"
     id="paymentModal"
 >
+
     <div
         class="modal-backdrop"
         data-close-payment-modal
     ></div>
 
     <section class="modal-card payment-card">
+
         <div class="modal-header">
+
             <div>
+
                 <p class="eyebrow">
                     THANH TOÁN
                 </p>
@@ -205,6 +297,7 @@
                 <h2>
                     Hoàn tất hóa đơn
                 </h2>
+
             </div>
 
             <button
@@ -215,9 +308,11 @@
             >
                 ×
             </button>
+
         </div>
 
         <div class="payment-total-box">
+
             <span>
                 Tổng tiền
             </span>
@@ -225,10 +320,13 @@
             <strong id="paymentTotal">
                 0 ₫
             </strong>
+
         </div>
 
         <div class="payment-methods">
+
             <label class="payment-method-option">
+
                 <input
                     type="radio"
                     name="paymentMethod"
@@ -239,9 +337,11 @@
                 <span>
                     Tiền mặt
                 </span>
+
             </label>
 
             <label class="payment-method-option">
+
                 <input
                     type="radio"
                     name="paymentMethod"
@@ -251,11 +351,15 @@
                 <span>
                     Chuyển khoản
                 </span>
+
             </label>
+
         </div>
 
         <div id="cashPaymentBox">
+
             <label id="paidAmountWrap">
+
                 Khách đưa
 
                 <input
@@ -266,9 +370,11 @@
                     step="1000"
                     placeholder="Nhập số tiền khách đưa"
                 >
+
             </label>
 
             <div class="change-box">
+
                 <span>
                     Tiền thừa
                 </span>
@@ -276,14 +382,18 @@
                 <strong id="changeAmount">
                     0 ₫
                 </strong>
+
             </div>
+
         </div>
 
         <div
             id="bankTransferBox"
             class="bank-transfer-box hidden"
         >
+
             <div class="bank-transfer-note">
+
                 <strong>
                     Thanh toán bằng chuyển khoản
                 </strong>
@@ -291,6 +401,7 @@
                 <p>
                     Nhấn tạo QR, cho khách quét rồi kiểm tra ứng dụng ngân hàng trước khi xác nhận.
                 </p>
+
             </div>
 
             <button
@@ -305,6 +416,7 @@
                 id="paymentQrBox"
                 class="payment-qr-box hidden"
             >
+
                 <img
                     id="paymentQrImage"
                     class="payment-qr-image"
@@ -312,6 +424,7 @@
                 >
 
                 <div class="payment-bank-info">
+
                     <p>
                         Ngân hàng:
                         <strong id="qrBankName"></strong>
@@ -336,6 +449,7 @@
                         Nội dung:
                         <strong id="transferContent"></strong>
                     </p>
+
                 </div>
 
                 <p class="manual-payment-warning">
@@ -349,7 +463,9 @@
                 >
                     Đã nhận được tiền
                 </button>
+
             </div>
+
         </div>
 
         <p
@@ -358,6 +474,7 @@
         ></p>
 
         <div class="form-actions">
+
             <button
                 class="button button-light"
                 type="button"
@@ -373,22 +490,30 @@
             >
                 Xác nhận thanh toán
             </button>
+
         </div>
+
     </section>
+
 </div>
 
+<!-- Modal hóa đơn -->
 <div
     class="modal hidden"
     id="receiptModal"
 >
+
     <div
         class="modal-backdrop"
         data-close-receipt-modal
     ></div>
 
     <section class="modal-card receipt-card">
+
         <div class="modal-header receipt-modal-header">
+
             <div>
+
                 <p class="eyebrow">
                     HÓA ĐƠN
                 </p>
@@ -396,6 +521,7 @@
                 <h2>
                     Thanh toán thành công
                 </h2>
+
             </div>
 
             <button
@@ -406,11 +532,13 @@
             >
                 ×
             </button>
+
         </div>
 
         <div id="receiptContent"></div>
 
         <div class="form-actions receipt-actions">
+
             <button
                 class="button button-light"
                 id="printReceiptButton"
@@ -426,13 +554,16 @@
             >
                 Bán đơn mới
             </button>
+
         </div>
+
     </section>
+
 </div>
 
 <script
     type="module"
-    src="./assets/js/sidebar.js"
+    src="./assets/js/sidebar.js?v=10"
 ></script>
 
 <script
@@ -441,4 +572,5 @@
 ></script>
 
 </body>
+
 </html>

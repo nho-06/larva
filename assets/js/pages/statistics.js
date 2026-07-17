@@ -2,10 +2,8 @@ import {
     listenSales,
     filterSalesByDate,
     calculateRevenue,
-    calculateCost,
     calculateProfit,
     calculateSoldQuantity,
-    calculatePaymentSummary,
     calculateBestSellingProducts,
     calculateDailyRevenue,
     getMonthSales,
@@ -20,8 +18,11 @@ import {
 } from "../utils.js";
 
 const state = {
-    sales: [],
-    filteredSales: []
+    sales:
+        [],
+
+    filteredSales:
+        []
 };
 
 const elements = {
@@ -50,19 +51,19 @@ const elements = {
             "#todayRevenue"
         ),
 
-    periodRevenue:
+    monthRevenue:
         document.querySelector(
-            "#periodRevenue"
+            "#monthRevenue"
         ),
 
-    periodCost:
+    yearRevenue:
         document.querySelector(
-            "#periodCost"
+            "#yearRevenue"
         ),
 
-    periodProfit:
+    todayProfit:
         document.querySelector(
-            "#periodProfit"
+            "#todayProfit"
         ),
 
     monthProfit:
@@ -85,16 +86,6 @@ const elements = {
             "#totalSoldQuantity"
         ),
 
-    cashRevenue:
-        document.querySelector(
-            "#cashRevenue"
-        ),
-
-    transferRevenue:
-        document.querySelector(
-            "#transferRevenue"
-        ),
-
     bestSellingTableBody:
         document.querySelector(
             "#bestSellingTableBody"
@@ -103,16 +94,6 @@ const elements = {
     emptyBestSelling:
         document.querySelector(
             "#emptyBestSelling"
-        ),
-
-    recentSalesTableBody:
-        document.querySelector(
-            "#recentSalesTableBody"
-        ),
-
-    emptyRecentSales:
-        document.querySelector(
-            "#emptyRecentSales"
         ),
 
     dailyRevenueChart:
@@ -131,6 +112,10 @@ const elements = {
         )
 };
 
+/*
+    Mặc định chọn từ ngày đầu tháng hiện tại
+    đến ngày hôm nay.
+*/
 function setDefaultDateRange() {
     const today =
         new Date();
@@ -142,21 +127,29 @@ function setDefaultDateRange() {
             1
         );
 
-    elements.startDateInput.value =
-        toDateInputValue(
-            firstDayOfMonth
-        );
+    if (elements.startDateInput) {
+        elements.startDateInput.value =
+            toDateInputValue(
+                firstDayOfMonth
+            );
+    }
 
-    elements.endDateInput.value =
-        toDateInputValue(
-            today
-        );
+    if (elements.endDateInput) {
+        elements.endDateInput.value =
+            toDateInputValue(
+                today
+            );
+    }
 }
 
 function showStatisticsMessage(
     message,
     type = "error"
 ) {
+    if (!elements.statisticsMessage) {
+        return;
+    }
+
     elements.statisticsMessage.textContent =
         message;
 
@@ -176,6 +169,9 @@ function showStatisticsMessage(
         }, 2600);
 }
 
+/*
+    Lấy hóa đơn trong ngày hôm nay.
+*/
 function getTodaySales() {
     const today =
         toDateInputValue(
@@ -189,17 +185,29 @@ function getTodaySales() {
     );
 }
 
+/*
+    Lọc dữ liệu theo khoảng ngày để dùng cho:
+
+    - Tổng hóa đơn
+    - Tổng sản phẩm đã bán
+    - Biểu đồ
+    - Sản phẩm bán chạy
+*/
 function applyDateFilter() {
     const startDate =
-        elements.startDateInput.value;
+        elements.startDateInput?.value
+        || "";
 
     const endDate =
-        elements.endDateInput.value;
+        elements.endDateInput?.value
+        || "";
 
     if (
         startDate
-        && endDate
-        && startDate > endDate
+        &&
+        endDate
+        &&
+        startDate > endDate
     ) {
         showStatisticsMessage(
             "Ngày bắt đầu không được lớn hơn ngày kết thúc."
@@ -223,6 +231,15 @@ function resetDateFilter() {
     applyDateFilter();
 }
 
+/*
+    Hiển thị các ô doanh thu và tiền lời.
+
+    Doanh thu:
+    Tổng số tiền bán hàng thu được.
+
+    Tiền lời:
+    Doanh thu trừ giá vốn.
+*/
 function renderSummaryCards() {
     const now =
         new Date();
@@ -243,73 +260,85 @@ function renderSummaryCards() {
             now.getFullYear()
         );
 
-    const paymentSummary =
-        calculatePaymentSummary(
-            state.filteredSales
-        );
-
-    elements.todayRevenue.textContent =
+    setText(
+        elements.todayRevenue,
         formatMoney(
             calculateRevenue(
                 todaySales
             )
-        );
+        )
+    );
 
-    elements.periodRevenue.textContent =
+    setText(
+        elements.monthRevenue,
         formatMoney(
             calculateRevenue(
-                state.filteredSales
+                monthSales
             )
-        );
+        )
+    );
 
-    elements.periodCost.textContent =
+    setText(
+        elements.yearRevenue,
         formatMoney(
-            calculateCost(
-                state.filteredSales
+            calculateRevenue(
+                yearSales
             )
-        );
+        )
+    );
 
-    elements.periodProfit.textContent =
+    setText(
+        elements.todayProfit,
         formatMoney(
             calculateProfit(
-                state.filteredSales
+                todaySales
             )
-        );
+        )
+    );
 
-    elements.monthProfit.textContent =
+    setText(
+        elements.monthProfit,
         formatMoney(
             calculateProfit(
                 monthSales
             )
-        );
+        )
+    );
 
-    elements.yearProfit.textContent =
+    setText(
+        elements.yearProfit,
         formatMoney(
             calculateProfit(
                 yearSales
             )
-        );
+        )
+    );
 
-    elements.totalInvoices.textContent =
-        state.filteredSales.length;
+    setText(
+        elements.totalInvoices,
+        state.filteredSales.length
+    );
 
-    elements.totalSoldQuantity.textContent =
+    setText(
+        elements.totalSoldQuantity,
         calculateSoldQuantity(
             state.filteredSales
-        );
-
-    elements.cashRevenue.textContent =
-        formatMoney(
-            paymentSummary.cash
-        );
-
-    elements.transferRevenue.textContent =
-        formatMoney(
-            paymentSummary.transfer
-        );
+        )
+    );
 }
 
+/*
+    Hiển thị tối đa 10 sản phẩm bán chạy.
+*/
 function renderBestSellingProducts() {
+    if (
+        !elements.bestSellingTableBody
+        ||
+        !elements.emptyBestSelling
+    ) {
+        return;
+    }
+
     const products =
         calculateBestSellingProducts(
             state.filteredSales
@@ -322,59 +351,91 @@ function renderBestSellingProducts() {
                     product.image
                     || placeholderImage();
 
+                const productName =
+                    product.name
+                    || "Sản phẩm";
+
+                const sku =
+                    product.sku
+                    || "Chưa có mã";
+
+                const quantity =
+                    toNumber(
+                        product.quantity
+                    );
+
+                const revenue =
+                    toNumber(
+                        product.revenue
+                    );
+
+                const cost =
+                    toNumber(
+                        product.cost
+                    );
+
+                const profit =
+                    toNumber(
+                        product.profit
+                    );
+
                 return `
                     <tr>
+
                         <td>
                             ${index + 1}
                         </td>
 
                         <td>
+
                             <div class="statistics-product-cell">
+
                                 <img
                                     class="statistics-product-image"
                                     src="${escapeHtml(image)}"
-                                    alt="${escapeHtml(product.name)}"
-                                    onerror="this.src='${placeholderImage()}'"
+                                    alt="${escapeHtml(productName)}"
+                                    onerror="
+                                        this.onerror = null;
+                                        this.src = '${placeholderImage()}';
+                                    "
                                 >
 
                                 <div>
+
                                     <strong>
-                                        ${escapeHtml(product.name)}
+                                        ${escapeHtml(productName)}
                                     </strong>
 
                                     <small>
-                                        ${escapeHtml(
-                                            product.sku
-                                            || "Chưa có mã"
-                                        )}
+                                        ${escapeHtml(sku)}
                                     </small>
+
                                 </div>
+
                             </div>
+
                         </td>
 
                         <td>
-                            ${product.quantity}
+                            ${quantity}
                         </td>
 
                         <td>
-                            ${formatMoney(
-                                product.revenue
-                            )}
+                            ${formatMoney(revenue)}
                         </td>
 
                         <td>
-                            ${formatMoney(
-                                product.cost
-                            )}
+                            ${formatMoney(cost)}
                         </td>
 
                         <td>
+
                             <strong>
-                                ${formatMoney(
-                                    product.profit
-                                )}
+                                ${formatMoney(profit)}
                             </strong>
+
                         </td>
+
                     </tr>
                 `;
             })
@@ -387,131 +448,19 @@ function renderBestSellingProducts() {
         );
 }
 
-function renderRecentSales() {
-    const recentSales =
-        state.filteredSales
-            .slice(0, 20);
-
-    elements.recentSalesTableBody.innerHTML =
-        recentSales
-            .map((sale) => {
-                const createdAt =
-                    Number(
-                        sale.createdAt || 0
-                    );
-
-                const createdDate =
-                    createdAt
-                        ? new Date(
-                            createdAt
-                        ).toLocaleString(
-                            "vi-VN"
-                        )
-                        : "Không rõ";
-
-                const paymentMethod =
-                    sale.paymentMethod
-                    === "transfer"
-                        ? "Chuyển khoản"
-                        : "Tiền mặt";
-
-                const itemQuantity =
-                    Array.isArray(sale.items)
-                        ? sale.items.reduce(
-                            (
-                                total,
-                                item
-                            ) => {
-                                return (
-                                    total
-                                    + Number(
-                                        item.quantity
-                                        || 0
-                                    )
-                                );
-                            },
-                            0
-                        )
-                        : 0;
-
-                const saleCost =
-                    Number(
-                        sale.totalCost || 0
-                    );
-
-                const saleProfit =
-                    sale.totalProfit
-                    !== undefined
-                        ? Number(
-                            sale.totalProfit || 0
-                        )
-                        : (
-                            Number(
-                                sale.totalAmount || 0
-                            )
-                            - saleCost
-                        );
-
-                return `
-                    <tr>
-                        <td>
-                            <strong>
-                                ${escapeHtml(
-                                    sale.saleId
-                                    || sale.id
-                                    || ""
-                                )}
-                            </strong>
-                        </td>
-
-                        <td>
-                            ${escapeHtml(
-                                createdDate
-                            )}
-                        </td>
-
-                        <td>
-                            ${itemQuantity}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(
-                                paymentMethod
-                            )}
-                        </td>
-
-                        <td>
-                            ${formatMoney(
-                                sale.totalAmount
-                            )}
-                        </td>
-
-                        <td>
-                            ${formatMoney(
-                                saleCost
-                            )}
-                        </td>
-
-                        <td>
-                            <strong>
-                                ${formatMoney(
-                                    saleProfit
-                                )}
-                            </strong>
-                        </td>
-                    </tr>
-                `;
-            })
-            .join("");
-
-    elements.emptyRecentSales
-        .classList.toggle(
-            "hidden",
-            recentSales.length > 0
-        );
-}
-
+/*
+    Hiển thị biểu đồ doanh thu và tiền lời
+    theo từng ngày trong khoảng đã chọn.
+*/
 function renderDailyRevenueChart() {
+    if (
+        !elements.dailyRevenueChart
+        ||
+        !elements.emptyDailyRevenue
+    ) {
+        return;
+    }
+
     const dailyData =
         calculateDailyRevenue(
             state.filteredSales
@@ -533,21 +482,29 @@ function renderDailyRevenueChart() {
     const maxRevenue =
         Math.max(
             ...dailyData.map((day) => {
-                return Number(
-                    day.revenue || 0
+                return toNumber(
+                    day.revenue
                 );
             }),
             1
         );
 
     dailyData.forEach((day) => {
+        const revenue =
+            toNumber(
+                day.revenue
+            );
+
+        const profit =
+            toNumber(
+                day.profit
+            );
+
         const heightPercent =
             Math.max(
                 4,
                 (
-                    Number(
-                        day.revenue || 0
-                    )
+                    revenue
                     / maxRevenue
                 )
                 * 100
@@ -578,16 +535,18 @@ function renderDailyRevenueChart() {
         column.innerHTML = `
             <div
                 class="daily-revenue-value"
-                title="${formatMoney(day.revenue)}"
+                title="${formatMoney(revenue)}"
             >
-                ${formatMoney(day.revenue)}
+                ${formatMoney(revenue)}
             </div>
 
             <div class="daily-revenue-bar-wrap">
+
                 <div
                     class="daily-revenue-bar"
                     style="height: ${heightPercent}%"
                 ></div>
+
             </div>
 
             <div class="daily-revenue-date">
@@ -595,42 +554,64 @@ function renderDailyRevenueChart() {
             </div>
 
             <small>
-                Lời ${formatMoney(day.profit)}
+                Lời ${formatMoney(profit)}
             </small>
         `;
 
         elements.dailyRevenueChart
-            .appendChild(column);
+            .appendChild(
+                column
+            );
     });
 }
 
 function renderStatistics() {
     renderSummaryCards();
     renderBestSellingProducts();
-    renderRecentSales();
     renderDailyRevenueChart();
 }
 
+function setText(
+    element,
+    value
+) {
+    if (!element) {
+        return;
+    }
+
+    element.textContent =
+        String(value);
+}
+
+function toNumber(value) {
+    const number =
+        Number(value);
+
+    return Number.isFinite(number)
+        ? number
+        : 0;
+}
+
 elements.applyFilterButton
-    .addEventListener(
+    ?.addEventListener(
         "click",
         applyDateFilter
     );
 
 elements.resetFilterButton
-    .addEventListener(
+    ?.addEventListener(
         "click",
         resetDateFilter
     );
 
 elements.startDateInput
-    .addEventListener(
+    ?.addEventListener(
         "change",
         applyDateFilter
     );
 
 elements.endDateInput
-    .addEventListener(
+    ?.addEventListener(
         "change",
         applyDateFilter
     );

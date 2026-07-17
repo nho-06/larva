@@ -12,6 +12,18 @@
     <title>Larva | Quản lý sản phẩm</title>
 
     <link
+        rel="preconnect"
+        href="https://www.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        rel="preconnect"
+        href="https://larva-5b230-default-rtdb.asia-southeast1.firebasedatabase.app"
+        crossorigin
+    >
+
+    <link
         rel="stylesheet"
         href="./assets/css/main.css"
     >
@@ -71,6 +83,12 @@
             }
         }
     </style>
+
+
+<script
+    type="module"
+    src="./assets/js/auth/auth-guard.js?v=50"
+></script>
 </head>
 
 <body>
@@ -117,7 +135,6 @@
 
         </header>
 
-        <!-- Kết quả sau khi quét mã -->
         <section
             id="scannedProductBox"
             class="scanned-product-box hidden"
@@ -153,34 +170,13 @@
 
                     <tr>
                         <th>Sản phẩm</th>
-
-                        <th>
-                            Mã sản phẩm
-                        </th>
-
-                        <th>
-                            Mã vạch
-                        </th>
-
-                        <th>
-                            Danh mục
-                        </th>
-
-                        <th>
-                            Giá nhập
-                        </th>
-
-                        <th>
-                            Giá bán
-                        </th>
-
-                        <th>
-                            Tồn kho
-                        </th>
-
-                        <th>
-                            Thao tác
-                        </th>
+                        <th>Mã sản phẩm</th>
+                        <th>Mã vạch</th>
+                        <th>Danh mục</th>
+                        <th>Giá nhập</th>
+                        <th>Giá bán</th>
+                        <th>Tồn kho</th>
+                        <th>Thao tác</th>
                     </tr>
 
                     </thead>
@@ -204,7 +200,6 @@
 
 </div>
 
-<!-- Modal thêm và sửa sản phẩm -->
 <div
     class="modal hidden"
     id="productModal"
@@ -357,7 +352,6 @@
 
             </label>
 
-            <!-- Khu vực nhập ảnh -->
             <div class="product-image-section full-width">
 
                 <div class="product-image-heading">
@@ -415,7 +409,6 @@
 
                 </div>
 
-                <!-- Chế độ dán link ảnh -->
                 <div
                     id="imageUrlBox"
                     class="image-source-box"
@@ -436,7 +429,6 @@
 
                 </div>
 
-                <!-- Chế độ chọn ảnh trong máy -->
                 <div
                     id="imageFileBox"
                     class="image-source-box hidden"
@@ -471,7 +463,6 @@
 
                 </div>
 
-                <!-- Chế độ chụp ảnh -->
                 <div
                     id="imageCameraBox"
                     class="image-source-box hidden"
@@ -506,13 +497,11 @@
 
                 </div>
 
-                <!-- Trạng thái tải ảnh -->
                 <div
                     id="imageUploadStatus"
                     class="image-upload-status hidden"
                 ></div>
 
-                <!-- Xem trước ảnh -->
                 <div
                     id="imagePreviewBox"
                     class="image-preview-box hidden"
@@ -595,7 +584,6 @@
 
 </div>
 
-<!-- Modal thêm danh mục -->
 <div
     class="modal hidden"
     id="categoryModal"
@@ -703,7 +691,6 @@
 
 </div>
 
-<!-- Modal camera quét mã -->
 <div
     class="modal hidden"
     id="scannerModal"
@@ -756,7 +743,10 @@
 
 </div>
 
-<script src="./assets/js/sidebar.js"></script>
+<script
+    type="module"
+    src="./assets/js/sidebar.js?v=10"
+></script>
 
 <script
     type="module"
