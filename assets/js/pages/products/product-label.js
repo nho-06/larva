@@ -1,14 +1,11 @@
 /*
-    Quản lý tem mã vạch sản phẩm 50 × 30 mm.
+    Quản lý tem mã vạch sản phẩm ngang 50 × 30 mm.
 
-    Máy in MXW01 thường có độ phân giải khoảng 203 DPI.
+    Máy in MXW01 thường dùng độ phân giải khoảng 203 DPI.
 
     Tem 50 × 30 mm tương ứng gần:
     - Rộng: 400 px
     - Cao: 240 px
-
-    Barcode được tạo đúng kích thước cuối cùng,
-    không phóng to hoặc thu nhỏ để tránh vạch bị nhòe.
 */
 
 const LABEL_WIDTH_PX = 400;
@@ -121,9 +118,6 @@ function getBarcodeText(product) {
         MK007
         H001
         BN015
-
-        Không ưu tiên chuỗi barcode dài kiểu:
-        LRV-1761234567890-123
     */
     return String(
         product?.sku
@@ -155,13 +149,17 @@ function assertDependencies(
         );
     }
 
-    if (!elements?.labelPrintModal) {
+    if (
+        !elements?.labelPrintModal
+    ) {
         throw new Error(
             "Không tìm thấy modal in tem."
         );
     }
 
-    if (!elements?.labelCanvas) {
+    if (
+        !elements?.labelCanvas
+    ) {
         throw new Error(
             "Không tìm thấy canvas tem."
         );
@@ -189,9 +187,6 @@ async function drawProductLabel({
         );
     }
 
-    /*
-        Kích thước ảnh ngang 50 × 30 mm ở 203 DPI.
-    */
     canvas.width =
         LABEL_WIDTH_PX;
 
@@ -274,7 +269,7 @@ async function drawProductLabel({
     context.fillText(
         productName,
         LABEL_WIDTH_PX / 2,
-        28
+        27
     );
 
 
@@ -298,7 +293,7 @@ async function drawProductLabel({
                 3,
 
             height:
-                100,
+                105,
 
             displayValue:
                 false,
@@ -340,8 +335,11 @@ async function drawProductLabel({
             ) / 2
         );
 
+    /*
+        Đưa barcode lên gần tên sản phẩm hơn.
+    */
     const barcodeY =
-        62;
+        47;
 
     /*
         Không truyền width và height vào drawImage
@@ -364,16 +362,19 @@ async function drawProductLabel({
     context.textBaseline =
         "alphabetic";
 
+    /*
+        Mã sản phẩm và giá được phóng to.
+    */
     context.font =
-        "700 20px Arial, sans-serif";
+        "700 25px Arial, sans-serif";
 
     context.textAlign =
         "left";
 
     context.fillText(
         barcodeText,
-        20,
-        220
+        16,
+        225
     );
 
     context.textAlign =
@@ -381,8 +382,8 @@ async function drawProductLabel({
 
     context.fillText(
         priceText,
-        LABEL_WIDTH_PX - 20,
-        220
+        LABEL_WIDTH_PX - 16,
+        225
     );
 
     return canvasToBlob(
@@ -446,12 +447,16 @@ export function createProductLabelController({
 
 
     async function open(product) {
-        if (state.isGenerating) {
+        if (
+            state.isGenerating
+        ) {
             return;
         }
 
         const barcodeText =
-            getBarcodeText(product);
+            getBarcodeText(
+                product
+            );
 
         if (!barcodeText) {
             window.alert(
@@ -502,8 +507,10 @@ export function createProductLabelController({
             state.blob =
                 await drawProductLabel({
                     product,
+
                     canvas:
                         elements.labelCanvas,
+
                     formatMoney
                 });
 
@@ -549,7 +556,9 @@ export function createProductLabelController({
 
 
     async function download() {
-        if (!state.blob) {
+        if (
+            !state.blob
+        ) {
             setMessage(
                 "Ảnh tem chưa được tạo."
             );
@@ -593,7 +602,9 @@ export function createProductLabelController({
 
 
     async function share() {
-        if (!state.blob) {
+        if (
+            !state.blob
+        ) {
             setMessage(
                 "Ảnh tem chưa được tạo."
             );
@@ -627,7 +638,9 @@ export function createProductLabelController({
                     ]
                 });
 
-            if (canShareFile) {
+            if (
+                canShareFile
+            ) {
                 await navigator.share({
                     title:
                         "Tem mã vạch Larva",
