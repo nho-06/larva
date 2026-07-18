@@ -4120,3 +4120,50 @@ th {
         margin: 0;
     }
 }
+/* =========================================================
+   ĐIỀU KHIỂN CAMERA QUÉT MÃ
+========================================================= */
+
+.camera-controls {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid #eadde3;
+    border-radius: 12px;
+    background: #fff8fb;
+}
+
+.camera-zoom-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.camera-zoom-reset {
+    flex: 0 0 auto;
+    min-width: 58px;
+}
+
+.camera-zoom-field {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 7px;
+    color: #66585e;
+    font-size: 13px;
+}
+
+.camera-zoom-field input[type="range"] {
+    width: 100%;
+}
+
+.camera-focus-help {
+    margin: 9px 0 0;
+    color: #84757c;
+    font-size: 12px;
+}
+
+#barcodeReader video {
+    touch-action: manipulation;
+    cursor: crosshair;
+}

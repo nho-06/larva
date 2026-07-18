@@ -732,6 +732,48 @@
         </p>
 
         <div id="barcodeReader"></div>
+        <div
+    id="cameraControls"
+    class="camera-controls hidden"
+>
+
+    <div class="camera-zoom-row">
+
+        <button
+            id="resetCameraZoomButton"
+            class="button button-light camera-zoom-reset"
+            type="button"
+        >
+            1x
+        </button>
+
+        <label class="camera-zoom-field">
+
+            <span>
+                Thu phóng:
+                <strong id="cameraZoomValue">
+                    1x
+                </strong>
+            </span>
+
+            <input
+                id="cameraZoomInput"
+                type="range"
+                min="1"
+                max="1"
+                step="0.1"
+                value="1"
+            >
+
+        </label>
+
+    </div>
+
+    <p class="camera-focus-help">
+        Chạm vào hình camera để lấy nét.
+    </p>
+
+</div>
 
         <p
             id="scannerMessage"
