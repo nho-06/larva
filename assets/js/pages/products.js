@@ -249,25 +249,25 @@ function renderBarcode(
 
                 width:
                     compact
-                        ? 1.2
-                        : 1.8,
+                        ? 2
+                        : 2.4,
 
                 height:
                     compact
-                        ? 36
-                        : 70,
+                        ? 42
+                        : 80,
 
                 displayValue: true,
 
                 fontSize:
                     compact
-                        ? 10
+                        ? 11
                         : 14,
 
                 margin:
                     compact
-                        ? 2
-                        : 8,
+                        ? 6
+                        : 10,
 
                 background:
                     "#ffffff",
@@ -297,15 +297,19 @@ function fitCanvasText(
     minSize,
     weight = "700"
 ) {
-    let fontSize = startSize;
+    let fontSize =
+        startSize;
 
-    while (fontSize > minSize) {
+    while (
+        fontSize > minSize
+    ) {
         context.font =
             `${weight} ${fontSize}px Arial, sans-serif`;
 
         if (
-            context.measureText(text).width
-            <= maxWidth
+            context.measureText(
+                text
+            ).width <= maxWidth
         ) {
             break;
         }
@@ -318,7 +322,10 @@ function fitCanvasText(
 
 function canvasToBlob(canvas) {
     return new Promise(
-        (resolve, reject) => {
+        (
+            resolve,
+            reject
+        ) => {
             canvas.toBlob(
                 (blob) => {
                     if (blob) {
@@ -339,12 +346,16 @@ function canvasToBlob(canvas) {
     );
 }
 
-async function drawProductLabel(product) {
+async function drawProductLabel(
+    product
+) {
     const canvas =
         elements.labelCanvas;
 
     const context =
-        canvas.getContext("2d");
+        canvas.getContext(
+            "2d"
+        );
 
     if (!context) {
         throw new Error(
@@ -357,9 +368,6 @@ async function drawProductLabel(product) {
 
     const height =
         canvas.height;
-
-    const paddingX =
-        54;
 
     context.clearRect(
         0,
@@ -378,6 +386,50 @@ async function drawProductLabel(product) {
         height
     );
 
+    const productName =
+        String(
+            product.name
+            || "Sản phẩm"
+        ).trim();
+
+    /*
+        In mã vạch bằng SKU ngắn để dễ quét.
+
+        Ví dụ:
+        MK007
+        H001
+        BN015
+
+        Nếu sản phẩm chưa có SKU thì mới dùng
+        barcode cũ làm phương án dự phòng.
+    */
+    const barcodeText =
+        String(
+            product.sku
+            || product.barcode
+            || ""
+        ).trim();
+
+    if (!barcodeText) {
+        throw new Error(
+            "Sản phẩm chưa có mã để in."
+        );
+    }
+
+    const codeText =
+        barcodeText;
+
+    const priceText =
+        formatMoney(
+            product.salePrice
+        ).replace(
+            /\s+/g,
+            ""
+        );
+
+    /*
+        Tên sản phẩm
+    */
     context.fillStyle =
         "#000000";
 
@@ -387,19 +439,13 @@ async function drawProductLabel(product) {
     context.textBaseline =
         "middle";
 
-    const productName =
-        String(
-            product.name
-            || "Sản phẩm"
-        ).trim();
-
     const titleSize =
         fitCanvasText(
             context,
             productName,
-            width - paddingX * 2,
-            64,
-            34
+            width - 90,
+            56,
+            30
         );
 
     context.font =
@@ -408,9 +454,15 @@ async function drawProductLabel(product) {
     context.fillText(
         productName,
         width / 2,
-        78
+        70
     );
 
+    /*
+        Tạo mã vạch Code 128.
+
+        margin tạo vùng trắng hai bên mã,
+        giúp camera nhận đầu và cuối mã tốt hơn.
+    */
     const barcodeCanvas =
         document.createElement(
             "canvas"
@@ -418,22 +470,22 @@ async function drawProductLabel(product) {
 
     JsBarcode(
         barcodeCanvas,
-        product.barcode,
+        barcodeText,
         {
             format:
                 "CODE128",
 
             width:
-                3,
+                4,
 
             height:
-                210,
+                170,
 
             displayValue:
                 false,
 
             margin:
-                0,
+                24,
 
             background:
                 "#ffffff",
@@ -443,75 +495,47 @@ async function drawProductLabel(product) {
         }
     );
 
-    const maxBarcodeWidth =
-        width - 150;
-
-    const maxBarcodeHeight =
-        250;
-
-    const barcodeScale =
-        Math.min(
-            maxBarcodeWidth
-                / barcodeCanvas.width,
-
-            maxBarcodeHeight
-                / barcodeCanvas.height,
-
-            1
-        );
-
     const barcodeWidth =
-        Math.round(
-            barcodeCanvas.width
-            * barcodeScale
-        );
+        700;
 
     const barcodeHeight =
-        Math.round(
-            barcodeCanvas.height
-            * barcodeScale
-        );
+        180;
 
-    context.drawImage(
-        barcodeCanvas,
-
+    const barcodeX =
         Math.round(
             (
                 width
                 - barcodeWidth
             ) / 2
-        ),
+        );
 
-        145,
+    const barcodeY =
+        135;
 
+    context.drawImage(
+        barcodeCanvas,
+        barcodeX,
+        barcodeY,
         barcodeWidth,
         barcodeHeight
     );
 
-    const codeText =
-        String(
-            product.sku
-            || product.barcode
-        ).trim();
-
-    const priceText =
-        formatMoney(
-            product.salePrice
-        );
-
+    /*
+        Mã sản phẩm và giá bán
+    */
     context.textBaseline =
         "alphabetic";
 
     context.font =
-        "700 45px Arial, sans-serif";
+        "700 40px Arial, sans-serif";
 
     context.textAlign =
         "left";
 
     context.fillText(
         codeText,
-        70,
-        535
+        85,
+        515
     );
 
     context.textAlign =
@@ -519,8 +543,8 @@ async function drawProductLabel(product) {
 
     context.fillText(
         priceText,
-        width - 70,
-        535
+        width - 85,
+        515
     );
 
     state.labelBlob =
@@ -532,7 +556,10 @@ async function drawProductLabel(product) {
 async function openLabelPrintModal(
     product
 ) {
-    if (!product?.barcode) {
+    if (
+        !product?.barcode
+        && !product?.sku
+    ) {
         alert(
             "Sản phẩm này chưa có mã vạch."
         );
@@ -574,9 +601,11 @@ async function openLabelPrintModal(
         );
 
         elements.labelPrintMessage.textContent =
-            "Tem đã sẵn sàng. Trên iPhone, chọn Chia sẻ rồi mở bằng Fun Print.";
+            "Tem đã sẵn sàng. Nên in bằng chế độ Văn bản và nồng độ Giữa.";
     } catch (error) {
-        console.error(error);
+        console.error(
+            error
+        );
 
         elements.labelPrintMessage.textContent =
             error.message
@@ -702,7 +731,7 @@ async function shareLabelImage() {
         await downloadLabelImage();
 
         elements.labelPrintMessage.textContent =
-            "Thiết bị chưa hỗ trợ chia sẻ file. Ảnh tem đã được lưu để bạn mở bằng Fun Print.";
+            "Thiết bị chưa hỗ trợ chia sẻ file. Ảnh tem đã được lưu để mở bằng Fun Print.";
     } catch (error) {
         if (
             error?.name
@@ -711,7 +740,9 @@ async function shareLabelImage() {
             return;
         }
 
-        console.error(error);
+        console.error(
+            error
+        );
 
         elements.labelPrintMessage.textContent =
             "Không thể chia sẻ ảnh. Hãy dùng nút Lưu ảnh tem.";
@@ -723,7 +754,9 @@ async function shareLabelImage() {
    THÔNG BÁO LỖI
 ========================================================= */
 
-function showProductError(message) {
+function showProductError(
+    message
+) {
     elements.productFormError.textContent =
         message;
 
@@ -743,7 +776,9 @@ function hideProductError() {
         );
 }
 
-function showCategoryError(message) {
+function showCategoryError(
+    message
+) {
     elements.categoryFormError.textContent =
         message;
 
@@ -884,7 +919,9 @@ function resetImageState() {
     });
 }
 
-function setImageMode(mode) {
+function setImageMode(
+    mode
+) {
     state.imageMode =
         mode;
 
@@ -896,7 +933,6 @@ function setImageMode(mode) {
             (button) => {
                 button.classList.toggle(
                     "active",
-
                     button.dataset.imageMode
                         === mode
                 );
@@ -1003,7 +1039,9 @@ function handleSelectedImageFile(
                 } KB`
         });
     } catch (error) {
-        console.error(error);
+        console.error(
+            error
+        );
 
         state.selectedImageFile =
             null;
@@ -1120,12 +1158,20 @@ async function uploadSelectedImageIfNeeded() {
    DANH MỤC
 ========================================================= */
 
-function findCategoryById(categoryId) {
-    return state.categories.find(
-        (category) => {
-            return category.id === categoryId;
-        }
-    ) || null;
+function findCategoryById(
+    categoryId
+) {
+    return (
+        state.categories.find(
+            (category) => {
+                return (
+                    category.id
+                    === categoryId
+                );
+            }
+        )
+        || null
+    );
 }
 
 function renderCategoryOptions() {
@@ -1141,15 +1187,21 @@ function renderCategoryOptions() {
         </option>
 
         ${state.categories
-            .map((category) => {
-                return `
-                    <option
-                        value="${escapeHtml(category.id)}"
-                    >
-                        ${escapeHtml(category.name)}
-                    </option>
-                `;
-            })
+            .map(
+                (category) => {
+                    return `
+                        <option
+                            value="${escapeHtml(
+                                category.id
+                            )}"
+                        >
+                            ${escapeHtml(
+                                category.name
+                            )}
+                        </option>
+                    `;
+                }
+            )
             .join("")}
     `;
 
@@ -1159,15 +1211,21 @@ function renderCategoryOptions() {
         </option>
 
         ${state.categories
-            .map((category) => {
-                return `
-                    <option
-                        value="${escapeHtml(category.id)}"
-                    >
-                        ${escapeHtml(category.name)}
-                    </option>
-                `;
-            })
+            .map(
+                (category) => {
+                    return `
+                        <option
+                            value="${escapeHtml(
+                                category.id
+                            )}"
+                        >
+                            ${escapeHtml(
+                                category.name
+                            )}
+                        </option>
+                    `;
+                }
+            )
             .join("")}
     `;
 
@@ -1234,7 +1292,9 @@ function closeCategoryModal() {
    MODAL SẢN PHẨM
 ========================================================= */
 
-function openProductModal(product = null) {
+function openProductModal(
+    product = null
+) {
     elements.productForm.reset();
 
     hideProductError();
@@ -1344,7 +1404,10 @@ function openProductModal(product = null) {
             });
         }
 
-        if (product.barcode) {
+        if (
+            product.sku
+            || product.barcode
+        ) {
             elements.barcodePreviewBox
                 .classList.remove(
                     "hidden"
@@ -1354,7 +1417,9 @@ function openProductModal(product = null) {
                 () => {
                     renderBarcode(
                         "#barcodePreview",
-                        product.barcode
+
+                        product.sku
+                        || product.barcode
                     );
                 },
                 0
@@ -1372,7 +1437,9 @@ function openProductModal(product = null) {
 }
 
 function closeProductModal() {
-    if (state.isUploadingImage) {
+    if (
+        state.isUploadingImage
+    ) {
         return;
     }
 
@@ -1389,7 +1456,9 @@ function closeProductModal() {
    LẤY DỮ LIỆU FORM SẢN PHẨM
 ========================================================= */
 
-async function getProductFormData(imageUrl) {
+async function getProductFormData(
+    imageUrl
+) {
     const productId =
         elements.productId.value;
 
@@ -1407,11 +1476,6 @@ async function getProductFormData(imageUrl) {
     let sku =
         elements.sku.value.trim();
 
-    /*
-        Chỉ tự tạo mã khi thêm sản phẩm mới.
-
-        Khi sửa sản phẩm, giữ nguyên mã cũ.
-    */
     if (
         !productId
         && !sku
@@ -1437,6 +1501,9 @@ async function getProductFormData(imageUrl) {
     if (!barcode) {
         barcode =
             generateBarcodeValue();
+
+        elements.barcode.value =
+            barcode;
     }
 
     return {
@@ -1547,6 +1614,11 @@ function renderProducts() {
                         product.image
                         || placeholderImage();
 
+                    const previewCode =
+                        product.sku
+                        || product.barcode
+                        || "";
+
                     return `
                         <tr>
 
@@ -1556,8 +1628,12 @@ function renderProducts() {
 
                                     <img
                                         class="product-image"
-                                        src="${escapeHtml(productImage)}"
-                                        alt="${escapeHtml(product.name)}"
+                                        src="${escapeHtml(
+                                            productImage
+                                        )}"
+                                        alt="${escapeHtml(
+                                            product.name
+                                        )}"
                                         onerror="this.src='${placeholderImage()}'"
                                     >
 
@@ -1594,20 +1670,20 @@ function renderProducts() {
                             <td>
 
                                 ${
-                                    product.barcode
+                                    previewCode
                                         ? `
                                             <div class="table-barcode">
 
                                                 <svg
                                                     class="product-barcode"
                                                     data-barcode="${escapeHtml(
-                                                        product.barcode
+                                                        previewCode
                                                     )}"
                                                 ></svg>
 
                                                 <small>
                                                     ${escapeHtml(
-                                                        product.barcode
+                                                        previewCode
                                                     )}
                                                 </small>
 
@@ -1623,37 +1699,29 @@ function renderProducts() {
                             </td>
 
                             <td>
-
                                 ${escapeHtml(
                                     product.category
                                     || "Chưa phân loại"
                                 )}
-
                             </td>
 
                             <td>
-
                                 ${formatMoney(
                                     product.costPrice
                                 )}
-
                             </td>
 
                             <td>
-
                                 ${formatMoney(
                                     product.salePrice
                                 )}
-
                             </td>
 
                             <td>
-
                                 ${Number(
                                     product.quantity
                                     || 0
                                 )}
-
                             </td>
 
                             <td>
@@ -1692,9 +1760,7 @@ function renderProducts() {
                     `;
                 }
             )
-            .join(
-                ""
-            );
+            .join("");
 
     elements.emptyState
         .classList.toggle(
@@ -1711,7 +1777,9 @@ function renderTableBarcodes() {
             ".product-barcode"
         )
         .forEach(
-            (barcodeElement) => {
+            (
+                barcodeElement
+            ) => {
                 const barcodeValue =
                     barcodeElement
                         .dataset
@@ -1731,7 +1799,9 @@ function renderTableBarcodes() {
    HIỂN THỊ SẢN PHẨM SAU KHI QUÉT
 ========================================================= */
 
-function showScannedProduct(product) {
+function showScannedProduct(
+    product
+) {
     const productImage =
         product.image
         || placeholderImage();
@@ -1741,8 +1811,12 @@ function showScannedProduct(product) {
 
             <img
                 class="scanned-product-image"
-                src="${escapeHtml(productImage)}"
-                alt="${escapeHtml(product.name)}"
+                src="${escapeHtml(
+                    productImage
+                )}"
+                alt="${escapeHtml(
+                    product.name
+                )}"
                 onerror="this.src='${placeholderImage()}'"
             >
 
@@ -1753,7 +1827,9 @@ function showScannedProduct(product) {
                 </span>
 
                 <h2>
-                    ${escapeHtml(product.name)}
+                    ${escapeHtml(
+                        product.name
+                    )}
                 </h2>
 
                 <p>
@@ -1922,6 +1998,12 @@ function getScannerConfig() {
     };
 }
 
+/*
+    Chỉ bật lấy nét liên tục nếu điện thoại hỗ trợ.
+
+    Không còn ép zoom về capabilities.zoom.min,
+    vì iPhone có thể hiểu mức nhỏ nhất là camera 0.5x.
+*/
 async function applyScannerCameraSettings() {
     const video =
         elements.barcodeReader
@@ -1963,19 +2045,16 @@ async function applyScannerCameraSettings() {
             });
         }
 
-        if (
-            capabilities.zoom
-            && Number.isFinite(
-                capabilities.zoom.min
-            )
-        ) {
-            advanced.push({
-                zoom:
-                    capabilities.zoom.min
-            });
-        }
+        /*
+            Không đặt zoom tại đây.
 
-        if (advanced.length > 0) {
+            Trình duyệt sẽ giữ mức camera mặc định.
+            Không ép về 0.5x và cũng không ép về 1x.
+        */
+
+        if (
+            advanced.length > 0
+        ) {
             await track.applyConstraints({
                 advanced
             });
@@ -1988,7 +2067,9 @@ async function applyScannerCameraSettings() {
     }
 }
 
-function findProductByScannedCode(decodedText) {
+function findProductByScannedCode(
+    decodedText
+) {
     const scannedCode =
         normalizeText(
             decodedText
@@ -1999,7 +2080,7 @@ function findProductByScannedCode(decodedText) {
             (product) => {
                 return (
                     normalizeText(
-                        product.barcode
+                        product.sku
                     ) === scannedCode
                 );
             }
@@ -2009,7 +2090,7 @@ function findProductByScannedCode(decodedText) {
             (product) => {
                 return (
                     normalizeText(
-                        product.sku
+                        product.barcode
                     ) === scannedCode
                 );
             }
@@ -2019,8 +2100,12 @@ function findProductByScannedCode(decodedText) {
     );
 }
 
-async function handleScanSuccess(decodedText) {
-    if (state.scanLocked) {
+async function handleScanSuccess(
+    decodedText
+) {
+    if (
+        state.scanLocked
+    ) {
         return;
     }
 
@@ -2036,9 +2121,13 @@ async function handleScanSuccess(decodedText) {
         elements.scannerMessage.textContent =
             `Đã tìm thấy: ${product.name}`;
 
+        /*
+            Tem đang mã hóa SKU ngắn,
+            nên ưu tiên tìm kiếm bằng SKU.
+        */
         elements.searchInput.value =
-            product.barcode
-            || product.sku
+            product.sku
+            || product.barcode
             || "";
 
         renderProducts();
@@ -2082,10 +2171,10 @@ async function handleScanSuccess(decodedText) {
 
 function handleScanFailure() {
     /*
-        Hàm này được gọi liên tục khi camera
-        chưa đọc được mã.
+        Hàm này chạy liên tục khi camera
+        chưa nhận ra mã.
 
-        Không cần hiển thị lỗi mỗi khung hình.
+        Không hiển thị lỗi theo từng khung hình.
     */
 }
 
@@ -2105,6 +2194,12 @@ async function startScanner() {
         getScannerConfig();
 
     try {
+        /*
+            Thử yêu cầu camera sau trước.
+
+            Không truyền zoom nên trình duyệt
+            không bị ép sang mức 0.5x.
+        */
         await state.scanner.start(
             {
                 facingMode: {
@@ -2129,7 +2224,9 @@ async function startScanner() {
         await applyScannerCameraSettings();
 
         return;
-    } catch (exactCameraError) {
+    } catch (
+        exactCameraError
+    ) {
         console.warn(
             "Không mở được camera sau bằng exact:",
             exactCameraError
@@ -2159,7 +2256,9 @@ async function startScanner() {
         await applyScannerCameraSettings();
 
         return;
-    } catch (environmentCameraError) {
+    } catch (
+        environmentCameraError
+    ) {
         console.warn(
             "Không mở được camera environment:",
             environmentCameraError
@@ -2170,7 +2269,9 @@ async function startScanner() {
         const cameras =
             await Html5Qrcode.getCameras();
 
-        if (!cameras.length) {
+        if (
+            !cameras.length
+        ) {
             throw new Error(
                 "Không tìm thấy camera."
             );
@@ -2204,11 +2305,16 @@ async function startScanner() {
                 }
             );
 
+        /*
+            Không tự lấy camera cuối danh sách nữa,
+            vì camera cuối có thể là ống kính 0.5x.
+
+            Nếu nhận diện được camera sau thì dùng camera đó.
+            Nếu không nhận diện được thì dùng camera đầu tiên.
+        */
         const selectedCamera =
             rearCamera
-            || cameras[
-                cameras.length - 1
-            ];
+            || cameras[0];
 
         await state.scanner.start(
             selectedCamera.id,
@@ -2301,7 +2407,9 @@ async function closeScannerModal() {
 async function handleProductSubmit(event) {
     event.preventDefault();
 
-    if (state.isUploadingImage) {
+    if (
+        state.isUploadingImage
+    ) {
         return;
     }
 
@@ -2322,7 +2430,9 @@ async function handleProductSubmit(event) {
                 imageUrl
             );
 
-        if (!productData.name) {
+        if (
+            !productData.name
+        ) {
             throw new Error(
                 "Hãy nhập tên sản phẩm."
             );
@@ -2348,7 +2458,9 @@ async function handleProductSubmit(event) {
         const productId =
             elements.productId.value;
 
-        if (productId) {
+        if (
+            productId
+        ) {
             await updateProduct(
                 productId,
                 productData
@@ -2384,7 +2496,9 @@ async function handleProductSubmit(event) {
    THÊM DANH MỤC
 ========================================================= */
 
-async function handleCategorySubmit(event) {
+async function handleCategorySubmit(
+    event
+) {
     event.preventDefault();
 
     hideCategoryError();
@@ -2401,7 +2515,9 @@ async function handleCategorySubmit(event) {
                 ""
             );
 
-    if (!categoryName) {
+    if (
+        !categoryName
+    ) {
         showCategoryError(
             "Hãy nhập tên danh mục."
         );
@@ -2409,7 +2525,9 @@ async function handleCategorySubmit(event) {
         return;
     }
 
-    if (!categoryPrefix) {
+    if (
+        !categoryPrefix
+    ) {
         showCategoryError(
             "Hãy nhập ký hiệu mã sản phẩm."
         );
@@ -2431,7 +2549,9 @@ async function handleCategorySubmit(event) {
             }
         );
 
-    if (duplicatedName) {
+    if (
+        duplicatedName
+    ) {
         showCategoryError(
             "Danh mục này đã tồn tại."
         );
@@ -2452,7 +2572,9 @@ async function handleCategorySubmit(event) {
             }
         );
 
-    if (duplicatedPrefix) {
+    if (
+        duplicatedPrefix
+    ) {
         showCategoryError(
             "Ký hiệu này đã được sử dụng."
         );
@@ -2506,33 +2628,44 @@ async function handleCategorySubmit(event) {
 
 
 /* =========================================================
-   SỬA, XÓA VÀ IN TEM SẢN PHẨM
+   SỬA, XÓA VÀ IN TEM
 ========================================================= */
 
-function findProductById(productId) {
-    return state.products.find(
-        (product) => {
-            return (
-                product.id
-                === productId
-            );
-        }
-    ) || null;
+function findProductById(
+    productId
+) {
+    return (
+        state.products.find(
+            (product) => {
+                return (
+                    product.id
+                    === productId
+                );
+            }
+        )
+        || null
+    );
 }
 
-async function handleProductTableClick(event) {
+async function handleProductTableClick(
+    event
+) {
     const printButton =
         event.target.closest(
             "[data-print-label]"
         );
 
-    if (printButton) {
+    if (
+        printButton
+    ) {
         const product =
             findProductById(
                 printButton.dataset.printLabel
             );
 
-        if (!product) {
+        if (
+            !product
+        ) {
             alert(
                 "Không tìm thấy sản phẩm."
             );
@@ -2552,13 +2685,17 @@ async function handleProductTableClick(event) {
             "[data-edit]"
         );
 
-    if (editButton) {
+    if (
+        editButton
+    ) {
         const product =
             findProductById(
                 editButton.dataset.edit
             );
 
-        if (!product) {
+        if (
+            !product
+        ) {
             alert(
                 "Không tìm thấy sản phẩm."
             );
@@ -2578,7 +2715,9 @@ async function handleProductTableClick(event) {
             "[data-delete]"
         );
 
-    if (!deleteButton) {
+    if (
+        !deleteButton
+    ) {
         return;
     }
 
@@ -2587,7 +2726,9 @@ async function handleProductTableClick(event) {
             deleteButton.dataset.delete
         );
 
-    if (!product) {
+    if (
+        !product
+    ) {
         alert(
             "Không tìm thấy sản phẩm."
         );
@@ -2600,7 +2741,9 @@ async function handleProductTableClick(event) {
             `Bạn có chắc muốn xóa sản phẩm "${product.name}" không?`
         );
 
-    if (!confirmed) {
+    if (
+        !confirmed
+    ) {
         return;
     }
 
@@ -2635,7 +2778,7 @@ async function handleProductTableClick(event) {
 
 
 /* =========================================================
-   ĐỒNG BỘ LINK ẢNH KHI SỬA INPUT
+   LINK ẢNH
 ========================================================= */
 
 function handleImageUrlChange() {
@@ -2908,7 +3051,7 @@ function bindEvents() {
 
 
 /* =========================================================
-   LẮNG NGHE DỮ LIỆU FIREBASE
+   FIREBASE
 ========================================================= */
 
 function subscribeData() {
@@ -2922,7 +3065,10 @@ function subscribeData() {
                     : [];
 
             state.categories.sort(
-                (firstCategory, secondCategory) => {
+                (
+                    firstCategory,
+                    secondCategory
+                ) => {
                     return String(
                         firstCategory.name
                         || ""
@@ -2950,7 +3096,10 @@ function subscribeData() {
                     : [];
 
             state.products.sort(
-                (firstProduct, secondProduct) => {
+                (
+                    firstProduct,
+                    secondProduct
+                ) => {
                     const firstTime =
                         Number(
                             firstProduct.createdAt
