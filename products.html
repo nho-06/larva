@@ -84,11 +84,10 @@
         }
     </style>
 
-
-<script
-    type="module"
-    src="./assets/js/auth/auth-guard.js?v=50"
-></script>
+    <script
+        type="module"
+        src="./assets/js/auth/auth-guard.js?v=50"
+    ></script>
 </head>
 
 <body>
@@ -743,6 +742,93 @@
 
 </div>
 
+<div
+    class="modal hidden"
+    id="labelPrintModal"
+>
+
+    <div
+        class="modal-backdrop"
+        data-close-label-modal
+    ></div>
+
+    <section class="modal-card label-print-card">
+
+        <div class="modal-header">
+
+            <div>
+                <p class="eyebrow">
+                    TEM 50 × 30 MM
+                </p>
+
+                <h2>
+                    In mã vạch sản phẩm
+                </h2>
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-label-modal
+            >
+                ×
+            </button>
+
+        </div>
+
+        <p class="label-print-help">
+            Tem được tạo đúng tỉ lệ 50 × 30 mm để mở bằng Fun Print.
+        </p>
+
+        <div class="label-preview-shell">
+
+            <canvas
+                id="labelCanvas"
+                width="1000"
+                height="600"
+                aria-label="Xem trước tem mã vạch"
+            ></canvas>
+
+        </div>
+
+        <div class="label-product-summary">
+
+            <strong id="labelProductName"></strong>
+
+            <span id="labelProductMeta"></span>
+
+        </div>
+
+        <p
+            id="labelPrintMessage"
+            class="scanner-message"
+        ></p>
+
+        <div class="form-actions label-print-actions">
+
+            <button
+                class="button button-light"
+                id="downloadLabelButton"
+                type="button"
+            >
+                Lưu ảnh tem
+            </button>
+
+            <button
+                class="button"
+                id="shareLabelButton"
+                type="button"
+            >
+                Chia sẻ sang Fun Print
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
 <script
     type="module"
     src="./assets/js/sidebar.js?v=10"
@@ -750,7 +836,7 @@
 
 <script
     type="module"
-    src="./assets/js/pages/products.js"
+    src="./assets/js/pages/products.js?v=51"
 ></script>
 
 </body>
