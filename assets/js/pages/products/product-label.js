@@ -1,21 +1,25 @@
 /*
-    Quản lý tem mã vạch sản phẩm 50 × 30 mm.
+    Quản lý tem mã vạch sản phẩm 30 × 50 mm (tem dọc).
 
-    Máy in MXW01 thường có độ phân giải khoảng 203 DPI.
+    Tem thực tế của bạn:
+    - Rộng: 30 mm
+    - Dài theo chiều kéo giấy: 50 mm
 
-    Tem 50 × 30 mm tương ứng gần:
-    - Rộng: 400 px
-    - Cao: 240 px
+    Kích thước canvas tương ứng:
+    - Rộng: 240 px
+    - Cao: 400 px
 
-    Barcode được tạo đúng kích thước cuối cùng,
-    không phóng to hoặc thu nhỏ để tránh vạch bị nhòe.
+    Mục tiêu:
+    - Xuất ảnh đúng tỉ lệ tem dọc.
+    - Barcode to, rõ, dễ quét.
+    - Hạn chế khoảng trắng thừa.
 */
 
-const LABEL_WIDTH_PX = 400;
-const LABEL_HEIGHT_PX = 240;
+const LABEL_WIDTH_PX = 240;
+const LABEL_HEIGHT_PX = 400;
 
-const LABEL_WIDTH_MM = 50;
-const LABEL_HEIGHT_MM = 30;
+const LABEL_WIDTH_MM = 30;
+const LABEL_HEIGHT_MM = 50;
 
 
 /* =========================================================
@@ -49,6 +53,7 @@ function fitCanvasText(
     return fontSize;
 }
 
+
 function canvasToBlob(canvas) {
     return new Promise(
         (resolve, reject) => {
@@ -72,6 +77,7 @@ function canvasToBlob(canvas) {
     );
 }
 
+
 function normalizeFilePart(value) {
     return String(
         value || "san-pham"
@@ -91,6 +97,7 @@ function normalizeFilePart(value) {
         );
 }
 
+
 function normalizePriceText(
     value,
     formatMoney
@@ -109,17 +116,10 @@ function normalizePriceText(
         );
 }
 
+
 function getBarcodeText(product) {
     /*
-        Ưu tiên SKU ngắn để barcode dễ quét.
-
-        Ví dụ:
-        MK007
-        H001
-        BN015
-
-        Không ưu tiên chuỗi barcode dài kiểu:
-        LRV-1761234567890-123
+        Ưu tiên SKU ngắn để barcode dễ quét hơn.
     */
     return String(
         product?.sku
@@ -127,6 +127,7 @@ function getBarcodeText(product) {
         || ""
     ).trim();
 }
+
 
 function assertDependencies(
     elements,
@@ -183,10 +184,7 @@ async function drawProductLabel({
     }
 
     /*
-        Luôn đặt đúng kích thước cuối cùng.
-
-        Việc này tránh trường hợp canvas bị giữ kích thước
-        1000 × 600 từ phiên bản cũ.
+        Đặt đúng kích thước tem dọc 30 × 50 mm.
     */
     canvas.width =
         LABEL_WIDTH_PX;
@@ -208,12 +206,6 @@ async function drawProductLabel({
         );
     }
 
-    /*
-        Không làm mịn hình ảnh barcode.
-
-        Nếu bật image smoothing, trình duyệt có thể tạo
-        các điểm xám ở rìa vạch, làm máy quét khó nhận.
-    */
     context.imageSmoothingEnabled =
         false;
 
@@ -264,9 +256,9 @@ async function drawProductLabel({
         fitCanvasText(
             context,
             productName,
-            350,
-            25,
-            15,
+            210,
+            26,
+            14,
             "700"
         );
 
@@ -276,12 +268,12 @@ async function drawProductLabel({
     context.fillText(
         productName,
         LABEL_WIDTH_PX / 2,
-        25
+        32
     );
 
 
     /* =====================================================
-       BARCODE CODE 128
+       BARCODE
     ===================================================== */
 
     const barcodeCanvas =
@@ -289,12 +281,6 @@ async function drawProductLabel({
             "canvas"
         );
 
-    /*
-        width phải là số nguyên.
-
-        width: 3 nghĩa là module nhỏ nhất rộng 3 pixel.
-        Barcode sẽ sắc hơn và dễ quét hơn width thập phân.
-    */
     window.JsBarcode(
         barcodeCanvas,
         barcodeText,
@@ -302,26 +288,23 @@ async function drawProductLabel({
             format:
                 "CODE128",
 
+            /*
+                Để barcode đủ to và dễ quét.
+            */
             width:
-                3,
+                2,
 
             height:
-                92,
+                145,
 
             displayValue:
                 false,
 
-            /*
-                Quiet zone hai bên barcode.
-
-                Máy quét cần khoảng trắng để xác định
-                điểm bắt đầu và kết thúc barcode.
-            */
             marginLeft:
-                18,
+                10,
 
             marginRight:
-                18,
+                10,
 
             marginTop:
                 0,
@@ -339,10 +322,10 @@ async function drawProductLabel({
 
     if (
         barcodeCanvas.width
-        > LABEL_WIDTH_PX - 20
+        > LABEL_WIDTH_PX - 8
     ) {
         throw new Error(
-            "Mã sản phẩm quá dài để in rõ trên tem 50 × 30 mm."
+            "Mã sản phẩm quá dài để in rõ trên tem 30 × 50 mm."
         );
     }
 
@@ -355,14 +338,8 @@ async function drawProductLabel({
         );
 
     const barcodeY =
-        55;
+        78;
 
-    /*
-        Chỉ truyền tọa độ X và Y.
-
-        Không truyền width/height vào drawImage,
-        vì truyền kích thước sẽ làm barcode bị co giãn.
-    */
     context.drawImage(
         barcodeCanvas,
         barcodeX,
@@ -371,11 +348,14 @@ async function drawProductLabel({
 
 
     /* =====================================================
-       MÃ SẢN PHẨM VÀ GIÁ
+       SKU / BARCODE TEXT NHỎ DƯỚI MÃ
     ===================================================== */
 
     context.fillStyle =
         "#000000";
+
+    context.textAlign =
+        "center";
 
     context.textBaseline =
         "alphabetic";
@@ -383,13 +363,27 @@ async function drawProductLabel({
     context.font =
         "700 18px Arial, sans-serif";
 
+    context.fillText(
+        barcodeText,
+        LABEL_WIDTH_PX / 2,
+        255
+    );
+
+
+    /* =====================================================
+       MÃ SP VÀ GIÁ Ở DƯỚI
+    ===================================================== */
+
+    context.font =
+        "700 20px Arial, sans-serif";
+
     context.textAlign =
         "left";
 
     context.fillText(
         barcodeText,
-        22,
-        218
+        14,
+        382
     );
 
     context.textAlign =
@@ -397,8 +391,8 @@ async function drawProductLabel({
 
     context.fillText(
         priceText,
-        LABEL_WIDTH_PX - 22,
-        218
+        LABEL_WIDTH_PX - 14,
+        382
     );
 
     return canvasToBlob(
@@ -421,14 +415,9 @@ export function createProductLabelController({
     );
 
     const state = {
-        product:
-            null,
-
-        blob:
-            null,
-
-        isGenerating:
-            false
+        product: null,
+        blob: null,
+        isGenerating: false
     };
 
 
@@ -524,7 +513,7 @@ export function createProductLabelController({
                 });
 
             setMessage(
-                "Tem đã sẵn sàng. Trong Fun Print hãy chọn Nguyên văn, khổ 50 × 30 mm."
+                "Tem đã sẵn sàng. Trong Fun Print hãy chọn giấy dán nhãn có khe hở, khổ 30 × 50 mm, chế độ Nguyên văn."
             );
         } catch (error) {
             console.error(
@@ -619,9 +608,7 @@ export function createProductLabelController({
 
         const file =
             new File(
-                [
-                    state.blob
-                ],
+                [state.blob],
                 getFileName(),
                 {
                     type:
@@ -638,22 +625,16 @@ export function createProductLabelController({
                     === "function"
 
                 && navigator.canShare({
-                    files: [
-                        file
-                    ]
+                    files: [file]
                 });
 
             if (canShareFile) {
                 await navigator.share({
                     title:
                         "Tem mã vạch Larva",
-
                     text:
-                        "Tem mã vạch 50 × 30 mm",
-
-                    files: [
-                        file
-                    ]
+                        "Tem mã vạch 30 × 50 mm",
+                    files: [file]
                 });
 
                 return;
