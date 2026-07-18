@@ -26,11 +26,11 @@ import {
 
 import {
     createProductLabelController
-} from "./products/product-label.js";
+} from "./products/product-label.js?v=62";
 
 import {
     createProductScannerController
-} from "./products/product-scanner.js";
+} from "./products/product-scanner.js?v=62";
 
 
 /* =========================================================
@@ -223,12 +223,6 @@ const elements = {
             "#scannedProductBox"
         ),
 
-    /*
-        Các phần điều khiển camera:
-        - Thanh zoom
-        - Hiển thị mức zoom
-        - Nút quay về 1x
-    */
     cameraControls:
         document.querySelector(
             "#cameraControls"
@@ -384,7 +378,8 @@ function renderBarcode(
             target,
             barcodeValue,
             {
-                format: "CODE128",
+                format:
+                    "CODE128",
 
                 width:
                     compact
@@ -396,7 +391,8 @@ function renderBarcode(
                         ? 42
                         : 80,
 
-                displayValue: true,
+                displayValue:
+                    true,
 
                 fontSize:
                     compact
@@ -665,9 +661,14 @@ function handleImageUrlInput() {
     }
 
     showImagePreview({
-        url: imageUrl,
-        name: "Ảnh từ đường dẫn",
-        type: "Link ảnh"
+        url:
+            imageUrl,
+
+        name:
+            "Ảnh từ đường dẫn",
+
+        type:
+            "Link ảnh"
     });
 }
 
@@ -837,8 +838,6 @@ async function uploadSelectedImageIfNeeded() {
             "Lưu sản phẩm";
     }
 }
-
-
 /* =========================================================
    DANH MỤC
 ========================================================= */
@@ -1256,6 +1255,8 @@ async function getProductFormData(
             elements.description.value.trim()
     };
 }
+
+
 /* =========================================================
    LỌC SẢN PHẨM
 ========================================================= */
@@ -1515,8 +1516,6 @@ function renderTableBarcodes() {
             }
         );
 }
-
-
 /* =========================================================
    HIỂN THỊ SẢN PHẨM SAU KHI QUÉT
 ========================================================= */
@@ -2101,8 +2100,6 @@ function handleImageUrlChange() {
 
     handleImageUrlInput();
 }
-
-
 /* =========================================================
    SỰ KIỆN MODAL
 ========================================================= */

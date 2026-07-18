@@ -25,7 +25,7 @@
 
     <link
         rel="stylesheet"
-        href="./assets/css/main.css?v=59"
+        href="./assets/css/main.css?v=62"
     >
 
     <!-- Tạo mã vạch Code 128 -->
@@ -74,13 +74,10 @@
         }
 
         /*
-            Tem ngang 50 × 30 mm.
+            Canvas thật là 400 × 240 px.
 
-            Canvas thật:
-            400 × 240 px.
-
-            CSS chỉ giới hạn kích thước hiển thị,
-            không thay đổi kích thước ảnh xuất ra.
+            CSS này chỉ thay đổi kích thước xem trước
+            trong modal, không thay đổi ảnh PNG lưu về.
         */
         #labelCanvas {
             display: block;
@@ -872,8 +869,7 @@
         </div>
 
         <p class="label-print-help">
-            Tem được tạo theo chiều ngang 50 × 30 mm,
-            độ phân giải 203 DPI.
+            Tem được tạo theo chiều ngang 50 × 30 mm.
         </p>
 
         <div class="label-preview-shell">
@@ -932,7 +928,7 @@
 
 <script
     type="module"
-    src="./assets/js/pages/products.js?v=59"
+    src="./assets/js/pages/products.js?v=62"
 ></script>
 
 </body>
