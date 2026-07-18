@@ -349,7 +349,7 @@ async function drawProductLabel({
         "alphabetic";
 
     context.font =
-        "700 27px Arial, sans-serif";
+        "700 40px Arial, sans-serif";
 
     context.textAlign =
         "left";
