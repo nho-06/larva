@@ -1,29 +1,26 @@
 /*
-    Quản lý tem mã vạch sản phẩm 30 × 50 mm.
+    Tạo tem mã vạch nằm ngang 50 × 30 mm.
 
-    Tem thực tế:
-    - Rộng: 30 mm
-    - Cao theo chiều kéo giấy: 50 mm
-
-    Máy in nhiệt 203 DPI:
-    - 30 mm ≈ 240 px
+    Độ phân giải máy in:
+    - 203 DPI
     - 50 mm ≈ 400 px
+    - 30 mm ≈ 240 px
 
-    Ảnh PNG được chèn metadata 203 DPI
-    để ứng dụng in nhận đúng kích thước vật lý.
+    Ảnh PNG được gắn metadata 203 DPI để hạn chế
+    Fun Print tự hiểu sai kích thước ảnh.
 */
 
-const LABEL_WIDTH_PX = 240;
-const LABEL_HEIGHT_PX = 400;
+const LABEL_WIDTH_PX = 400;
+const LABEL_HEIGHT_PX = 240;
 
-const LABEL_WIDTH_MM = 30;
-const LABEL_HEIGHT_MM = 50;
+const LABEL_WIDTH_MM = 50;
+const LABEL_HEIGHT_MM = 30;
 
 const LABEL_DPI = 203;
 
 
 /* =========================================================
-   HÀM HỖ TRỢ VĂN BẢN
+   HÀM XỬ LÝ VĂN BẢN
 ========================================================= */
 
 function fitCanvasText(
@@ -34,28 +31,20 @@ function fitCanvasText(
     minSize,
     weight = "700"
 ) {
-    let fontSize =
-        startSize;
+    let fontSize = startSize;
 
-    while (
-        fontSize > minSize
-    ) {
+    while (fontSize > minSize) {
         context.font =
             `${weight} ${fontSize}px Arial, sans-serif`;
 
-        const measuredWidth =
-            context.measureText(
-                text
-            ).width;
-
         if (
-            measuredWidth <= maxWidth
+            context.measureText(text).width
+            <= maxWidth
         ) {
             break;
         }
 
-        fontSize -=
-            1;
+        fontSize -= 1;
     }
 
     return fontSize;
@@ -64,8 +53,7 @@ function fitCanvasText(
 
 function normalizeFilePart(value) {
     return String(
-        value
-        || "san-pham"
+        value || "san-pham"
     )
         .trim()
         .replace(
@@ -88,10 +76,7 @@ function normalizePriceText(
     formatMoney
 ) {
     return String(
-        formatMoney(
-            value
-        )
-        || ""
+        formatMoney(value) || ""
     )
         .replace(
             /\s+/g,
@@ -104,16 +89,15 @@ function normalizePriceText(
 }
 
 
-function getBarcodeText(
-    product
-) {
+function getBarcodeText(product) {
     /*
-        Ưu tiên SKU ngắn để mã dễ quét.
-
-        Ví dụ:
+        Ưu tiên SKU ngắn như:
         MK005
-        H001
+        Q001
         GB012
+
+        SKU ngắn giúp barcode ít vạch,
+        to hơn và dễ quét hơn.
     */
     return String(
         product?.sku
@@ -124,7 +108,7 @@ function getBarcodeText(
 
 
 /* =========================================================
-   KIỂM TRA PHỤ THUỘC
+   KIỂM TRA THÀNH PHẦN CẦN THIẾT
 ========================================================= */
 
 function assertDependencies(
@@ -168,22 +152,18 @@ function assertDependencies(
 
 
 /* =========================================================
-   CRC32 CHO PNG
+   CRC32 CHO FILE PNG
 ========================================================= */
 
-function calculateCrc32(
-    bytes
-) {
-    let crc =
-        0xffffffff;
+function calculateCrc32(bytes) {
+    let crc = 0xffffffff;
 
     for (
         let index = 0;
         index < bytes.length;
         index += 1
     ) {
-        crc ^=
-            bytes[index];
+        crc ^= bytes[index];
 
         for (
             let bit = 0;
@@ -191,9 +171,7 @@ function calculateCrc32(
             bit += 1
         ) {
             crc =
-                (
-                    crc >>> 1
-                )
+                (crc >>> 1)
                 ^ (
                     crc & 1
                         ? 0xedb88320
@@ -209,14 +187,12 @@ function calculateCrc32(
 
 
 /* =========================================================
-   THÊM DPI VÀO ẢNH PNG
+   TẠO CHUNK pHYs CHỨA DPI
 ========================================================= */
 
-function createPhysChunk(
-    dpi
-) {
+function createPhysChunk(dpi) {
     /*
-        pHYs lưu số pixel trên mét.
+        PNG lưu pixel trên mét.
 
         203 DPI:
         203 / 0.0254 ≈ 7992 pixel/mét.
@@ -227,17 +203,14 @@ function createPhysChunk(
         );
 
     /*
-        Cấu trúc chunk:
-
-        4 byte: độ dài dữ liệu
-        4 byte: tên pHYs
-        9 byte: dữ liệu
-        4 byte: CRC
+        Cấu trúc:
+        - 4 byte độ dài
+        - 4 byte tên pHYs
+        - 9 byte dữ liệu
+        - 4 byte CRC
     */
     const chunk =
-        new Uint8Array(
-            21
-        );
+        new Uint8Array(21);
 
     const view =
         new DataView(
@@ -254,7 +227,7 @@ function createPhysChunk(
     );
 
     /*
-        Tên chunk "pHYs".
+        Tên chunk: pHYs
     */
     chunk.set(
         [
@@ -267,7 +240,7 @@ function createPhysChunk(
     );
 
     /*
-        Pixel/mét theo chiều X.
+        Pixel/mét chiều ngang.
     */
     view.setUint32(
         8,
@@ -276,7 +249,7 @@ function createPhysChunk(
     );
 
     /*
-        Pixel/mét theo chiều Y.
+        Pixel/mét chiều dọc.
     */
     view.setUint32(
         12,
@@ -285,14 +258,10 @@ function createPhysChunk(
     );
 
     /*
-        1 = đơn vị mét.
+        Đơn vị là mét.
     */
-    chunk[16] =
-        1;
+    chunk[16] = 1;
 
-    /*
-        CRC tính từ tên chunk và dữ liệu.
-    */
     const crc =
         calculateCrc32(
             chunk.slice(
@@ -311,15 +280,11 @@ function createPhysChunk(
 }
 
 
-function findFirstPngChunkEnd(
-    source
-) {
-    /*
-        PNG bắt đầu bằng 8 byte signature.
+/* =========================================================
+   TÌM VỊ TRÍ SAU CHUNK IHDR
+========================================================= */
 
-        Chunk đầu tiên thường là IHDR.
-        Ta chèn pHYs ngay sau IHDR để ứng dụng dễ nhận.
-    */
+function findFirstPngChunkEnd(source) {
     const view =
         new DataView(
             source.buffer,
@@ -327,19 +292,21 @@ function findFirstPngChunkEnd(
             source.byteLength
         );
 
+    /*
+        Chunk đầu tiên bắt đầu sau signature PNG 8 byte.
+
+        8 byte signature
+        + 4 byte length
+        + 4 byte type
+        + dữ liệu IHDR
+        + 4 byte CRC
+    */
     const firstChunkLength =
         view.getUint32(
             8,
             false
         );
 
-    /*
-        8 byte signature
-        + 4 byte length
-        + 4 byte type
-        + dữ liệu
-        + 4 byte CRC
-    */
     return (
         8
         + 4
@@ -350,6 +317,10 @@ function findFirstPngChunkEnd(
 }
 
 
+/* =========================================================
+   CHÈN METADATA DPI VÀO PNG
+========================================================= */
+
 function addPngDpiMetadata(
     pngArrayBuffer,
     dpi = LABEL_DPI
@@ -359,9 +330,6 @@ function addPngDpiMetadata(
             pngArrayBuffer
         );
 
-    /*
-        Kiểm tra PNG signature.
-    */
     const pngSignature = [
         0x89,
         0x50,
@@ -373,12 +341,9 @@ function addPngDpiMetadata(
         0x0a
     ];
 
-    const isPng =
+    const isValidPng =
         pngSignature.every(
-            (
-                byte,
-                index
-            ) => {
+            (byte, index) => {
                 return (
                     source[index]
                     === byte
@@ -386,18 +351,14 @@ function addPngDpiMetadata(
             }
         );
 
-    if (
-        !isPng
-    ) {
+    if (!isValidPng) {
         throw new Error(
-            "Dữ liệu ảnh không phải PNG hợp lệ."
+            "Dữ liệu ảnh PNG không hợp lệ."
         );
     }
 
     const physChunk =
-        createPhysChunk(
-            dpi
-        );
+        createPhysChunk(dpi);
 
     const insertPosition =
         findFirstPngChunkEnd(
@@ -436,24 +397,15 @@ function addPngDpiMetadata(
 
 
 /* =========================================================
-   CHUYỂN CANVAS THÀNH PNG CÓ DPI
+   CHUYỂN CANVAS THÀNH PNG 203 DPI
 ========================================================= */
 
-function canvasToBlob(
-    canvas
-) {
+function canvasToBlob(canvas) {
     return new Promise(
-        (
-            resolve,
-            reject
-        ) => {
+        (resolve, reject) => {
             canvas.toBlob(
-                async (
-                    originalBlob
-                ) => {
-                    if (
-                        !originalBlob
-                    ) {
+                async (originalBlob) => {
+                    if (!originalBlob) {
                         reject(
                             new Error(
                                 "Không thể tạo ảnh tem."
@@ -474,26 +426,17 @@ function canvasToBlob(
                                 LABEL_DPI
                             );
 
-                        const finalBlob =
+                        resolve(
                             new Blob(
-                                [
-                                    pngWithDpi
-                                ],
+                                [pngWithDpi],
                                 {
                                     type:
                                         "image/png"
                                 }
-                            );
-
-                        resolve(
-                            finalBlob
+                            )
                         );
-                    } catch (
-                        error
-                    ) {
-                        reject(
-                            error
-                        );
+                    } catch (error) {
+                        reject(error);
                     }
                 },
                 "image/png",
@@ -505,7 +448,7 @@ function canvasToBlob(
 
 
 /* =========================================================
-   TẠO ẢNH TEM
+   TẠO HÌNH TEM 50 × 30 MM
 ========================================================= */
 
 async function drawProductLabel({
@@ -514,20 +457,17 @@ async function drawProductLabel({
     formatMoney
 }) {
     const barcodeText =
-        getBarcodeText(
-            product
-        );
+        getBarcodeText(product);
 
-    if (
-        !barcodeText
-    ) {
+    if (!barcodeText) {
         throw new Error(
             "Sản phẩm chưa có mã để in."
         );
     }
 
     /*
-        Kích thước ảnh đúng 30 × 50 mm ở 203 DPI.
+        Canvas nằm ngang:
+        rộng 400 px × cao 240 px.
     */
     canvas.width =
         LABEL_WIDTH_PX;
@@ -539,21 +479,19 @@ async function drawProductLabel({
         canvas.getContext(
             "2d",
             {
-                alpha:
-                    false
+                alpha: false
             }
         );
 
-    if (
-        !context
-    ) {
+    if (!context) {
         throw new Error(
             "Trình duyệt không hỗ trợ tạo ảnh tem."
         );
     }
 
     /*
-        Không làm mịn barcode.
+        Không làm mịn barcode để mép vạch
+        giữ nguyên màu đen trắng.
     */
     context.imageSmoothingEnabled =
         false;
@@ -605,9 +543,9 @@ async function drawProductLabel({
         fitCanvasText(
             context,
             productName,
-            LABEL_WIDTH_PX - 24,
-            25,
-            13,
+            LABEL_WIDTH_PX - 40,
+            27,
+            15,
             "700"
         );
 
@@ -617,12 +555,12 @@ async function drawProductLabel({
     context.fillText(
         productName,
         LABEL_WIDTH_PX / 2,
-        32
+        26
     );
 
 
     /* =====================================================
-       TẠO BARCODE CODE 128
+       BARCODE CODE 128
     ===================================================== */
 
     const barcodeCanvas =
@@ -638,25 +576,27 @@ async function drawProductLabel({
                 "CODE128",
 
             /*
-                Module rộng 2 px.
-
-                Với SKU ngắn, barcode vừa tem 30 mm
-                và vẫn đủ rõ để quét.
+                Module rộng 3 px giúp barcode rõ,
+                phù hợp với SKU ngắn.
             */
             width:
-                2,
+                3,
 
             height:
-                145,
+                112,
 
             displayValue:
                 false,
 
+            /*
+                Khoảng trắng hai bên barcode
+                để camera xác định đầu và cuối mã.
+            */
             marginLeft:
-                10,
+                18,
 
             marginRight:
-                10,
+                18,
 
             marginTop:
                 0,
@@ -674,10 +614,10 @@ async function drawProductLabel({
 
     if (
         barcodeCanvas.width
-        > LABEL_WIDTH_PX - 8
+        > LABEL_WIDTH_PX - 20
     ) {
         throw new Error(
-            "Mã sản phẩm quá dài để in rõ trên tem 30 × 50 mm."
+            "Mã sản phẩm quá dài để in rõ trên tem 50 × 30 mm."
         );
     }
 
@@ -689,11 +629,11 @@ async function drawProductLabel({
             ) / 2
         );
 
-    const barcodeY =
-        76;
+    const barcodeY = 56;
 
     /*
-        Không co giãn barcode.
+        Không truyền chiều rộng và chiều cao,
+        tránh barcode bị trình duyệt kéo giãn.
     */
     context.drawImage(
         barcodeCanvas,
@@ -703,31 +643,14 @@ async function drawProductLabel({
 
 
     /* =====================================================
-       MÃ DƯỚI BARCODE
+       SKU VÀ GIÁ BÁN
     ===================================================== */
 
     context.fillStyle =
         "#000000";
 
-    context.textAlign =
-        "center";
-
     context.textBaseline =
         "alphabetic";
-
-    context.font =
-        "700 18px Arial, sans-serif";
-
-    context.fillText(
-        barcodeText,
-        LABEL_WIDTH_PX / 2,
-        253
-    );
-
-
-    /* =====================================================
-       SKU VÀ GIÁ Ở DƯỚI TEM
-    ===================================================== */
 
     context.font =
         "700 19px Arial, sans-serif";
@@ -737,8 +660,8 @@ async function drawProductLabel({
 
     context.fillText(
         barcodeText,
-        13,
-        381
+        20,
+        220
     );
 
     context.textAlign =
@@ -746,18 +669,16 @@ async function drawProductLabel({
 
     context.fillText(
         priceText,
-        LABEL_WIDTH_PX - 13,
-        381
+        LABEL_WIDTH_PX - 20,
+        220
     );
 
-    return canvasToBlob(
-        canvas
-    );
+    return canvasToBlob(canvas);
 }
 
 
 /* =========================================================
-   CONTROLLER TEM
+   CONTROLLER TEM SẢN PHẨM
 ========================================================= */
 
 export function createProductLabelController({
@@ -770,20 +691,13 @@ export function createProductLabelController({
     );
 
     const state = {
-        product:
-            null,
-
-        blob:
-            null,
-
-        isGenerating:
-            false
+        product: null,
+        blob: null,
+        isGenerating: false
     };
 
 
-    function setMessage(
-        message
-    ) {
+    function setMessage(message) {
         if (
             elements.labelPrintMessage
         ) {
@@ -795,8 +709,7 @@ export function createProductLabelController({
 
     function getFileName() {
         const product =
-            state.product
-            || {};
+            state.product || {};
 
         const code =
             normalizeFilePart(
@@ -813,23 +726,15 @@ export function createProductLabelController({
     }
 
 
-    async function open(
-        product
-    ) {
-        if (
-            state.isGenerating
-        ) {
+    async function open(product) {
+        if (state.isGenerating) {
             return;
         }
 
         const barcodeText =
-            getBarcodeText(
-                product
-            );
+            getBarcodeText(product);
 
-        if (
-            !barcodeText
-        ) {
+        if (!barcodeText) {
             window.alert(
                 "Sản phẩm này chưa có mã để in."
             );
@@ -866,7 +771,7 @@ export function createProductLabelController({
         }
 
         setMessage(
-            "Đang tạo ảnh tem 30 × 50 mm..."
+            "Đang tạo ảnh tem 50 × 30 mm..."
         );
 
         elements.labelPrintModal
@@ -884,11 +789,9 @@ export function createProductLabelController({
                 });
 
             setMessage(
-                "Tem 30 × 50 mm, 203 DPI đã sẵn sàng. Trong Fun Print chọn giấy dán nhãn có khe hở và Nguyên văn."
+                "Tem ngang 50 × 30 mm, 203 DPI đã sẵn sàng. Trong Fun Print chọn giấy dán nhãn có khe hở, hướng ngang và Nguyên văn."
             );
-        } catch (
-            error
-        ) {
+        } catch (error) {
             console.error(
                 "Không thể tạo tem:",
                 error
@@ -915,9 +818,7 @@ export function createProductLabelController({
         state.isGenerating =
             false;
 
-        setMessage(
-            ""
-        );
+        setMessage("");
 
         elements.labelPrintModal
             .classList.add(
@@ -927,9 +828,7 @@ export function createProductLabelController({
 
 
     async function download() {
-        if (
-            !state.blob
-        ) {
+        if (!state.blob) {
             setMessage(
                 "Ảnh tem chưa được tạo."
             );
@@ -958,7 +857,6 @@ export function createProductLabelController({
         );
 
         link.click();
-
         link.remove();
 
         window.setTimeout(
@@ -973,9 +871,7 @@ export function createProductLabelController({
 
 
     async function share() {
-        if (
-            !state.blob
-        ) {
+        if (!state.blob) {
             setMessage(
                 "Ảnh tem chưa được tạo."
             );
@@ -985,9 +881,7 @@ export function createProductLabelController({
 
         const file =
             new File(
-                [
-                    state.blob
-                ],
+                [state.blob],
                 getFileName(),
                 {
                     type:
@@ -1004,24 +898,19 @@ export function createProductLabelController({
                     === "function"
 
                 && navigator.canShare({
-                    files: [
-                        file
-                    ]
+                    files: [file]
                 });
 
-            if (
-                canShareFile
-            ) {
+            if (canShareFile) {
                 await navigator.share({
                     title:
                         "Tem mã vạch Larva",
 
                     text:
-                        "Tem mã vạch 30 × 50 mm, 203 DPI",
+                        "Tem mã vạch ngang 50 × 30 mm, 203 DPI",
 
-                    files: [
-                        file
-                    ]
+                    files:
+                        [file]
                 });
 
                 return;
@@ -1032,9 +921,7 @@ export function createProductLabelController({
             setMessage(
                 "Thiết bị không hỗ trợ chia sẻ file. Ảnh tem đã được lưu."
             );
-        } catch (
-            error
-        ) {
+        } catch (error) {
             if (
                 error?.name
                 === "AbortError"
@@ -1060,9 +947,7 @@ export function createProductLabelController({
                 "[data-close-label-modal]"
             )
             .forEach(
-                (
-                    element
-                ) => {
+                (element) => {
                     element.addEventListener(
                         "click",
                         close

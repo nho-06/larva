@@ -25,7 +25,7 @@
 
     <link
         rel="stylesheet"
-        href="./assets/css/main.css"
+        href="./assets/css/main.css?v=59"
     >
 
     <!-- Tạo mã vạch Code 128 -->
@@ -71,6 +71,34 @@
             margin: 6px 0 0;
             color: #777;
             font-size: 13px;
+        }
+
+        /*
+            Tem ngang 50 × 30 mm.
+
+            Canvas thật:
+            400 × 240 px.
+
+            CSS chỉ giới hạn kích thước hiển thị,
+            không thay đổi kích thước ảnh xuất ra.
+        */
+        #labelCanvas {
+            display: block;
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            margin: 0 auto;
+            background: #ffffff;
+        }
+
+        .label-preview-shell {
+            display: flex;
+            justify-content: center;
+            overflow: auto;
+            padding: 16px;
+            border: 1px solid #eadde3;
+            border-radius: 14px;
+            background: #f8f4f6;
         }
 
         @media (max-width: 640px) {
@@ -198,6 +226,11 @@
     </main>
 
 </div>
+
+
+<!-- =====================================================
+     MODAL THÊM / SỬA SẢN PHẨM
+===================================================== -->
 
 <div
     class="modal hidden"
@@ -583,6 +616,11 @@
 
 </div>
 
+
+<!-- =====================================================
+     MODAL THÊM DANH MỤC
+===================================================== -->
+
 <div
     class="modal hidden"
     id="categoryModal"
@@ -690,6 +728,11 @@
 
 </div>
 
+
+<!-- =====================================================
+     MODAL QUÉT MÃ
+===================================================== -->
+
 <div
     class="modal hidden"
     id="scannerModal"
@@ -732,48 +775,50 @@
         </p>
 
         <div id="barcodeReader"></div>
+
         <div
-    id="cameraControls"
-    class="camera-controls hidden"
->
-
-    <div class="camera-zoom-row">
-
-        <button
-            id="resetCameraZoomButton"
-            class="button button-light camera-zoom-reset"
-            type="button"
+            id="cameraControls"
+            class="camera-controls hidden"
         >
-            1x
-        </button>
 
-        <label class="camera-zoom-field">
+            <div class="camera-zoom-row">
 
-            <span>
-                Thu phóng:
-                <strong id="cameraZoomValue">
+                <button
+                    id="resetCameraZoomButton"
+                    class="button button-light camera-zoom-reset"
+                    type="button"
+                >
                     1x
-                </strong>
-            </span>
+                </button>
 
-            <input
-                id="cameraZoomInput"
-                type="range"
-                min="1"
-                max="1"
-                step="0.1"
-                value="1"
-            >
+                <label class="camera-zoom-field">
 
-        </label>
+                    <span>
+                        Thu phóng:
 
-    </div>
+                        <strong id="cameraZoomValue">
+                            1.0x
+                        </strong>
+                    </span>
 
-    <p class="camera-focus-help">
-        Chạm vào hình camera để lấy nét.
-    </p>
+                    <input
+                        id="cameraZoomInput"
+                        type="range"
+                        min="1"
+                        max="1"
+                        step="0.1"
+                        value="1"
+                    >
 
-</div>
+                </label>
+
+            </div>
+
+            <p class="camera-focus-help">
+                Chạm vào hình camera để lấy nét.
+            </p>
+
+        </div>
 
         <p
             id="scannerMessage"
@@ -783,6 +828,11 @@
     </section>
 
 </div>
+
+
+<!-- =====================================================
+     MODAL IN TEM NGANG 50 × 30 MM
+===================================================== -->
 
 <div
     class="modal hidden"
@@ -799,13 +849,15 @@
         <div class="modal-header">
 
             <div>
+
                 <p class="eyebrow">
-                    TEM 30 × 50 MM
+                    TEM NGANG 50 × 30 MM
                 </p>
 
                 <h2>
                     In mã vạch sản phẩm
                 </h2>
+
             </div>
 
             <button
@@ -820,16 +872,17 @@
         </div>
 
         <p class="label-print-help">
-            Tem được tạo theo chiều dọc 30 × 50 mm để mở bằng Fun Print.
+            Tem được tạo theo chiều ngang 50 × 30 mm,
+            độ phân giải 203 DPI.
         </p>
 
         <div class="label-preview-shell">
 
             <canvas
                 id="labelCanvas"
-                width="240"
-                height="400"
-                aria-label="Xem trước tem mã vạch"
+                width="400"
+                height="240"
+                aria-label="Xem trước tem mã vạch ngang 50 × 30 mm"
             ></canvas>
 
         </div>
@@ -871,6 +924,7 @@
 
 </div>
 
+
 <script
     type="module"
     src="./assets/js/sidebar.js?v=10"
@@ -878,7 +932,7 @@
 
 <script
     type="module"
-    src="./assets/js/pages/products.js?v=58"
+    src="./assets/js/pages/products.js?v=59"
 ></script>
 
 </body>
