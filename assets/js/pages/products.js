@@ -32,6 +32,7 @@ import {
     createProductScannerController
 } from "./products/product-scanner.js?v=63";
 
+
 /* =========================================================
    STATE
 ========================================================= */
@@ -2427,7 +2428,3 @@ function initializeProductsPage() {
 }
 
 initializeProductsPage();
-<script
-    type="module"
-    src="./assets/js/pages/products.js?v=63"
-></script>

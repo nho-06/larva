@@ -1,9 +1,7 @@
 /*
     Quản lý tem mã vạch sản phẩm ngang 50 × 30 mm.
 
-    Máy in MXW01 thường dùng độ phân giải khoảng 203 DPI.
-
-    Tem 50 × 30 mm tương ứng gần:
+    Tem 50 × 30 mm ở khoảng 203 DPI:
     - Rộng: 400 px
     - Cao: 240 px
 */
@@ -111,14 +109,6 @@ function normalizePriceText(
 
 
 function getBarcodeText(product) {
-    /*
-        Ưu tiên SKU ngắn để barcode dễ quét.
-
-        Ví dụ:
-        MK007
-        H001
-        BN015
-    */
     return String(
         product?.sku
         || product?.barcode
@@ -257,9 +247,9 @@ async function drawProductLabel({
         fitCanvasText(
             context,
             productName,
-            LABEL_WIDTH_PX - 36,
-            27,
-            15,
+            LABEL_WIDTH_PX - 32,
+            28,
+            16,
             "700"
         );
 
@@ -269,7 +259,7 @@ async function drawProductLabel({
     context.fillText(
         productName,
         LABEL_WIDTH_PX / 2,
-        27
+        28
     );
 
 
@@ -336,15 +326,11 @@ async function drawProductLabel({
         );
 
     /*
-        Đưa barcode lên gần tên sản phẩm hơn.
+        Đẩy mã vạch sát tên sản phẩm hơn.
     */
     const barcodeY =
-        47;
+        44;
 
-    /*
-        Không truyền width và height vào drawImage
-        để barcode không bị kéo giãn.
-    */
     context.drawImage(
         barcodeCanvas,
         barcodeX,
@@ -362,19 +348,16 @@ async function drawProductLabel({
     context.textBaseline =
         "alphabetic";
 
-    /*
-        Mã sản phẩm và giá được phóng to.
-    */
     context.font =
-        "700 25px Arial, sans-serif";
+        "700 27px Arial, sans-serif";
 
     context.textAlign =
         "left";
 
     context.fillText(
         barcodeText,
-        16,
-        225
+        14,
+        226
     );
 
     context.textAlign =
@@ -382,8 +365,8 @@ async function drawProductLabel({
 
     context.fillText(
         priceText,
-        LABEL_WIDTH_PX - 16,
-        225
+        LABEL_WIDTH_PX - 14,
+        226
     );
 
     return canvasToBlob(
