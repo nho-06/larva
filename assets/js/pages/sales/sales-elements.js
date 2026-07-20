@@ -47,6 +47,63 @@ export const elements = {
             "#cartTotal"
         ),
 
+    /*
+        Tổng tiền hàng trước khi giảm giá.
+    */
+    cartSubtotal:
+        document.querySelector(
+            "#cartSubtotal"
+        ),
+
+    /*
+        Số tiền được giảm.
+    */
+    cartDiscount:
+        document.querySelector(
+            "#cartDiscount"
+        ),
+
+    /*
+        Danh sách mã giảm giá dạng hàng ngang.
+    */
+    discountCodeList:
+        document.querySelector(
+            "#discountCodeList"
+        ),
+
+    discountEmptyState:
+        document.querySelector(
+            "#discountEmptyState"
+        ),
+
+    /*
+        Form tự thêm mã giảm giá.
+    */
+    discountCodeInput:
+        document.querySelector(
+            "#discountCodeInput"
+        ),
+
+    discountTypeInput:
+        document.querySelector(
+            "#discountTypeInput"
+        ),
+
+    discountValueInput:
+        document.querySelector(
+            "#discountValueInput"
+        ),
+
+    addDiscountButton:
+        document.querySelector(
+            "#addDiscountButton"
+        ),
+
+    discountFormMessage:
+        document.querySelector(
+            "#discountFormMessage"
+        ),
+
     clearCartButton:
         document.querySelector(
             "#clearCartButton"

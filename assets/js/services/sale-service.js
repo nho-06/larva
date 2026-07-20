@@ -9,12 +9,13 @@ import {
     db
 } from "../firebase-config.js";
 
-/**
- * Lấy giá nhập của sản phẩm.
- *
- * Hỗ trợ nhiều tên trường để tránh sai nếu project
- * đang lưu giá nhập bằng tên khác nhau.
- */
+/*
+    Lấy giá nhập của sản phẩm.
+
+    Hỗ trợ nhiều tên trường để tránh lỗi
+    nếu sản phẩm cũ đang lưu giá vốn
+    bằng tên khác nhau.
+*/
 function getProductCostPrice(product) {
     return Number(
         product.purchasePrice
@@ -26,20 +27,28 @@ function getProductCostPrice(product) {
     );
 }
 
-/**
- * Thanh toán hóa đơn:
- * - Lấy sản phẩm mới nhất từ Firebase.
- * - Kiểm tra tồn kho.
- * - Lấy giá nhập của sản phẩm.
- * - Tính giá vốn và tiền lời.
- * - Trừ tồn kho.
- * - Lưu hóa đơn vào sales.
- */
+/*
+    Thanh toán hóa đơn:
+
+    - Lấy dữ liệu sản phẩm mới nhất.
+    - Kiểm tra tồn kho.
+    - Lấy giá nhập.
+    - Tính giá vốn.
+    - Trừ mã giảm giá.
+    - Tính lợi nhuận sau giảm giá.
+    - Trừ tồn kho.
+    - Lưu hóa đơn vào Firebase.
+*/
 export async function checkoutSale({
     items,
     paymentMethod,
     paidAmount,
     totalAmount,
+    subtotalAmount = 0,
+    discountAmount = 0,
+    discountCode = "",
+    discountType = "",
+    discountValue = 0,
     transferCode = ""
 }) {
     if (
@@ -51,6 +60,10 @@ export async function checkoutSale({
         );
     }
 
+    /*
+        Chuẩn hóa dữ liệu sản phẩm
+        nhận từ giỏ hàng.
+    */
     const normalizedItems =
         items.map((item) => {
             return {
@@ -92,7 +105,13 @@ export async function checkoutSale({
             };
         });
 
-    for (const item of normalizedItems) {
+    /*
+        Kiểm tra dữ liệu giỏ hàng.
+    */
+    for (
+        const item
+        of normalizedItems
+    ) {
         if (!item.productId) {
             throw new Error(
                 `Sản phẩm "${item.name}" không có ID Firebase.`
@@ -113,31 +132,42 @@ export async function checkoutSale({
     }
 
     /*
-        Lấy toàn bộ sản phẩm mới nhất từ Firebase.
+        Lấy toàn bộ sản phẩm mới nhất
+        từ Firebase trước khi thanh toán.
     */
     const productsSnapshot =
         await get(
-            ref(db, "products")
+            ref(
+                db,
+                "products"
+            )
         );
 
     const products =
         productsSnapshot.val()
         || {};
 
-    const updates = {};
+    const updates =
+        {};
 
     const now =
         Date.now();
 
-    /*
-        Tạo danh sách sản phẩm bán ra,
-        đồng thời lấy giá nhập từ Firebase.
-    */
-    const saleItems = [];
+    const saleItems =
+        [];
 
-    for (const item of normalizedItems) {
+    /*
+        Kiểm tra từng sản phẩm,
+        lấy giá vốn và chuẩn bị trừ tồn kho.
+    */
+    for (
+        const item
+        of normalizedItems
+    ) {
         const product =
-            products[item.productId];
+            products[
+                item.productId
+            ];
 
         if (!product) {
             throw new Error(
@@ -173,6 +203,10 @@ export async function checkoutSale({
             costPrice
             * item.quantity;
 
+        /*
+            lineProfit ở đây là tiền lời
+            trước khi phân bổ giảm giá.
+        */
         const lineProfit =
             lineTotal
             - lineCost;
@@ -228,11 +262,14 @@ export async function checkoutSale({
     }
 
     /*
-        Tạo ID hóa đơn mới.
+        Tạo mã hóa đơn Firebase mới.
     */
     const saleId =
         push(
-            ref(db, "sales")
+            ref(
+                db,
+                "sales"
+            )
         ).key;
 
     if (!saleId) {
@@ -242,10 +279,9 @@ export async function checkoutSale({
     }
 
     /*
-        Tính tổng doanh thu theo dữ liệu thực tế
-        của các sản phẩm trong hóa đơn.
+        Tổng tiền sản phẩm trước giảm giá.
     */
-    const calculatedTotal =
+    const calculatedSubtotal =
         saleItems.reduce(
             (total, item) => {
                 return (
@@ -260,7 +296,7 @@ export async function checkoutSale({
         );
 
     /*
-        Tổng giá vốn.
+        Tổng giá vốn của hóa đơn.
     */
     const totalCost =
         saleItems.reduce(
@@ -277,15 +313,56 @@ export async function checkoutSale({
         );
 
     /*
-        Lợi nhuận gộp trước thuế và chi phí khác.
+        Ưu tiên tổng tiền do hệ thống
+        tự tính từ sản phẩm.
+
+        Không tin hoàn toàn dữ liệu gửi
+        từ giao diện để tránh sai tổng tiền.
+    */
+    const normalizedSubtotal =
+        Math.max(
+            0,
+            calculatedSubtotal
+        );
+
+    /*
+        Số tiền giảm không được âm
+        và không được lớn hơn tạm tính.
+    */
+    const normalizedDiscount =
+        Math.min(
+            normalizedSubtotal,
+            Math.max(
+                0,
+                Number(
+                    discountAmount
+                    || 0
+                )
+            )
+        );
+
+    /*
+        Tổng khách cần thanh toán
+        sau khi trừ mã giảm giá.
+    */
+    const finalTotal =
+        Math.max(
+            0,
+            normalizedSubtotal
+            - normalizedDiscount
+        );
+
+    /*
+        Lợi nhuận phải tính theo doanh thu
+        sau khi trừ mã giảm giá.
     */
     const grossProfit =
-        calculatedTotal
+        finalTotal
         - totalCost;
 
     /*
-        Hiện tại chưa nhập thuế khi thanh toán,
-        nên mặc định bằng 0.
+        Hiện tại chưa tính thuế
+        và chi phí khác.
     */
     const taxAmount =
         0;
@@ -293,20 +370,10 @@ export async function checkoutSale({
     const otherCost =
         0;
 
-    /*
-        Lợi nhuận thực.
-    */
     const netProfit =
         grossProfit
         - taxAmount
         - otherCost;
-
-    const finalTotal =
-        calculatedTotal
-        || Number(
-            totalAmount
-            || 0
-        );
 
     const finalPaidAmount =
         Number(
@@ -318,6 +385,9 @@ export async function checkoutSale({
         paymentMethod
         || "cash";
 
+    /*
+        Dữ liệu hóa đơn lưu trên Firebase.
+    */
     const saleData = {
         id:
             saleId,
@@ -327,12 +397,48 @@ export async function checkoutSale({
         items:
             saleItems,
 
+        /*
+            Tổng tiền trước giảm giá.
+        */
+        subtotalAmount:
+            normalizedSubtotal,
+
+        /*
+            Thông tin mã giảm giá.
+        */
+        discountAmount:
+            normalizedDiscount,
+
+        discountCode:
+            String(
+                discountCode
+                || ""
+            ),
+
+        discountType:
+            String(
+                discountType
+                || ""
+            ),
+
+        discountValue:
+            Number(
+                discountValue
+                || 0
+            ),
+
+        /*
+            Tổng tiền sau giảm giá.
+        */
         totalAmount:
             finalTotal,
 
         totalRevenue:
             finalTotal,
 
+        /*
+            Giá vốn và lợi nhuận.
+        */
         totalCost,
 
         grossProfit,
@@ -346,6 +452,9 @@ export async function checkoutSale({
 
         netProfit,
 
+        /*
+            Thông tin thanh toán.
+        */
         paymentMethod:
             finalPaymentMethod,
 
@@ -378,7 +487,7 @@ export async function checkoutSale({
 
     /*
         Lưu hóa đơn và cập nhật tồn kho
-        trong cùng một lần update.
+        trong cùng một lần update Firebase.
     */
     updates[
         `sales/${saleId}`

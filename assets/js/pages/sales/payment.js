@@ -17,6 +17,12 @@ import {
 } from "./cart.js";
 
 import {
+    getCartSubtotal,
+    getDiscountAmount,
+    getSelectedDiscount
+} from "./discount.js";
+
+import {
     renderReceipt,
     openReceiptModal
 } from "./receipt.js";
@@ -341,6 +347,17 @@ export async function confirmPayment(
         "Đang lưu hóa đơn...";
 
     try {
+        const subtotalAmount =
+            getCartSubtotal();
+
+        const discountAmount =
+            getDiscountAmount(
+                subtotalAmount
+            );
+
+        const selectedDiscount =
+            getSelectedDiscount();
+
         const sale =
             await checkoutSale({
                 items:
@@ -352,6 +369,24 @@ export async function confirmPayment(
 
                 totalAmount,
 
+                subtotalAmount,
+
+                discountAmount,
+
+                discountCode:
+                    selectedDiscount?.code
+                    || "",
+
+                discountType:
+                    selectedDiscount?.type
+                    || "",
+
+                discountValue:
+                    Number(
+                        selectedDiscount?.value
+                        || 0
+                    ),
+
                 transferCode:
                     paymentMethod === "transfer"
                         ? state.transferCode
@@ -360,6 +395,9 @@ export async function confirmPayment(
 
         state.cart =
             [];
+
+        state.selectedDiscountId =
+            "";
 
         renderCart();
 
@@ -373,7 +411,10 @@ export async function confirmPayment(
         openReceiptModal();
 
     } catch (error) {
-        console.error(error);
+        console.error(
+            "Lỗi thanh toán:",
+            error
+        );
 
         showPaymentError(
             error.message

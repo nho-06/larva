@@ -12,17 +12,15 @@ import {
     placeholderImage
 } from "../../utils.js";
 
+import {
+    getCartSubtotal,
+    getDiscountAmount,
+    getFinalTotal,
+    renderDiscountCodes
+} from "./discount.js";
+
 export function getCartTotal() {
-    return state.cart.reduce(
-        (total, item) => {
-            return (
-                total
-                + Number(item.price || 0)
-                * Number(item.quantity || 0)
-            );
-        },
-        0
-    );
+    return getFinalTotal();
 }
 
 export function getCartQuantity() {
@@ -59,8 +57,14 @@ export function showSaleMessage(
 }
 
 export function renderCart() {
+    const subtotal =
+        getCartSubtotal();
+
+    const discountAmount =
+        getDiscountAmount(subtotal);
+
     const total =
-        getCartTotal();
+        getFinalTotal();
 
     const quantity =
         getCartQuantity();
@@ -160,8 +164,20 @@ export function renderCart() {
     elements.cartCount.textContent =
         quantity;
 
+    if (elements.cartSubtotal) {
+        elements.cartSubtotal.textContent =
+            formatMoney(subtotal);
+    }
+
+    if (elements.cartDiscount) {
+        elements.cartDiscount.textContent =
+            `− ${formatMoney(discountAmount)}`;
+    }
+
     elements.cartTotal.textContent =
         formatMoney(total);
+
+    renderDiscountCodes();
 
     elements.openPaymentButton.disabled =
         state.cart.length === 0;
@@ -344,6 +360,12 @@ export function clearCart() {
     }
 
     state.cart = [];
+
+    /*
+        Khi xóa toàn bộ giỏ hàng,
+        đồng thời bỏ mã giảm giá đang chọn.
+    */
+    state.selectedDiscountId = "";
 
     renderCart();
 }

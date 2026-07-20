@@ -113,6 +113,43 @@ export function renderReceipt(sale) {
 
             <div class="receipt-summary">
 
+                ${
+                    Number(sale.discountAmount || 0) > 0
+                        ? `
+                            <div>
+                                <span>
+                                    Tạm tính
+                                </span>
+
+                                <strong>
+                                    ${formatMoney(
+                                        sale.subtotalAmount || 0
+                                    )}
+                                </strong>
+                            </div>
+
+                            <div>
+                                <span>
+                                    Giảm giá
+                                    ${
+                                        sale.discountCode
+                                            ? `(${escapeHtml(
+                                                sale.discountCode
+                                            )})`
+                                            : ""
+                                    }
+                                </span>
+
+                                <strong>
+                                    − ${formatMoney(
+                                        sale.discountAmount || 0
+                                    )}
+                                </strong>
+                            </div>
+                        `
+                        : ""
+                }
+
                 <div>
                     <span>
                         Tổng tiền

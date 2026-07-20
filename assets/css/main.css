@@ -4167,3 +4167,195 @@ th {
     touch-action: manipulation;
     cursor: crosshair;
 }
+/* =========================================================
+   MÃ GIẢM GIÁ TẠI TRANG BÁN HÀNG
+========================================================= */
+
+.discount-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(
+        --border-color,
+        #eadfe4
+    );
+}
+
+.discount-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.discount-heading .eyebrow {
+    margin-bottom: 2px;
+}
+
+/*
+    Danh sách mã giảm giá hiển thị ngang.
+
+    Trên điện thoại có thể dùng tay
+    lướt sang trái hoặc phải.
+*/
+.discount-code-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 2px 8px;
+
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+}
+
+.discount-code-chip {
+    flex: 0 0 auto;
+    min-width: 108px;
+
+    padding: 9px 11px;
+
+    border: 1px solid #e7cfd9;
+    border-radius: 14px;
+
+    background: #fff7fa;
+
+    text-align: left;
+    cursor: pointer;
+
+    scroll-snap-align: start;
+
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.discount-code-chip:hover {
+    border-color: #d997b0;
+    background: #fff0f5;
+    transform: translateY(-1px);
+}
+
+.discount-code-chip strong,
+.discount-code-chip span {
+    display: block;
+}
+
+.discount-code-chip strong {
+    color: #54333f;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+}
+
+.discount-code-chip span {
+    margin-top: 3px;
+
+    color: #7a626b;
+    font-size: 12px;
+}
+
+/*
+    Mã đang được chọn.
+*/
+.discount-code-chip.active {
+    border-color: #d45f8b;
+    background: #ffe8f0;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(
+            212,
+            95,
+            139,
+            0.12
+        );
+}
+
+.discount-code-chip.active strong {
+    color: #a7315e;
+}
+
+.discount-empty-state {
+    margin: 0 0 10px;
+
+    color: #8a777e;
+    font-size: 13px;
+}
+
+/*
+    Form tự thêm mã giảm giá.
+*/
+.discount-create-form {
+    display: grid;
+
+    grid-template-columns:
+        minmax(110px, 1.2fr)
+        minmax(95px, 0.9fr)
+        minmax(80px, 0.8fr)
+        auto;
+
+    gap: 7px;
+}
+
+.discount-create-form .input {
+    min-width: 0;
+}
+
+.discount-add-button {
+    white-space: nowrap;
+}
+
+.discount-form-message {
+    margin: 8px 0 0;
+    font-size: 13px;
+}
+
+.discount-form-message.success {
+    color: #247a4b;
+}
+
+.discount-form-message.error {
+    color: #b42318;
+}
+
+/*
+    Dòng số tiền đã giảm
+    trong phần tổng hóa đơn.
+*/
+.discount-summary-row strong {
+    color: #c24774;
+}
+
+/*
+    Responsive điện thoại.
+*/
+@media (max-width: 720px) {
+    .discount-create-form {
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(0, 1fr);
+    }
+
+    .discount-add-button {
+        width: 100%;
+    }
+
+    .discount-code-chip {
+        min-width: 115px;
+    }
+}
+
+@media (max-width: 420px) {
+    .discount-create-form {
+        grid-template-columns: 1fr;
+    }
+
+    .discount-code-list {
+        margin-right: -4px;
+    }
+
+    .discount-code-chip {
+        min-width: 120px;
+    }
+}

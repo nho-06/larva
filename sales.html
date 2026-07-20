@@ -54,10 +54,10 @@
         }
     </style>
 
-<script
-    type="module"
-    src="./assets/js/auth/auth-guard.js?v=50"
-></script>
+    <script
+        type="module"
+        src="./assets/js/auth/auth-guard.js?v=50"
+    ></script>
 
 </head>
 
@@ -187,7 +187,110 @@
                     Chưa có sản phẩm trong giỏ.
                 </p>
 
+                <section class="discount-section">
+
+                    <div class="discount-heading">
+
+                        <div>
+
+                            <p class="eyebrow">
+                                MÃ GIẢM GIÁ
+                            </p>
+
+                            <strong>
+                                Chạm để áp dụng
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="discountCodeList"
+                        class="discount-code-list"
+                    ></div>
+
+                    <p
+                        id="discountEmptyState"
+                        class="discount-empty-state"
+                    >
+                        Chưa có mã giảm giá.
+                    </p>
+
+                    <div class="discount-create-form">
+
+                        <input
+                            id="discountCodeInput"
+                            class="input"
+                            type="text"
+                            maxlength="20"
+                            placeholder="Tên mã, ví dụ: SALE10"
+                        >
+
+                        <select
+                            id="discountTypeInput"
+                            class="input"
+                        >
+                            <option value="percent">
+                                Giảm %
+                            </option>
+
+                            <option value="amount">
+                                Giảm tiền
+                            </option>
+                        </select>
+
+                        <input
+                            id="discountValueInput"
+                            class="input"
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="Giá trị"
+                        >
+
+                        <button
+                            id="addDiscountButton"
+                            class="button discount-add-button"
+                            type="button"
+                        >
+                            Thêm mã
+                        </button>
+
+                    </div>
+
+                    <p
+                        id="discountFormMessage"
+                        class="discount-form-message hidden"
+                    ></p>
+
+                </section>
+
                 <div class="cart-summary">
+
+                    <div class="summary-row">
+
+                        <span>
+                            Tạm tính
+                        </span>
+
+                        <strong id="cartSubtotal">
+                            0 ₫
+                        </strong>
+
+                    </div>
+
+                    <div class="summary-row discount-summary-row">
+
+                        <span>
+                            Giảm giá
+                        </span>
+
+                        <strong id="cartDiscount">
+                            − 0 ₫
+                        </strong>
+
+                    </div>
 
                     <div class="summary-row total-row">
 
@@ -568,7 +671,7 @@
 
 <script
     type="module"
-    src="./assets/js/pages/sales.js"
+    src="./assets/js/pages/sales.js?v=2"
 ></script>
 
 </body>

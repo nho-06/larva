@@ -10,7 +10,8 @@ import {
     addProductToCart,
     updateCartQuantity,
     removeCartItem,
-    clearCart
+    clearCart,
+    renderCart
 } from "./cart.js";
 
 import {
@@ -35,6 +36,11 @@ import {
     closeReceiptModal,
     printReceipt
 } from "./receipt.js";
+
+import {
+    addDiscountCode,
+    toggleDiscount
+} from "./discount.js";
 
 export function initializeSaleEvents() {
     /*
@@ -65,7 +71,8 @@ export function initializeSaleEvents() {
         );
 
     /*
-        Các nút tăng, giảm, xóa trong giỏ hàng.
+        Các nút tăng, giảm, xóa
+        trong giỏ hàng.
     */
     elements.cartItems
         ?.addEventListener(
@@ -73,52 +80,145 @@ export function initializeSaleEvents() {
             handleCartClick
         );
 
+    /*
+        Xóa toàn bộ giỏ hàng.
+    */
     elements.clearCartButton
         ?.addEventListener(
             "click",
             clearCart
         );
 
+    /*
+        Chọn hoặc bỏ chọn mã giảm giá.
+
+        Danh sách mã có thể lướt ngang
+        trên điện thoại.
+    */
+    elements.discountCodeList
+        ?.addEventListener(
+            "click",
+            (event) => {
+                const button =
+                    event.target.closest(
+                        "[data-discount-id]"
+                    );
+
+                if (!button) {
+                    return;
+                }
+
+                toggleDiscount(
+                    button.dataset.discountId
+                );
+
+                renderCartAfterDiscountChange();
+            }
+        );
+
+    /*
+        Tự thêm mã giảm giá mới.
+    */
+    elements.addDiscountButton
+        ?.addEventListener(
+            "click",
+            async () => {
+                await addDiscountCode();
+
+                renderCartAfterDiscountChange();
+            }
+        );
+
+    /*
+        Nhấn Enter tại ô giá trị giảm
+        cũng có thể thêm mã.
+    */
+    elements.discountValueInput
+        ?.addEventListener(
+            "keydown",
+            async (event) => {
+                if (
+                    event.key !== "Enter"
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                await addDiscountCode();
+
+                renderCartAfterDiscountChange();
+            }
+        );
+
+    /*
+        Mở máy quét mã vạch.
+    */
     elements.openScannerButton
         ?.addEventListener(
             "click",
             openScanner
         );
 
+    /*
+        Mở cửa sổ thanh toán.
+    */
     elements.openPaymentButton
         ?.addEventListener(
             "click",
             openPaymentModal
         );
 
+    /*
+        Xác nhận thanh toán tiền mặt.
+    */
     elements.confirmPaymentButton
         ?.addEventListener(
             "click",
             () => {
-                confirmPayment("cash");
+                confirmPayment(
+                    "cash"
+                );
             }
         );
 
+    /*
+        Tạo QR chuyển khoản.
+    */
     elements.createQrButton
         ?.addEventListener(
             "click",
             createPaymentQr
         );
 
+    /*
+        Xác nhận đã nhận được
+        tiền chuyển khoản.
+    */
     elements.confirmReceivedButton
         ?.addEventListener(
             "click",
             () => {
-                confirmPayment("transfer");
+                confirmPayment(
+                    "transfer"
+                );
             }
         );
 
+    /*
+        Tự tính tiền thừa
+        khi nhập số tiền khách đưa.
+    */
     elements.paidAmountInput
         ?.addEventListener(
             "input",
             updatePaymentView
         );
 
+    /*
+        Chuyển giữa tiền mặt
+        và chuyển khoản.
+    */
     document
         .querySelectorAll(
             'input[name="paymentMethod"]'
@@ -130,6 +230,9 @@ export function initializeSaleEvents() {
             );
         });
 
+    /*
+        Các nút đóng cửa sổ quét mã.
+    */
     document
         .querySelectorAll(
             "[data-close-scanner-modal]"
@@ -141,6 +244,9 @@ export function initializeSaleEvents() {
             );
         });
 
+    /*
+        Các nút đóng cửa sổ thanh toán.
+    */
     document
         .querySelectorAll(
             "[data-close-payment-modal]"
@@ -152,6 +258,9 @@ export function initializeSaleEvents() {
             );
         });
 
+    /*
+        Các nút đóng hóa đơn.
+    */
     document
         .querySelectorAll(
             "[data-close-receipt-modal]"
@@ -163,6 +272,9 @@ export function initializeSaleEvents() {
             );
         });
 
+    /*
+        In hóa đơn.
+    */
     elements.printReceiptButton
         ?.addEventListener(
             "click",
@@ -170,7 +282,8 @@ export function initializeSaleEvents() {
         );
 
     /*
-        Khi rời trang thì dừng camera.
+        Khi rời trang thì dừng camera,
+        tránh camera vẫn chạy ngầm.
     */
     window.addEventListener(
         "pagehide",
@@ -178,7 +291,12 @@ export function initializeSaleEvents() {
     );
 }
 
-function handleCategoryChange(event) {
+/*
+    Khi đổi danh mục sản phẩm.
+*/
+function handleCategoryChange(
+    event
+) {
     state.selectedCategoryId =
         String(
             event.target.value || ""
@@ -187,7 +305,13 @@ function handleCategoryChange(event) {
     renderProducts();
 }
 
-function handleProductGridClick(event) {
+/*
+    Nhấn nút thêm sản phẩm
+    từ danh sách sản phẩm.
+*/
+function handleProductGridClick(
+    event
+) {
     const button =
         event.target.closest(
             "[data-add-product]"
@@ -204,8 +328,12 @@ function handleProductGridClick(event) {
         state.products.find(
             (item) => {
                 return (
-                    String(item.id || "")
-                    === String(productId || "")
+                    String(
+                        item.id || ""
+                    ) ===
+                    String(
+                        productId || ""
+                    )
                 );
             }
         );
@@ -214,10 +342,18 @@ function handleProductGridClick(event) {
         return;
     }
 
-    addProductToCart(product);
+    addProductToCart(
+        product
+    );
 }
 
-function handleCartClick(event) {
+/*
+    Xử lý tăng, giảm
+    hoặc xóa sản phẩm trong giỏ.
+*/
+function handleCartClick(
+    event
+) {
     const increaseButton =
         event.target.closest(
             "[data-increase]"
@@ -256,4 +392,15 @@ function handleCartClick(event) {
             removeButton.dataset.remove
         );
     }
+}
+
+/*
+    Sau khi chọn hoặc tạo mã giảm giá,
+    cập nhật lại cả giỏ hàng
+    và cửa sổ thanh toán.
+*/
+function renderCartAfterDiscountChange() {
+    renderCart();
+
+    updatePaymentView();
 }

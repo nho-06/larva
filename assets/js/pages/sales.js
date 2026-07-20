@@ -7,6 +7,10 @@ import {
 } from "../services/category-service.js";
 
 import {
+    listenDiscountCodes
+} from "../services/discount-service.js";
+
+import {
     state
 } from "./sales/sales-state.js";
 
@@ -22,6 +26,10 @@ import {
 import {
     renderCart
 } from "./sales/cart.js";
+
+import {
+    renderDiscountCodes
+} from "./sales/discount.js";
 
 function syncCartStock(products) {
     state.cart.forEach((cartItem) => {
@@ -98,6 +106,49 @@ function initializeSalesPage() {
     renderCart();
 
     /*
+        Theo dõi mã giảm giá từ Firebase.
+
+        Khi thêm mã mới,
+        danh sách mã trên trang bán hàng
+        sẽ tự động cập nhật.
+    */
+    listenDiscountCodes((discountCodes) => {
+        state.discountCodes =
+            Array.isArray(discountCodes)
+                ? discountCodes
+                : [];
+
+        /*
+            Nếu mã đang chọn không còn tồn tại
+            hoặc đã bị tắt thì bỏ chọn.
+        */
+        const selectedStillExists =
+            state.discountCodes.some(
+                (item) => {
+                    return (
+                        String(item.id || "")
+                        ===
+                        String(
+                            state.selectedDiscountId || ""
+                        )
+                    );
+                }
+            );
+
+        if (
+            state.selectedDiscountId
+            &&
+            !selectedStillExists
+        ) {
+            state.selectedDiscountId =
+                "";
+        }
+
+        renderDiscountCodes();
+        renderCart();
+    });
+
+    /*
         Theo dõi danh mục từ Firebase.
 
         Khi thêm, sửa hoặc xóa danh mục
@@ -119,7 +170,8 @@ function initializeSalesPage() {
                 (category) => {
                     return (
                         String(category.id || "")
-                        === String(
+                        ===
+                        String(
                             state.selectedCategoryId || ""
                         )
                     );
