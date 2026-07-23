@@ -1,21 +1,36 @@
+import {
+    deleteObject,
+    getDownloadURL,
+    ref,
+    uploadBytesResumable
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+
+import {
+    storage
+} from "../firebase-config.js";
+
+
+/* =========================================================
+   CẤU HÌNH ẢNH
+========================================================= */
+
 const MAX_ORIGINAL_IMAGE_SIZE =
     10 * 1024 * 1024;
 
-/*
-    Ảnh sau khi nén nên nhỏ hơn khoảng 700 KB
-    để không làm Firebase Database quá nặng.
-*/
 const MAX_COMPRESSED_IMAGE_SIZE =
-    700 * 1024;
+    100 * 1024;
 
 const MAX_IMAGE_WIDTH =
-    1200;
+    700;
 
 const MAX_IMAGE_HEIGHT =
-    1200;
+    700;
 
-const JPEG_QUALITY =
-    0.78;
+const DEFAULT_JPEG_QUALITY =
+    0.68;
+
+const MIN_JPEG_QUALITY =
+    0.32;
 
 const ALLOWED_IMAGE_TYPES = [
     "image/jpeg",
@@ -25,11 +40,15 @@ const ALLOWED_IMAGE_TYPES = [
 
 
 /* =========================================================
-   KIỂM TRA FILE ẢNH
+   KIỂM TRA FILE
 ========================================================= */
 
-export function validateProductImage(file) {
-    if (!(file instanceof File)) {
+export function validateProductImage(
+    file
+) {
+    if (
+        !(file instanceof File)
+    ) {
         throw new Error(
             "Bạn chưa chọn ảnh."
         );
@@ -46,7 +65,8 @@ export function validateProductImage(file) {
     }
 
     if (
-        file.size > MAX_ORIGINAL_IMAGE_SIZE
+        file.size >
+        MAX_ORIGINAL_IMAGE_SIZE
     ) {
         throw new Error(
             "Ảnh ban đầu không được lớn hơn 10 MB."
@@ -58,83 +78,100 @@ export function validateProductImage(file) {
 
 
 /* =========================================================
-   TẠO ẢNH XEM TRƯỚC
+   ẢNH XEM TRƯỚC
 ========================================================= */
 
-export function createLocalImagePreview(file) {
-    validateProductImage(file);
+export function createLocalImagePreview(
+    file
+) {
+    validateProductImage(
+        file
+    );
 
-    return URL.createObjectURL(file);
+    return URL.createObjectURL(
+        file
+    );
 }
 
 
-/* =========================================================
-   XÓA LINK ẢNH TẠM
-========================================================= */
-
-export function releaseLocalImagePreview(url) {
+export function releaseLocalImagePreview(
+    url
+) {
     if (
         typeof url === "string"
-        && url.startsWith("blob:")
+        &&
+        url.startsWith(
+            "blob:"
+        )
     ) {
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(
+            url
+        );
     }
 }
 
 
 /* =========================================================
-   ĐỌC FILE THÀNH DATA URL
+   ĐỌC FILE ẢNH
 ========================================================= */
 
-function readFileAsDataUrl(file) {
+function readFileAsDataUrl(
+    file
+) {
     return new Promise(
         (resolve, reject) => {
             const reader =
                 new FileReader();
 
-            reader.onload = () => {
-                resolve(
-                    String(
-                        reader.result || ""
-                    )
-                );
-            };
+            reader.onload =
+                () => {
+                    resolve(
+                        String(
+                            reader.result || ""
+                        )
+                    );
+                };
 
-            reader.onerror = () => {
-                reject(
-                    new Error(
-                        "Không thể đọc file ảnh."
-                    )
-                );
-            };
+            reader.onerror =
+                () => {
+                    reject(
+                        new Error(
+                            "Không thể đọc file ảnh."
+                        )
+                    );
+                };
 
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(
+                file
+            );
         }
     );
 }
 
 
-/* =========================================================
-   TẢI DATA URL THÀNH IMAGE
-========================================================= */
-
-function loadImage(dataUrl) {
+function loadImage(
+    dataUrl
+) {
     return new Promise(
         (resolve, reject) => {
             const image =
                 new Image();
 
-            image.onload = () => {
-                resolve(image);
-            };
+            image.onload =
+                () => {
+                    resolve(
+                        image
+                    );
+                };
 
-            image.onerror = () => {
-                reject(
-                    new Error(
-                        "Không thể xử lý ảnh đã chọn."
-                    )
-                );
-            };
+            image.onerror =
+                () => {
+                    reject(
+                        new Error(
+                            "Không thể xử lý ảnh đã chọn."
+                        )
+                    );
+                };
 
             image.src =
                 dataUrl;
@@ -144,7 +181,7 @@ function loadImage(dataUrl) {
 
 
 /* =========================================================
-   TÍNH KÍCH THƯỚC ẢNH SAU KHI THU NHỎ
+   TÍNH KÍCH THƯỚC ẢNH
 ========================================================= */
 
 function calculateImageSize(
@@ -152,18 +189,30 @@ function calculateImageSize(
     originalHeight
 ) {
     let width =
-        Number(originalWidth || 1);
+        Math.max(
+            Number(
+                originalWidth || 1
+            ),
+            1
+        );
 
     let height =
-        Number(originalHeight || 1);
+        Math.max(
+            Number(
+                originalHeight || 1
+            ),
+            1
+        );
 
     const widthRatio =
-        MAX_IMAGE_WIDTH / width;
+        MAX_IMAGE_WIDTH /
+        width;
 
     const heightRatio =
-        MAX_IMAGE_HEIGHT / height;
+        MAX_IMAGE_HEIGHT /
+        height;
 
-    const ratio =
+    const resizeRatio =
         Math.min(
             widthRatio,
             heightRatio,
@@ -171,37 +220,61 @@ function calculateImageSize(
         );
 
     width =
-        Math.round(
-            width * ratio
+        Math.max(
+            Math.round(
+                width *
+                resizeRatio
+            ),
+            1
         );
 
     height =
-        Math.round(
-            height * ratio
+        Math.max(
+            Math.round(
+                height *
+                resizeRatio
+            ),
+            1
         );
 
     return {
-        width:
-            Math.max(width, 1),
-
-        height:
-            Math.max(height, 1)
+        width,
+        height
     };
 }
 
 
 /* =========================================================
-   TÍNH DUNG LƯỢNG DATA URL
+   CANVAS THÀNH BLOB
 ========================================================= */
 
-function getDataUrlSize(dataUrl) {
-    const base64 =
-        String(dataUrl || "")
-            .split(",")[1]
-        || "";
+function canvasToBlob(
+    canvas,
+    quality
+) {
+    return new Promise(
+        (resolve, reject) => {
+            canvas.toBlob(
+                (blob) => {
+                    if (!blob) {
+                        reject(
+                            new Error(
+                                "Không thể nén ảnh."
+                            )
+                        );
 
-    return Math.round(
-        base64.length * 0.75
+                        return;
+                    }
+
+                    resolve(
+                        blob
+                    );
+                },
+
+                "image/jpeg",
+                quality
+            );
+        }
     );
 }
 
@@ -214,44 +287,42 @@ async function compressProductImage(
     file,
     onProgress
 ) {
-    if (
-        typeof onProgress
-        === "function"
-    ) {
-        onProgress(10);
-    }
+    updateProgress(
+        onProgress,
+        5
+    );
 
     const originalDataUrl =
-        await readFileAsDataUrl(file);
+        await readFileAsDataUrl(
+            file
+        );
 
-    if (
-        typeof onProgress
-        === "function"
-    ) {
-        onProgress(30);
-    }
+    updateProgress(
+        onProgress,
+        15
+    );
 
     const image =
         await loadImage(
             originalDataUrl
         );
 
-    if (
-        typeof onProgress
-        === "function"
-    ) {
-        onProgress(50);
-    }
+    updateProgress(
+        onProgress,
+        25
+    );
 
     const {
         width,
         height
     } = calculateImageSize(
         image.naturalWidth
-        || image.width,
+        ||
+        image.width,
 
         image.naturalHeight
-        || image.height
+        ||
+        image.height
     );
 
     const canvas =
@@ -269,7 +340,8 @@ async function compressProductImage(
         canvas.getContext(
             "2d",
             {
-                alpha: false
+                alpha:
+                    false
             }
         );
 
@@ -279,10 +351,6 @@ async function compressProductImage(
         );
     }
 
-    /*
-        Nền trắng để ảnh PNG trong suốt
-        không bị thành nền đen khi đổi sang JPG.
-    */
     context.fillStyle =
         "#ffffff";
 
@@ -301,138 +369,225 @@ async function compressProductImage(
         height
     );
 
-    if (
-        typeof onProgress
-        === "function"
-    ) {
-        onProgress(70);
-    }
+    updateProgress(
+        onProgress,
+        35
+    );
 
-    /*
-        Thử nén nhiều mức để giảm dung lượng.
-    */
     const qualityLevels = [
-        JPEG_QUALITY,
-        0.68,
-        0.58,
-        0.48
+        DEFAULT_JPEG_QUALITY,
+        0.60,
+        0.52,
+        0.44,
+        0.36,
+        MIN_JPEG_QUALITY
     ];
 
-    let compressedDataUrl =
-        "";
+    let compressedBlob =
+        null;
 
     for (
         const quality
         of qualityLevels
     ) {
-        compressedDataUrl =
-            canvas.toDataURL(
-                "image/jpeg",
+        compressedBlob =
+            await canvasToBlob(
+                canvas,
                 quality
             );
 
-        const compressedSize =
-            getDataUrlSize(
-                compressedDataUrl
-            );
-
         if (
-            compressedSize
-            <= MAX_COMPRESSED_IMAGE_SIZE
+            compressedBlob.size <=
+            MAX_COMPRESSED_IMAGE_SIZE
         ) {
             break;
         }
     }
 
-    const finalSize =
-        getDataUrlSize(
-            compressedDataUrl
+    if (!compressedBlob) {
+        throw new Error(
+            "Không thể tạo ảnh đã nén."
         );
+    }
 
     if (
-        finalSize
-        > MAX_COMPRESSED_IMAGE_SIZE
+        compressedBlob.size >
+        MAX_COMPRESSED_IMAGE_SIZE
     ) {
         throw new Error(
             "Ảnh sau khi nén vẫn còn quá lớn. "
-            + "Hãy chọn ảnh có kích thước nhỏ hơn."
+            +
+            "Hãy chọn ảnh đơn giản hoặc nhỏ hơn."
         );
     }
 
-    if (
-        typeof onProgress
-        === "function"
-    ) {
-        onProgress(90);
-    }
+    updateProgress(
+        onProgress,
+        45
+    );
 
     return {
-        dataUrl:
-            compressedDataUrl,
-
-        size:
-            finalSize,
+        blob:
+            compressedBlob,
 
         width,
 
-        height
+        height,
+
+        size:
+            compressedBlob.size
     };
 }
 
 
 /* =========================================================
-   XỬ LÝ ẢNH SẢN PHẨM
+   TẠO TÊN FILE AN TOÀN
+========================================================= */
 
-   Không còn upload Firebase Storage.
-   Ảnh được nén thành Base64 rồi lưu chung với sản phẩm
-   trong Firebase Realtime Database.
+function createSafeFileName(
+    originalName
+) {
+    const baseName =
+        String(
+            originalName || "product"
+        )
+            .replace(
+                /\.[^/.]+$/,
+                ""
+            )
+            .normalize(
+                "NFD"
+            )
+            .replace(
+                /[\u0300-\u036f]/g,
+                ""
+            )
+            .replace(
+                /đ/gi,
+                "d"
+            )
+            .replace(
+                /[^a-zA-Z0-9_-]/g,
+                "-"
+            )
+            .replace(
+                /-+/g,
+                "-"
+            )
+            .replace(
+                /^-|-$|_/g,
+                ""
+            )
+            .slice(
+                0,
+                60
+            )
+        ||
+        "product";
+
+    const randomPart =
+        Math.random()
+            .toString(36)
+            .slice(2, 10);
+
+    return (
+        `${Date.now()}-${randomPart}-${baseName}.jpg`
+    );
+}
+
+
+/* =========================================================
+   UPLOAD FIREBASE STORAGE
 ========================================================= */
 
 export async function uploadProductImage(
     file,
     onProgress = null
 ) {
-    validateProductImage(file);
+    validateProductImage(
+        file
+    );
+
+    updateProgress(
+        onProgress,
+        0
+    );
 
     try {
-        if (
-            typeof onProgress
-            === "function"
-        ) {
-            onProgress(0);
-        }
-
         const compressed =
             await compressProductImage(
                 file,
                 onProgress
             );
 
-        if (
-            typeof onProgress
-            === "function"
-        ) {
-            onProgress(100);
-        }
+        const fileName =
+            createSafeFileName(
+                file.name
+            );
+
+        const storagePath =
+            `product-images/${fileName}`;
+
+        const imageRef =
+            ref(
+                storage,
+                storagePath
+            );
+
+        const metadata = {
+            contentType:
+                "image/jpeg",
+
+            customMetadata: {
+                originalName:
+                    String(
+                        file.name || ""
+                    ),
+
+                uploadedAt:
+                    String(
+                        Date.now()
+                    )
+            }
+        };
+
+        const uploadTask =
+            uploadBytesResumable(
+                imageRef,
+                compressed.blob,
+                metadata
+            );
+
+        const snapshot =
+            await waitForUpload(
+                uploadTask,
+                onProgress
+            );
+
+        const downloadUrl =
+            await getDownloadURL(
+                snapshot.ref
+            );
+
+        updateProgress(
+            onProgress,
+            100
+        );
 
         return {
-            /*
-                products.js đang lấy result.url,
-                nên trả ảnh Base64 ở đây.
-            */
             url:
-                compressed.dataUrl,
+                downloadUrl,
 
-            /*
-                Không dùng Firebase Storage nữa,
-                vì vậy path để trống.
-            */
             path:
-                "",
+                storagePath,
 
             name:
+                fileName,
+
+            originalName:
                 file.name
-                || "product-image.jpg",
+                ||
+                "product-image.jpg",
 
             type:
                 "image/jpeg",
@@ -448,31 +603,230 @@ export async function uploadProductImage(
         };
     } catch (error) {
         console.error(
-            "Không thể xử lý ảnh:",
+            "Không thể tải ảnh sản phẩm:",
             error
         );
 
         throw new Error(
-            error.message
-            || "Không thể xử lý ảnh sản phẩm."
+            getImageErrorMessage(
+                error
+            )
         );
     }
 }
 
 
 /* =========================================================
-   KHÔNG CẦN XÓA FIREBASE STORAGE
+   CHỜ UPLOAD
+========================================================= */
 
-   Hàm vẫn giữ lại để những file khác gọi không bị lỗi.
+function waitForUpload(
+    uploadTask,
+    onProgress
+) {
+    return new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+            uploadTask.on(
+                "state_changed",
+
+                (snapshot) => {
+                    const totalBytes =
+                        Number(
+                            snapshot.totalBytes
+                            ||
+                            0
+                        );
+
+                    const bytesTransferred =
+                        Number(
+                            snapshot.bytesTransferred
+                            ||
+                            0
+                        );
+
+                    if (
+                        totalBytes <= 0
+                    ) {
+                        return;
+                    }
+
+                    const uploadPercent =
+                        (
+                            bytesTransferred /
+                            totalBytes
+                        ) *
+                        50;
+
+                    const progress =
+                        45 +
+                        uploadPercent;
+
+                    updateProgress(
+                        onProgress,
+                        Math.min(
+                            progress,
+                            95
+                        )
+                    );
+                },
+
+                (error) => {
+                    reject(
+                        error
+                    );
+                },
+
+                () => {
+                    resolve(
+                        uploadTask.snapshot
+                    );
+                }
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   XÓA ẢNH STORAGE
 ========================================================= */
 
 export async function deleteProductImage(
     storagePath
 ) {
-    /*
-        Ảnh hiện nằm trực tiếp trong dữ liệu sản phẩm.
-        Khi xóa sản phẩm, ảnh cũng tự mất theo sản phẩm.
-    */
+    const normalizedPath =
+        String(
+            storagePath
+            ||
+            ""
+        ).trim();
 
-    return;
+    if (!normalizedPath) {
+        return;
+    }
+
+    try {
+        const imageRef =
+            ref(
+                storage,
+                normalizedPath
+            );
+
+        await deleteObject(
+            imageRef
+        );
+    } catch (error) {
+        const errorCode =
+            String(
+                error?.code
+                ||
+                ""
+            );
+
+        if (
+            errorCode ===
+            "storage/object-not-found"
+        ) {
+            return;
+        }
+
+        console.warn(
+            "Không thể xóa ảnh cũ:",
+            error
+        );
+    }
+}
+
+
+/* =========================================================
+   TIẾN TRÌNH
+========================================================= */
+
+function updateProgress(
+    callback,
+    value
+) {
+    if (
+        typeof callback !==
+        "function"
+    ) {
+        return;
+    }
+
+    callback(
+        Math.max(
+            0,
+            Math.min(
+                Math.round(
+                    Number(
+                        value || 0
+                    )
+                ),
+                100
+            )
+        )
+    );
+}
+
+
+/* =========================================================
+   THÔNG BÁO LỖI
+========================================================= */
+
+function getImageErrorMessage(
+    error
+) {
+    const errorCode =
+        String(
+            error?.code
+            ||
+            ""
+        );
+
+    if (
+        errorCode ===
+        "storage/unauthorized"
+    ) {
+        return (
+            "Không có quyền tải ảnh lên Firebase Storage. "
+            +
+            "Hãy kiểm tra Storage Rules."
+        );
+    }
+
+    if (
+        errorCode ===
+        "storage/canceled"
+    ) {
+        return "Đã hủy tải ảnh.";
+    }
+
+    if (
+        errorCode ===
+        "storage/retry-limit-exceeded"
+    ) {
+        return (
+            "Tải ảnh quá lâu hoặc mạng không ổn định. "
+            +
+            "Vui lòng thử lại."
+        );
+    }
+
+    if (
+        errorCode ===
+        "storage/quota-exceeded"
+    ) {
+        return (
+            "Firebase Storage đã vượt giới hạn sử dụng."
+        );
+    }
+
+    return (
+        error?.message
+        ||
+        "Không thể tải ảnh sản phẩm."
+    );
 }

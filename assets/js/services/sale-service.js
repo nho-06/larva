@@ -9,36 +9,147 @@ import {
     db
 } from "../firebase-config.js";
 
-/*
-    Lấy giá nhập của sản phẩm.
 
-    Hỗ trợ nhiều tên trường để tránh lỗi
-    nếu sản phẩm cũ đang lưu giá vốn
-    bằng tên khác nhau.
-*/
-function getProductCostPrice(product) {
-    return Number(
+/* =========================================================
+   CHUYỂN GIÁ TRỊ THÀNH SỐ HỢP LỆ
+========================================================= */
+
+function toNumber(
+    value
+) {
+    const number =
+        Number(
+            value
+        );
+
+    return Number.isFinite(
+        number
+    )
+        ? number
+        : 0;
+}
+
+
+/* =========================================================
+   LẤY GIÁ NHẬP CỦA SẢN PHẨM
+========================================================= */
+
+function getProductCostPrice(
+    product
+) {
+    return toNumber(
         product.purchasePrice
-        ?? product.costPrice
-        ?? product.importPrice
-        ?? product.buyPrice
-        ?? product.entryPrice
-        ?? 0
+        ??
+        product.costPrice
+        ??
+        product.importPrice
+        ??
+        product.buyPrice
+        ??
+        product.entryPrice
+        ??
+        0
     );
 }
 
-/*
-    Thanh toán hóa đơn:
 
-    - Lấy dữ liệu sản phẩm mới nhất.
-    - Kiểm tra tồn kho.
-    - Lấy giá nhập.
-    - Tính giá vốn.
-    - Trừ mã giảm giá.
-    - Tính lợi nhuận sau giảm giá.
-    - Trừ tồn kho.
-    - Lưu hóa đơn vào Firebase.
-*/
+/* =========================================================
+   PHÂN BỔ TIỀN GIẢM GIÁ CHO TỪNG SẢN PHẨM
+========================================================= */
+
+function allocateDiscountToItems(
+    items,
+    subtotalAmount,
+    discountAmount
+) {
+    let allocatedDiscount =
+        0;
+
+    return items.map(
+        (
+            item,
+            index
+        ) => {
+            const isLastItem =
+                index ===
+                items.length - 1;
+
+            let lineDiscount =
+                0;
+
+            if (
+                subtotalAmount > 0
+                &&
+                discountAmount > 0
+            ) {
+                if (
+                    isLastItem
+                ) {
+                    lineDiscount =
+                        discountAmount -
+                        allocatedDiscount;
+                } else {
+                    lineDiscount =
+                        Math.round(
+                            discountAmount *
+                            (
+                                toNumber(
+                                    item.lineTotal
+                                )
+                                /
+                                subtotalAmount
+                            )
+                        );
+
+                    allocatedDiscount +=
+                        lineDiscount;
+                }
+            }
+
+            lineDiscount =
+                Math.max(
+                    0,
+                    Math.min(
+                        toNumber(
+                            item.lineTotal
+                        ),
+                        lineDiscount
+                    )
+                );
+
+            const lineRevenue =
+                Math.max(
+                    0,
+                    toNumber(
+                        item.lineTotal
+                    ) -
+                    lineDiscount
+                );
+
+            const lineProfit =
+                lineRevenue -
+                toNumber(
+                    item.lineCost
+                );
+
+            return {
+                ...item,
+
+                lineDiscount,
+
+                lineRevenue,
+
+                lineProfit
+            };
+        }
+    );
+}
+
+
+/* =========================================================
+   THANH TOÁN HÓA ĐƠN
+========================================================= */
+
 export async function checkoutSale({
     items,
     paymentMethod,
@@ -49,11 +160,15 @@ export async function checkoutSale({
     discountCode = "",
     discountType = "",
     discountValue = 0,
-    transferCode = ""
+    transferCode = "",
+    billName = "Bill"
 }) {
     if (
-        !Array.isArray(items)
-        || items.length === 0
+        !Array.isArray(
+            items
+        )
+        ||
+        items.length === 0
     ) {
         throw new Error(
             "Giỏ hàng đang trống."
@@ -61,49 +176,61 @@ export async function checkoutSale({
     }
 
     /*
-        Chuẩn hóa dữ liệu sản phẩm
-        nhận từ giỏ hàng.
+        Chuẩn hóa dữ liệu giỏ hàng.
     */
     const normalizedItems =
-        items.map((item) => {
-            return {
-                productId:
-                    String(
-                        item.productId
-                        || item.id
-                        || ""
-                    ).trim(),
+        items.map(
+            (
+                item
+            ) => {
+                return {
+                    productId:
+                        String(
+                            item.productId
+                            ||
+                            item.id
+                            ||
+                            ""
+                        ).trim(),
 
-                name:
-                    item.name
-                    || "Sản phẩm",
+                    name:
+                        item.name
+                        ||
+                        "Sản phẩm",
 
-                sku:
-                    item.sku
-                    || "",
+                    sku:
+                        item.sku
+                        ||
+                        "",
 
-                barcode:
-                    item.barcode
-                    || "",
+                    barcode:
+                        item.barcode
+                        ||
+                        "",
 
-                image:
-                    item.image
-                    || "",
+                    image:
+                        item.image
+                        ||
+                        "",
 
-                price:
-                    Number(
-                        item.price
-                        ?? item.salePrice
-                        ?? 0
-                    ),
+                    price:
+                        toNumber(
+                            item.price
+                            ??
+                            item.salePrice
+                            ??
+                            0
+                        ),
 
-                quantity:
-                    Number(
-                        item.quantity
-                        || 0
-                    )
-            };
-        });
+                    quantity:
+                        toNumber(
+                            item.quantity
+                            ||
+                            0
+                        )
+                };
+            }
+        );
 
     /*
         Kiểm tra dữ liệu giỏ hàng.
@@ -112,19 +239,29 @@ export async function checkoutSale({
         const item
         of normalizedItems
     ) {
-        if (!item.productId) {
+        if (
+            !item.productId
+        ) {
             throw new Error(
                 `Sản phẩm "${item.name}" không có ID Firebase.`
             );
         }
 
-        if (item.quantity <= 0) {
+        if (
+            !Number.isInteger(
+                item.quantity
+            )
+            ||
+            item.quantity <= 0
+        ) {
             throw new Error(
                 `Số lượng của "${item.name}" không hợp lệ.`
             );
         }
 
-        if (item.price < 0) {
+        if (
+            item.price < 0
+        ) {
             throw new Error(
                 `Giá bán của "${item.name}" không hợp lệ.`
             );
@@ -132,8 +269,7 @@ export async function checkoutSale({
     }
 
     /*
-        Lấy toàn bộ sản phẩm mới nhất
-        từ Firebase trước khi thanh toán.
+        Lấy toàn bộ sản phẩm mới nhất từ Firebase.
     */
     const productsSnapshot =
         await get(
@@ -145,7 +281,8 @@ export async function checkoutSale({
 
     const products =
         productsSnapshot.val()
-        || {};
+        ||
+        {};
 
     const updates =
         {};
@@ -153,12 +290,11 @@ export async function checkoutSale({
     const now =
         Date.now();
 
-    const saleItems =
+    const preparedItems =
         [];
 
     /*
-        Kiểm tra từng sản phẩm,
-        lấy giá vốn và chuẩn bị trừ tồn kho.
+        Kiểm tra tồn kho và tính giá vốn.
     */
     for (
         const item
@@ -169,21 +305,24 @@ export async function checkoutSale({
                 item.productId
             ];
 
-        if (!product) {
+        if (
+            !product
+        ) {
             throw new Error(
                 `Không tìm thấy sản phẩm "${item.name}" trên Firebase.`
             );
         }
 
         const currentStock =
-            Number(
+            toNumber(
                 product.quantity
-                || 0
+                ||
+                0
             );
 
         if (
-            currentStock
-            < item.quantity
+            currentStock <
+            item.quantity
         ) {
             throw new Error(
                 `"${item.name}" chỉ còn ${currentStock} sản phẩm.`
@@ -196,22 +335,14 @@ export async function checkoutSale({
             );
 
         const lineTotal =
-            item.price
-            * item.quantity;
+            item.price *
+            item.quantity;
 
         const lineCost =
-            costPrice
-            * item.quantity;
+            costPrice *
+            item.quantity;
 
-        /*
-            lineProfit ở đây là tiền lời
-            trước khi phân bổ giảm giá.
-        */
-        const lineProfit =
-            lineTotal
-            - lineCost;
-
-        saleItems.push({
+        preparedItems.push({
             productId:
                 item.productId,
 
@@ -224,9 +355,11 @@ export async function checkoutSale({
             barcode:
                 item.barcode,
 
-            image:
-                item.image,
-
+            /*
+                Không lưu URL hoặc Base64 ảnh vào từng hóa đơn.
+                Lịch sử đơn hàng chỉ cần productId, tên, mã, giá
+                và số lượng. Việc này tránh lặp dữ liệu ảnh.
+            */
             price:
                 item.price,
 
@@ -243,82 +376,46 @@ export async function checkoutSale({
 
             lineTotal,
 
-            lineCost,
-
-            lineProfit
+            lineCost
         });
 
         const newStock =
-            currentStock
-            - item.quantity;
+            currentStock -
+            item.quantity;
 
         updates[
             `products/${item.productId}/quantity`
-        ] = newStock;
+        ] =
+            newStock;
 
         updates[
             `products/${item.productId}/updatedAt`
-        ] = now;
+        ] =
+            now;
     }
 
     /*
-        Tạo mã hóa đơn Firebase mới.
-    */
-    const saleId =
-        push(
-            ref(
-                db,
-                "sales"
-            )
-        ).key;
+        Tổng tiền trước giảm giá.
 
-    if (!saleId) {
-        throw new Error(
-            "Không thể tạo mã hóa đơn."
-        );
-    }
-
-    /*
-        Tổng tiền sản phẩm trước giảm giá.
+        Tính trực tiếp từ sản phẩm để tránh
+        dữ liệu tổng tiền truyền vào bị sai.
     */
     const calculatedSubtotal =
-        saleItems.reduce(
-            (total, item) => {
+        preparedItems.reduce(
+            (
+                total,
+                item
+            ) => {
                 return (
-                    total
-                    + Number(
+                    total +
+                    toNumber(
                         item.lineTotal
-                        || 0
                     )
                 );
             },
             0
         );
 
-    /*
-        Tổng giá vốn của hóa đơn.
-    */
-    const totalCost =
-        saleItems.reduce(
-            (total, item) => {
-                return (
-                    total
-                    + Number(
-                        item.lineCost
-                        || 0
-                    )
-                );
-            },
-            0
-        );
-
-    /*
-        Ưu tiên tổng tiền do hệ thống
-        tự tính từ sản phẩm.
-
-        Không tin hoàn toàn dữ liệu gửi
-        từ giao diện để tránh sai tổng tiền.
-    */
     const normalizedSubtotal =
         Math.max(
             0,
@@ -326,7 +423,7 @@ export async function checkoutSale({
         );
 
     /*
-        Số tiền giảm không được âm
+        Tiền giảm giá không được âm
         và không được lớn hơn tạm tính.
     */
     const normalizedDiscount =
@@ -334,146 +431,207 @@ export async function checkoutSale({
             normalizedSubtotal,
             Math.max(
                 0,
-                Number(
+                toNumber(
                     discountAmount
-                    || 0
                 )
             )
         );
 
     /*
-        Tổng khách cần thanh toán
-        sau khi trừ mã giảm giá.
+        Tổng tiền cuối cùng.
     */
     const finalTotal =
         Math.max(
             0,
-            normalizedSubtotal
-            - normalizedDiscount
+            normalizedSubtotal -
+            normalizedDiscount
         );
 
     /*
-        Lợi nhuận phải tính theo doanh thu
-        sau khi trừ mã giảm giá.
+        Phân bổ giảm giá cho từng sản phẩm.
+    */
+    const saleItems =
+        allocateDiscountToItems(
+            preparedItems,
+            normalizedSubtotal,
+            normalizedDiscount
+        );
+            /*
+        Tổng doanh thu sau giảm giá.
+    */
+    const totalRevenue =
+        saleItems.reduce(
+            (
+                total,
+                item
+            ) => {
+                return (
+                    total +
+                    toNumber(
+                        item.lineRevenue
+                    )
+                );
+            },
+            0
+        );
+
+    /*
+        Tổng giá vốn.
+    */
+    const totalCost =
+        saleItems.reduce(
+            (
+                total,
+                item
+            ) => {
+                return (
+                    total +
+                    toNumber(
+                        item.lineCost
+                    )
+                );
+            },
+            0
+        );
+
+    /*
+        Tổng lợi nhuận.
     */
     const grossProfit =
-        finalTotal
-        - totalCost;
+        totalRevenue -
+        totalCost;
+
+    const normalizedPaidAmount =
+        paymentMethod ===
+            "cash"
+            ? Math.max(
+                0,
+                toNumber(
+                    paidAmount
+                )
+            )
+            : finalTotal;
+
+    if (
+        paymentMethod ===
+            "cash"
+        &&
+        normalizedPaidAmount <
+            finalTotal
+    ) {
+        throw new Error(
+            "Số tiền khách đưa chưa đủ."
+        );
+    }
+
+    const changeAmount =
+        paymentMethod ===
+            "cash"
+            ? Math.max(
+                0,
+                normalizedPaidAmount -
+                finalTotal
+            )
+            : 0;
 
     /*
-        Hiện tại chưa tính thuế
-        và chi phí khác.
+        Tạo ID hóa đơn mới.
     */
-    const taxAmount =
-        0;
-
-    const otherCost =
-        0;
-
-    const netProfit =
-        grossProfit
-        - taxAmount
-        - otherCost;
-
-    const finalPaidAmount =
-        Number(
-            paidAmount
-            || 0
+    const saleRef =
+        push(
+            ref(
+                db,
+                "sales"
+            )
         );
 
-    const finalPaymentMethod =
-        paymentMethod
-        || "cash";
+    const saleId =
+        saleRef.key;
 
-    /*
-        Dữ liệu hóa đơn lưu trên Firebase.
-    */
-    const saleData = {
+    if (
+        !saleId
+    ) {
+        throw new Error(
+            "Không tạo được mã hóa đơn."
+        );
+    }
+
+    const sale = {
         id:
             saleId,
 
         saleId,
 
+        billName:
+            String(
+                billName ||
+                "Bill"
+            ).trim() ||
+            "Bill",
+
         items:
             saleItems,
 
-        /*
-            Tổng tiền trước giảm giá.
-        */
         subtotalAmount:
             normalizedSubtotal,
 
-        /*
-            Thông tin mã giảm giá.
-        */
         discountAmount:
             normalizedDiscount,
 
         discountCode:
             String(
-                discountCode
-                || ""
-            ),
+                discountCode ||
+                ""
+            ).trim(),
 
         discountType:
             String(
-                discountType
-                || ""
-            ),
+                discountType ||
+                ""
+            ).trim(),
 
         discountValue:
-            Number(
-                discountValue
-                || 0
+            Math.max(
+                0,
+                toNumber(
+                    discountValue
+                )
             ),
 
-        /*
-            Tổng tiền sau giảm giá.
-        */
         totalAmount:
             finalTotal,
 
-        totalRevenue:
-            finalTotal,
+        totalRevenue,
 
-        /*
-            Giá vốn và lợi nhuận.
-        */
         totalCost,
 
         grossProfit,
 
-        taxAmount,
-
-        otherCost,
-
         totalProfit:
-            netProfit,
+            grossProfit,
 
-        netProfit,
+        netProfit:
+            grossProfit,
 
-        /*
-            Thông tin thanh toán.
-        */
         paymentMethod:
-            finalPaymentMethod,
+            paymentMethod ===
+                "transfer"
+                ? "transfer"
+                : "cash",
 
         paidAmount:
-            finalPaidAmount,
+            normalizedPaidAmount,
 
-        changeAmount:
-            finalPaymentMethod
-            === "cash"
-                ? Math.max(
-                    0,
-                    finalPaidAmount
-                    - finalTotal
-                )
-                : 0,
+        changeAmount,
 
         transferCode:
-            transferCode
-            || "",
+            paymentMethod ===
+                "transfer"
+                ? String(
+                    transferCode ||
+                    ""
+                ).trim()
+                : "",
 
         status:
             "paid",
@@ -486,17 +644,19 @@ export async function checkoutSale({
     };
 
     /*
-        Lưu hóa đơn và cập nhật tồn kho
-        trong cùng một lần update Firebase.
+        Lưu hóa đơn cùng lúc với cập nhật tồn kho.
     */
     updates[
         `sales/${saleId}`
-    ] = saleData;
+    ] =
+        sale;
 
     await update(
-        ref(db),
+        ref(
+            db
+        ),
         updates
     );
 
-    return saleData;
+    return sale;
 }

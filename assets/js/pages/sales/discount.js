@@ -1,8 +1,4 @@
 import {
-    createDiscountCode
-} from "../../services/discount-service.js";
-
-import {
     state
 } from "./sales-state.js";
 
@@ -15,12 +11,21 @@ import {
     formatMoney
 } from "../../utils.js";
 
-/*
-    Tính tổng tiền hàng trước khi giảm giá.
-*/
+import {
+    saveBillsToStorage
+} from "./bill-manager.js";
+
+
+/* =========================================================
+   TÍNH TỔNG TIỀN HÀNG TRƯỚC KHI GIẢM GIÁ
+========================================================= */
+
 export function getCartSubtotal() {
     return state.cart.reduce(
-        (total, item) => {
+        (
+            total,
+            item
+        ) => {
             const price =
                 Number(
                     item.price || 0
@@ -40,9 +45,11 @@ export function getCartSubtotal() {
     );
 }
 
-/*
-    Lấy mã giảm giá đang được chọn.
-*/
+
+/* =========================================================
+   LẤY MÃ GIẢM GIÁ ĐANG CHỌN CỦA BILL HIỆN TẠI
+========================================================= */
+
 export function getSelectedDiscount() {
     return (
         state.discountCodes.find(
@@ -57,26 +64,52 @@ export function getSelectedDiscount() {
                     )
                 );
             }
-        ) || null
+        ) ||
+        null
     );
 }
 
-/*
-    Tính số tiền được giảm.
 
-    Có 2 loại:
+/* =========================================================
+   KIỂM TRA MÃ GIẢM GIÁ CÒN TỒN TẠI KHÔNG
+========================================================= */
 
-    percent:
-    Giảm theo phần trăm.
+export function validateSelectedDiscount() {
+    if (
+        !state.selectedDiscountId
+    ) {
+        return null;
+    }
 
-    amount:
-    Giảm trực tiếp theo số tiền.
-*/
+    const selectedDiscount =
+        getSelectedDiscount();
+
+    /*
+        Nếu mã đã bị xóa hoặc không còn hoạt động,
+        bỏ mã khỏi bill hiện tại.
+    */
+    if (!selectedDiscount) {
+        state.selectedDiscountId =
+            "";
+
+        saveBillsToStorage();
+
+        return null;
+    }
+
+    return selectedDiscount;
+}
+
+
+/* =========================================================
+   TÍNH SỐ TIỀN ĐƯỢC GIẢM
+========================================================= */
+
 export function getDiscountAmount(
     subtotal = getCartSubtotal()
 ) {
     const discount =
-        getSelectedDiscount();
+        validateSelectedDiscount();
 
     if (
         !discount ||
@@ -85,16 +118,21 @@ export function getDiscountAmount(
         return 0;
     }
 
-    const rawAmount =
-        discount.type === "amount"
-            ? Number(
+    const discountValue =
+        Math.max(
+            0,
+            Number(
                 discount.value || 0
             )
+        );
+
+    const rawAmount =
+        discount.type ===
+        "amount"
+            ? discountValue
             : (
                 subtotal *
-                Number(
-                    discount.value || 0
-                )
+                discountValue
             ) / 100;
 
     /*
@@ -112,10 +150,11 @@ export function getDiscountAmount(
     );
 }
 
-/*
-    Tổng tiền khách phải thanh toán
-    sau khi trừ mã giảm giá.
-*/
+
+/* =========================================================
+   TÍNH TỔNG TIỀN SAU GIẢM GIÁ
+========================================================= */
+
 export function getFinalTotal() {
     const subtotal =
         getCartSubtotal();
@@ -132,9 +171,11 @@ export function getFinalTotal() {
     );
 }
 
-/*
-    Tạo nội dung hiển thị cho mã giảm giá.
-*/
+
+/* =========================================================
+   TẠO NỘI DUNG HIỂN THỊ CHO MÃ GIẢM GIÁ
+========================================================= */
+
 function getDiscountLabel(
     discount
 ) {
@@ -152,13 +193,17 @@ function getDiscountLabel(
     )}%`;
 }
 
-/*
-    Hiển thị danh sách mã giảm giá.
 
-    Danh sách được thiết kế theo hàng ngang,
-    có thể lướt trên điện thoại.
-*/
+/* =========================================================
+   HIỂN THỊ DANH SÁCH MÃ GIẢM GIÁ
+========================================================= */
+
 export function renderDiscountCodes() {
+    /*
+        Kiểm tra lại mã đang chọn của bill hiện tại.
+    */
+    validateSelectedDiscount();
+
     const hasDiscounts =
         state.discountCodes.length >
         0;
@@ -227,190 +272,82 @@ export function renderDiscountCodes() {
             .join("");
 }
 
-/*
-    Chọn hoặc bỏ chọn mã giảm giá.
 
-    Bấm một lần:
-    Áp dụng mã.
+/* =========================================================
+   CHỌN HOẶC BỎ CHỌN MÃ GIẢM GIÁ
+========================================================= */
 
-    Bấm lại:
-    Hủy áp dụng mã.
-*/
 export function toggleDiscount(
     discountId
 ) {
+    const clickedId =
+        String(
+            discountId || ""
+        );
+
     const currentId =
         String(
             state.selectedDiscountId ||
             ""
         );
 
-    const clickedId =
-        String(
-            discountId || ""
+    /*
+        Không cho chọn mã không tồn tại.
+    */
+    const discountExists =
+        state.discountCodes.some(
+            (discount) => {
+                return (
+                    String(
+                        discount.id || ""
+                    ) ===
+                    clickedId
+                );
+            }
         );
 
+    if (
+        clickedId &&
+        !discountExists
+    ) {
+        return false;
+    }
+
+    /*
+        Bấm lại mã đang chọn thì bỏ mã.
+        Bấm mã khác thì chuyển sang mã mới.
+    */
     state.selectedDiscountId =
         currentId === clickedId
             ? ""
             : clickedId;
 
-    renderDiscountCodes();
-}
-
-/*
-    Hiển thị thông báo khi tạo mã.
-*/
-function showDiscountMessage(
-    message,
-    type = "success"
-) {
-    if (
-        !elements.discountFormMessage
-    ) {
-        return;
-    }
-
-    elements.discountFormMessage.textContent =
-        message;
-
-    elements.discountFormMessage.className =
-        `discount-form-message ${type}`;
-
-    window.clearTimeout(
-        showDiscountMessage.timer
-    );
-
-    showDiscountMessage.timer =
-        window.setTimeout(
-            () => {
-                elements.discountFormMessage
-                    .classList.add(
-                        "hidden"
-                    );
-            },
-            2500
-        );
-}
-
-/*
-    Thêm mã giảm giá mới lên Firebase.
-
-    Sau khi thêm thành công,
-    mã mới sẽ được tự động chọn.
-*/
-export async function addDiscountCode() {
-    const code =
-        elements.discountCodeInput
-            ?.value || "";
-
-    const type =
-        elements.discountTypeInput
-            ?.value || "percent";
-
-    const value =
-        Number(
-            elements.discountValueInput
-                ?.value || 0
-        );
-
     /*
-        Kiểm tra mã trùng.
+        Lưu mã giảm giá riêng vào bill hiện tại.
     */
-    const duplicate =
-        state.discountCodes.some(
-            (item) => {
-                const existingCode =
-                    String(
-                        item.code || ""
-                    )
-                        .trim()
-                        .toUpperCase();
+    saveBillsToStorage();
 
-                const newCode =
-                    String(
-                        code || ""
-                    )
-                        .trim()
-                        .toUpperCase();
+    renderDiscountCodes();
 
-                return (
-                    existingCode ===
-                    newCode
-                );
-            }
-        );
+    return true;
+}
 
-    if (duplicate) {
-        showDiscountMessage(
-            "Mã giảm giá này đã tồn tại.",
-            "error"
-        );
 
+/* =========================================================
+   BỎ MÃ GIẢM GIÁ KHỎI BILL HIỆN TẠI
+========================================================= */
+
+export function clearSelectedDiscount() {
+    if (
+        !state.selectedDiscountId
+    ) {
         return;
     }
 
-    if (
-        elements.addDiscountButton
-    ) {
-        elements.addDiscountButton.disabled =
-            true;
+    state.selectedDiscountId =
+        "";
 
-        elements.addDiscountButton.textContent =
-            "Đang thêm...";
-    }
+    saveBillsToStorage();
 
-    try {
-        const discount =
-            await createDiscountCode({
-                code,
-                type,
-                value
-            });
-
-        /*
-            Tự chọn mã vừa tạo.
-        */
-        state.selectedDiscountId =
-            discount.id;
-
-        if (
-            elements.discountCodeInput
-        ) {
-            elements.discountCodeInput.value =
-                "";
-        }
-
-        if (
-            elements.discountValueInput
-        ) {
-            elements.discountValueInput.value =
-                "";
-        }
-
-        showDiscountMessage(
-            "Đã thêm và tự áp dụng mã giảm giá."
-        );
-    } catch (error) {
-        console.error(
-            "Lỗi thêm mã giảm giá:",
-            error
-        );
-
-        showDiscountMessage(
-            error.message ||
-            "Không thể thêm mã giảm giá.",
-            "error"
-        );
-    } finally {
-        if (
-            elements.addDiscountButton
-        ) {
-            elements.addDiscountButton.disabled =
-                false;
-
-            elements.addDiscountButton.textContent =
-                "Thêm mã";
-        }
-    }
+    renderDiscountCodes();
 }

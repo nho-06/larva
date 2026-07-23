@@ -1,5 +1,4 @@
 import {
-    getRegisterErrorMessage,
     registerStaffAccount
 } from "../auth/auth-service.js";
 
@@ -17,6 +16,11 @@ const elements = {
     usernameInput:
         document.querySelector(
             "#usernameInput"
+        ),
+
+    emailInput:
+        document.querySelector(
+            "#emailInput"
         ),
 
     passwordInput:
@@ -50,9 +54,77 @@ const elements = {
         )
 };
 
-let isSubmitting =
-    false;
+let isSubmitting = false;
 
+/**
+ * Chuẩn hóa họ và tên.
+ */
+function normalizeDisplayName(value) {
+    return String(value || "")
+        .trim()
+        .replace(/\s+/g, " ");
+}
+
+/**
+ * Chuẩn hóa tên đăng nhập.
+ */
+function normalizeUsername(value) {
+    return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "");
+}
+
+/**
+ * Chuẩn hóa email.
+ */
+function normalizeEmail(value) {
+    return String(value || "")
+        .trim()
+        .toLowerCase();
+}
+
+/**
+ * Kiểm tra định dạng email.
+ */
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        .test(
+            String(email || "")
+        );
+}
+
+/**
+ * Kiểm tra tên đăng nhập.
+ *
+ * Chỉ chấp nhận:
+ * - Chữ thường không dấu
+ * - Chữ số
+ * - Dấu chấm
+ * - Dấu gạch dưới
+ */
+function isValidUsername(username) {
+    return /^[a-z0-9._]{3,30}$/
+        .test(
+            String(username || "")
+        );
+}
+
+/**
+ * Khởi tạo trang đăng ký.
+ */
+function initializeRegisterPage() {
+    hideRegisterMessage();
+
+    setFormDisabled(false);
+
+    elements.displayNameInput
+        ?.focus();
+}
+
+/**
+ * Xử lý submit form đăng ký.
+ */
 async function handleRegisterSubmit(event) {
     event.preventDefault();
 
@@ -63,32 +135,43 @@ async function handleRegisterSubmit(event) {
     hideRegisterMessage();
 
     const displayName =
-        String(
-            elements.displayNameInput?.value
-            || ""
-        ).trim();
+        normalizeDisplayName(
+            elements.displayNameInput
+                ?.value
+        );
 
     const username =
-        String(
-            elements.usernameInput?.value
-            || ""
-        ).trim();
+        normalizeUsername(
+            elements.usernameInput
+                ?.value
+        );
+
+    const email =
+        normalizeEmail(
+            elements.emailInput
+                ?.value
+        );
 
     const password =
         String(
-            elements.passwordInput?.value
+            elements.passwordInput
+                ?.value
             || ""
         );
 
     const confirmPassword =
         String(
-            elements.confirmPasswordInput?.value
+            elements.confirmPasswordInput
+                ?.value
             || ""
         );
 
+    /**
+     * Kiểm tra họ và tên.
+     */
     if (!displayName) {
         showRegisterMessage(
-            "Vui lòng nhập tên nhân viên.",
+            "Vui lòng nhập họ và tên.",
             "error"
         );
 
@@ -98,6 +181,33 @@ async function handleRegisterSubmit(event) {
         return;
     }
 
+    if (displayName.length < 2) {
+        showRegisterMessage(
+            "Họ và tên phải có ít nhất 2 ký tự.",
+            "error"
+        );
+
+        elements.displayNameInput
+            ?.focus();
+
+        return;
+    }
+
+    if (displayName.length > 100) {
+        showRegisterMessage(
+            "Họ và tên không được vượt quá 100 ký tự.",
+            "error"
+        );
+
+        elements.displayNameInput
+            ?.focus();
+
+        return;
+    }
+
+    /**
+     * Kiểm tra tên đăng nhập.
+     */
     if (!username) {
         showRegisterMessage(
             "Vui lòng nhập tên đăng nhập.",
@@ -105,6 +215,96 @@ async function handleRegisterSubmit(event) {
         );
 
         elements.usernameInput
+            ?.focus();
+
+        return;
+    }
+
+    if (username.length < 3) {
+        showRegisterMessage(
+            "Tên đăng nhập phải có ít nhất 3 ký tự.",
+            "error"
+        );
+
+        elements.usernameInput
+            ?.focus();
+
+        return;
+    }
+
+    if (username.length > 30) {
+        showRegisterMessage(
+            "Tên đăng nhập không được vượt quá 30 ký tự.",
+            "error"
+        );
+
+        elements.usernameInput
+            ?.focus();
+
+        return;
+    }
+
+    if (!isValidUsername(username)) {
+        showRegisterMessage(
+            "Tên đăng nhập chỉ được gồm chữ thường không dấu, số, dấu chấm hoặc dấu gạch dưới.",
+            "error"
+        );
+
+        elements.usernameInput
+            ?.focus();
+
+        return;
+    }
+
+    /**
+     * Kiểm tra email.
+     */
+    if (!email) {
+        showRegisterMessage(
+            "Vui lòng nhập email.",
+            "error"
+        );
+
+        elements.emailInput
+            ?.focus();
+
+        return;
+    }
+
+    if (!isValidEmail(email)) {
+        showRegisterMessage(
+            "Email không đúng định dạng.",
+            "error"
+        );
+
+        elements.emailInput
+            ?.focus();
+
+        return;
+    }
+
+    if (email.length > 150) {
+        showRegisterMessage(
+            "Email không được vượt quá 150 ký tự.",
+            "error"
+        );
+
+        elements.emailInput
+            ?.focus();
+
+        return;
+    }
+
+    /**
+     * Kiểm tra mật khẩu.
+     */
+    if (!password) {
+        showRegisterMessage(
+            "Vui lòng nhập mật khẩu.",
+            "error"
+        );
+
+        elements.passwordInput
             ?.focus();
 
         return;
@@ -122,12 +322,24 @@ async function handleRegisterSubmit(event) {
         return;
     }
 
-    if (
-        password
-        !== confirmPassword
-    ) {
+    if (password.length > 128) {
         showRegisterMessage(
-            "Mật khẩu nhập lại không khớp.",
+            "Mật khẩu không được vượt quá 128 ký tự.",
+            "error"
+        );
+
+        elements.passwordInput
+            ?.focus();
+
+        return;
+    }
+
+    /**
+     * Kiểm tra nhập lại mật khẩu.
+     */
+    if (!confirmPassword) {
+        showRegisterMessage(
+            "Vui lòng nhập lại mật khẩu.",
             "error"
         );
 
@@ -137,111 +349,128 @@ async function handleRegisterSubmit(event) {
         return;
     }
 
-    isSubmitting =
-        true;
+    if (confirmPassword !== password) {
+        showRegisterMessage(
+            "Mật khẩu nhập lại không khớp.",
+            "error"
+        );
 
-    setFormDisabled(
-        true
-    );
+        if (
+            elements.confirmPasswordInput
+        ) {
+            elements.confirmPasswordInput
+                .value = "";
 
-    setRegisterButtonLoading(
-        true
-    );
+            elements.confirmPasswordInput
+                .focus();
+        }
+
+        return;
+    }
+
+    isSubmitting = true;
+
+    setFormDisabled(true);
+    setRegisterButtonLoading(true);
 
     try {
         const result =
             await registerStaffAccount({
                 displayName,
                 username,
+                email,
                 password
             });
 
-        console.log(
-            "Đăng ký nhân viên thành công:",
-            result
-        );
+        clearRegisterForm();
 
         showRegisterMessage(
-            "Đăng ký nhân viên thành công. "
-            + "Đang chuyển về trang đăng nhập...",
+            result?.message
+            || (
+                "Đăng ký thành công. "
+                + "Tài khoản đang chờ admin xác nhận."
+            ),
             "success"
         );
 
-        clearRegisterForm();
-
+        /**
+         * Sau khi đăng ký thành công:
+         * - Không tự đăng nhập
+         * - Không chuyển vào trang bán hàng
+         * - Chờ admin duyệt tài khoản
+         */
         window.setTimeout(() => {
             window.location.replace(
                 "./login.html"
             );
-        }, 1400);
-
+        }, 2200);
     } catch (error) {
         console.error(
-            "Đăng ký nhân viên thất bại:",
+            "Đăng ký tài khoản thất bại:",
             error
         );
 
         showRegisterMessage(
-            getRegisterErrorMessage(
+            getFriendlyRegisterError(
                 error
             ),
             "error"
         );
 
-        isSubmitting =
-            false;
+        focusFieldByError(error);
+    } finally {
+        isSubmitting = false;
 
-        setFormDisabled(
-            false
-        );
-
-        setRegisterButtonLoading(
-            false
-        );
-
-        elements.passwordInput.value =
-            "";
-
-        elements.confirmPasswordInput.value =
-            "";
-
-        elements.passwordInput
-            ?.focus();
+        setFormDisabled(false);
+        setRegisterButtonLoading(false);
     }
 }
 
-function togglePasswordVisibility(
+/**
+ * Hiện hoặc ẩn mật khẩu.
+ */
+function togglePasswordVisibility({
     input,
     button
-) {
-    if (
-        !input
-        ||
-        !button
-    ) {
+}) {
+    if (!input || !button) {
         return;
     }
 
-    const isHidden =
-        input.type
-        === "password";
+    const isPasswordHidden =
+        input.type === "password";
 
     input.type =
-        isHidden
+        isPasswordHidden
             ? "text"
             : "password";
 
     button.textContent =
-        isHidden
+        isPasswordHidden
             ? "Ẩn"
             : "Hiện";
+
+    button.setAttribute(
+        "aria-label",
+        isPasswordHidden
+            ? "Ẩn mật khẩu"
+            : "Hiện mật khẩu"
+    );
+
+    button.setAttribute(
+        "aria-pressed",
+        String(isPasswordHidden)
+    );
 
     input.focus();
 }
 
+/**
+ * Hiện thông báo đăng ký.
+ */
 function showRegisterMessage(
     message,
-    type
+    type = "error"
 ) {
     if (!elements.registerMessage) {
         return;
@@ -250,13 +479,40 @@ function showRegisterMessage(
     elements.registerMessage.textContent =
         String(
             message
-            || ""
+            || "Không thể đăng ký tài khoản."
         );
 
-    elements.registerMessage.className =
-        `register-message ${type}`;
+    elements.registerMessage.hidden =
+        false;
+
+    elements.registerMessage.classList.remove(
+        "hidden",
+        "success",
+        "error",
+        "is-success",
+        "is-error"
+    );
+
+    if (type === "success") {
+        elements.registerMessage
+            .classList.add(
+                "success",
+                "is-success"
+            );
+
+        return;
+    }
+
+    elements.registerMessage
+        .classList.add(
+            "error",
+            "is-error"
+        );
 }
 
+/**
+ * Ẩn thông báo.
+ */
 function hideRegisterMessage() {
     if (!elements.registerMessage) {
         return;
@@ -265,14 +521,29 @@ function hideRegisterMessage() {
     elements.registerMessage.textContent =
         "";
 
-    elements.registerMessage.className =
-        "register-message hidden";
+    elements.registerMessage.hidden =
+        true;
+
+    elements.registerMessage.classList.add(
+        "hidden"
+    );
+
+    elements.registerMessage.classList.remove(
+        "success",
+        "error",
+        "is-success",
+        "is-error"
+    );
 }
 
+/**
+ * Khóa hoặc mở toàn bộ form.
+ */
 function setFormDisabled(disabled) {
     const fields = [
         elements.displayNameInput,
         elements.usernameInput,
+        elements.emailInput,
         elements.passwordInput,
         elements.confirmPasswordInput,
         elements.togglePasswordButton,
@@ -286,11 +557,16 @@ function setFormDisabled(disabled) {
         }
 
         field.disabled =
-            disabled;
+            Boolean(disabled);
     });
 }
 
-function setRegisterButtonLoading(loading) {
+/**
+ * Đổi nội dung nút đăng ký.
+ */
+function setRegisterButtonLoading(
+    loading
+) {
     if (!elements.registerButton) {
         return;
     }
@@ -298,83 +574,380 @@ function setRegisterButtonLoading(loading) {
     elements.registerButton.textContent =
         loading
             ? "Đang đăng ký..."
-            : "Đăng ký nhân viên";
+            : "Đăng ký tài khoản";
+
+    elements.registerButton.classList.toggle(
+        "is-loading",
+        Boolean(loading)
+    );
 }
 
+/**
+ * Xóa dữ liệu form sau khi đăng ký thành công.
+ */
 function clearRegisterForm() {
-    elements.registerForm
-        ?.reset();
-
-    if (
-        elements.passwordInput
-        &&
-        elements.passwordInput.type
-        !== "password"
-    ) {
-        elements.passwordInput.type =
-            "password";
+    if (elements.registerForm) {
+        elements.registerForm.reset();
     }
 
-    if (
-        elements.confirmPasswordInput
-        &&
-        elements.confirmPasswordInput.type
-        !== "password"
-    ) {
-        elements.confirmPasswordInput.type =
-            "password";
-    }
+    resetPasswordToggle(
+        elements.passwordInput,
+        elements.togglePasswordButton
+    );
 
-    if (elements.togglePasswordButton) {
-        elements.togglePasswordButton.textContent =
-            "Hiện";
-    }
-
-    if (
+    resetPasswordToggle(
+        elements.confirmPasswordInput,
         elements.toggleConfirmPasswordButton
-    ) {
-        elements.toggleConfirmPasswordButton.textContent =
-            "Hiện";
+    );
+}
+
+/**
+ * Đưa ô mật khẩu trở lại trạng thái ẩn.
+ */
+function resetPasswordToggle(
+    input,
+    button
+) {
+    if (input) {
+        input.type = "password";
+    }
+
+    if (button) {
+        button.textContent = "Hiện";
+
+        button.setAttribute(
+            "aria-label",
+            "Hiện mật khẩu"
+        );
+
+        button.setAttribute(
+            "aria-pressed",
+            "false"
+        );
     }
 }
 
+/**
+ * Đưa con trỏ đến trường phù hợp với lỗi.
+ */
+function focusFieldByError(error) {
+    const message =
+        String(
+            error?.message || ""
+        ).toLowerCase();
+
+    const code =
+        String(
+            error?.code || ""
+        ).toLowerCase();
+
+    if (
+        message.includes(
+            "tên đăng nhập"
+        )
+        || message.includes(
+            "username"
+        )
+    ) {
+        elements.usernameInput
+            ?.focus();
+
+        return;
+    }
+
+    if (
+        code ===
+            "auth/email-already-in-use"
+        || code ===
+            "auth/invalid-email"
+        || message.includes(
+            "email"
+        )
+    ) {
+        elements.emailInput
+            ?.focus();
+
+        return;
+    }
+
+    if (
+        code ===
+            "auth/weak-password"
+        || message.includes(
+            "mật khẩu"
+        )
+    ) {
+        if (elements.passwordInput) {
+            elements.passwordInput.value =
+                "";
+
+            elements.passwordInput.focus();
+        }
+
+        if (
+            elements.confirmPasswordInput
+        ) {
+            elements.confirmPasswordInput
+                .value = "";
+        }
+
+        return;
+    }
+
+    elements.displayNameInput
+        ?.focus();
+}
+
+/**
+ * Chuyển lỗi Firebase thành thông báo dễ hiểu.
+ */
+function getFriendlyRegisterError(error) {
+    const code =
+        String(
+            error?.code || ""
+        );
+
+    const message =
+        String(
+            error?.message || ""
+        );
+
+    if (
+        code ===
+            "auth/email-already-in-use"
+        || message.includes(
+            "Email này đã được đăng ký"
+        )
+    ) {
+        return (
+            "Email này đã được sử dụng. "
+            + "Vui lòng dùng email khác."
+        );
+    }
+
+    if (
+        code === "auth/invalid-email"
+    ) {
+        return (
+            "Email không hợp lệ."
+        );
+    }
+
+    if (
+        code === "auth/weak-password"
+    ) {
+        return (
+            "Mật khẩu quá yếu. "
+            + "Vui lòng nhập ít nhất 6 ký tự."
+        );
+    }
+
+    if (
+        code ===
+        "auth/operation-not-allowed"
+    ) {
+        return (
+            "Firebase chưa bật đăng nhập bằng Email/Password."
+        );
+    }
+
+    if (
+        code ===
+        "auth/network-request-failed"
+    ) {
+        return (
+            "Không thể kết nối Firebase. "
+            + "Vui lòng kiểm tra mạng."
+        );
+    }
+
+    if (
+        code ===
+        "auth/too-many-requests"
+    ) {
+        return (
+            "Bạn đã thao tác quá nhiều lần. "
+            + "Vui lòng đợi một lúc rồi thử lại."
+        );
+    }
+
+    if (
+        message.includes(
+            "Tên đăng nhập đã được sử dụng"
+        )
+    ) {
+        return (
+            "Tên đăng nhập đã được sử dụng. "
+            + "Vui lòng chọn tên khác."
+        );
+    }
+
+    if (
+        message.includes(
+            "Database Rules đang chặn"
+        )
+        || message.includes(
+            "Permission denied"
+        )
+        || message.includes(
+            "PERMISSION_DENIED"
+        )
+    ) {
+        return (
+            "Firebase Database Rules đang chặn đăng ký. "
+            + "Cần cập nhật database.rules.json."
+        );
+    }
+
+    if (
+        message.includes(
+            "Tên đăng nhập phải"
+        )
+        || message.includes(
+            "Vui lòng nhập tên đăng nhập"
+        )
+    ) {
+        return message;
+    }
+
+    if (
+        message.includes(
+            "Họ và tên"
+        )
+        || message.includes(
+            "Vui lòng nhập họ và tên"
+        )
+    ) {
+        return message;
+    }
+
+    if (
+        message.includes(
+            "Email không hợp lệ"
+        )
+        || message.includes(
+            "Vui lòng nhập email"
+        )
+    ) {
+        return message;
+    }
+
+    if (
+        message.includes(
+            "Mật khẩu"
+        )
+        || message.includes(
+            "Vui lòng nhập mật khẩu"
+        )
+    ) {
+        return message;
+    }
+
+    return (
+        message
+        || "Không thể đăng ký tài khoản."
+    );
+}
+
+/**
+ * Khi người dùng sửa nội dung,
+ * ẩn thông báo lỗi cũ.
+ */
+[
+    elements.displayNameInput,
+    elements.usernameInput,
+    elements.emailInput,
+    elements.passwordInput,
+    elements.confirmPasswordInput
+].forEach((input) => {
+    input?.addEventListener(
+        "input",
+        hideRegisterMessage
+    );
+});
+
+/**
+ * Tự chuẩn hóa username khi rời khỏi ô.
+ */
+elements.usernameInput
+    ?.addEventListener(
+        "blur",
+        () => {
+            if (
+                !elements.usernameInput
+            ) {
+                return;
+            }
+
+            elements.usernameInput.value =
+                normalizeUsername(
+                    elements.usernameInput
+                        .value
+                );
+        }
+    );
+
+/**
+ * Tự chuẩn hóa email khi rời khỏi ô.
+ */
+elements.emailInput
+    ?.addEventListener(
+        "blur",
+        () => {
+            if (!elements.emailInput) {
+                return;
+            }
+
+            elements.emailInput.value =
+                normalizeEmail(
+                    elements.emailInput
+                        .value
+                );
+        }
+    );
+
+/**
+ * Submit form.
+ */
 elements.registerForm
     ?.addEventListener(
         "submit",
         handleRegisterSubmit
     );
 
+/**
+ * Hiện hoặc ẩn mật khẩu chính.
+ */
 elements.togglePasswordButton
     ?.addEventListener(
         "click",
         () => {
-            togglePasswordVisibility(
-                elements.passwordInput,
-                elements.togglePasswordButton
-            );
+            togglePasswordVisibility({
+                input:
+                    elements.passwordInput,
+
+                button:
+                    elements.togglePasswordButton
+            });
         }
     );
 
+/**
+ * Hiện hoặc ẩn mật khẩu xác nhận.
+ */
 elements.toggleConfirmPasswordButton
     ?.addEventListener(
         "click",
         () => {
-            togglePasswordVisibility(
-                elements.confirmPasswordInput,
-                elements.toggleConfirmPasswordButton
-            );
+            togglePasswordVisibility({
+                input:
+                    elements.confirmPasswordInput,
+
+                button:
+                    elements
+                        .toggleConfirmPasswordButton
+            });
         }
     );
 
-[
-    elements.displayNameInput,
-    elements.usernameInput,
-    elements.passwordInput,
-    elements.confirmPasswordInput
-]
-    .forEach((input) => {
-        input?.addEventListener(
-            "input",
-            hideRegisterMessage
-        );
-    });
+initializeRegisterPage();

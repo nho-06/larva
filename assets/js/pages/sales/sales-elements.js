@@ -1,12 +1,13 @@
 export const elements = {
+    /* =====================================================
+       TÌM KIẾM VÀ LỌC SẢN PHẨM
+    ===================================================== */
+
     productSearchInput:
         document.querySelector(
             "#productSearchInput"
         ),
 
-    /*
-        Bộ lọc danh mục ở trang bán hàng.
-    */
     saleCategoryFilter:
         document.querySelector(
             "#saleCategoryFilter"
@@ -27,6 +28,91 @@ export const elements = {
             "#saleMessage"
         ),
 
+
+    /* =====================================================
+       QUẢN LÝ NHIỀU BILL
+    ===================================================== */
+
+    billTabs:
+        document.querySelector(
+            "#billTabs"
+        ),
+
+    addBillButton:
+        document.querySelector(
+            "#addBillButton"
+        ),
+
+    activeBillName:
+        document.querySelector(
+            "#activeBillName"
+        ),
+
+    renameBillButton:
+        document.querySelector(
+            "#renameBillButton"
+        ),
+
+    deleteBillButton:
+        document.querySelector(
+            "#deleteBillButton"
+        ),
+
+
+    /* =====================================================
+       MODAL ĐỔI TÊN BILL
+    ===================================================== */
+
+    renameBillModal:
+        document.querySelector(
+            "#renameBillModal"
+        ),
+
+    billNameInput:
+        document.querySelector(
+            "#billNameInput"
+        ),
+
+    renameBillError:
+        document.querySelector(
+            "#renameBillError"
+        ),
+
+    saveBillNameButton:
+        document.querySelector(
+            "#saveBillNameButton"
+        ),
+
+
+    /* =====================================================
+       MODAL XÁC NHẬN XÓA BILL
+    ===================================================== */
+
+    deleteBillModal:
+        document.querySelector(
+            "#deleteBillModal"
+        ),
+
+    deleteBillModalTitle:
+        document.querySelector(
+            "#deleteBillModalTitle"
+        ),
+
+    deleteBillModalMessage:
+        document.querySelector(
+            "#deleteBillModalMessage"
+        ),
+
+    confirmDeleteBillButton:
+        document.querySelector(
+            "#confirmDeleteBillButton"
+        ),
+
+
+    /* =====================================================
+       GIỎ HÀNG CỦA BILL ĐANG CHỌN
+    ===================================================== */
+
     cartItems:
         document.querySelector(
             "#cartItems"
@@ -42,30 +128,31 @@ export const elements = {
             "#cartCount"
         ),
 
-    cartTotal:
-        document.querySelector(
-            "#cartTotal"
-        ),
-
-    /*
-        Tổng tiền hàng trước khi giảm giá.
-    */
     cartSubtotal:
         document.querySelector(
             "#cartSubtotal"
         ),
 
-    /*
-        Số tiền được giảm.
-    */
     cartDiscount:
         document.querySelector(
             "#cartDiscount"
         ),
 
-    /*
-        Danh sách mã giảm giá dạng hàng ngang.
-    */
+    cartTotal:
+        document.querySelector(
+            "#cartTotal"
+        ),
+
+    clearCartButton:
+        document.querySelector(
+            "#clearCartButton"
+        ),
+
+
+    /* =====================================================
+       MÃ GIẢM GIÁ
+    ===================================================== */
+
     discountCodeList:
         document.querySelector(
             "#discountCodeList"
@@ -76,47 +163,14 @@ export const elements = {
             "#discountEmptyState"
         ),
 
-    /*
-        Form tự thêm mã giảm giá.
-    */
-    discountCodeInput:
-        document.querySelector(
-            "#discountCodeInput"
-        ),
 
-    discountTypeInput:
-        document.querySelector(
-            "#discountTypeInput"
-        ),
-
-    discountValueInput:
-        document.querySelector(
-            "#discountValueInput"
-        ),
-
-    addDiscountButton:
-        document.querySelector(
-            "#addDiscountButton"
-        ),
-
-    discountFormMessage:
-        document.querySelector(
-            "#discountFormMessage"
-        ),
-
-    clearCartButton:
-        document.querySelector(
-            "#clearCartButton"
-        ),
+    /* =====================================================
+       QUÉT MÃ SẢN PHẨM
+    ===================================================== */
 
     openScannerButton:
         document.querySelector(
             "#openScannerButton"
-        ),
-
-    openPaymentButton:
-        document.querySelector(
-            "#openPaymentButton"
         ),
 
     scannerModal:
@@ -134,9 +188,44 @@ export const elements = {
             "#scannerMessage"
         ),
 
+    cameraControls:
+        document.querySelector(
+            "#cameraControls"
+        ),
+
+    cameraZoomInput:
+        document.querySelector(
+            "#cameraZoomInput"
+        ),
+
+    cameraZoomValue:
+        document.querySelector(
+            "#cameraZoomValue"
+        ),
+
+    resetCameraZoomButton:
+        document.querySelector(
+            "#resetCameraZoomButton"
+        ),
+
+
+    /* =====================================================
+       THANH TOÁN
+    ===================================================== */
+
+    openPaymentButton:
+        document.querySelector(
+            "#openPaymentButton"
+        ),
+
     paymentModal:
         document.querySelector(
             "#paymentModal"
+        ),
+
+    paymentBillName:
+        document.querySelector(
+            "#paymentBillName"
         ),
 
     paymentTotal:
@@ -223,6 +312,11 @@ export const elements = {
         document.querySelector(
             "#confirmPaymentButton"
         ),
+
+
+    /* =====================================================
+       HÓA ĐƠN SAU THANH TOÁN
+    ===================================================== */
 
     receiptModal:
         document.querySelector(

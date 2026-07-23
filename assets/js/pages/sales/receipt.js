@@ -114,7 +114,9 @@ export function renderReceipt(sale) {
             <div class="receipt-summary">
 
                 ${
-                    Number(sale.discountAmount || 0) > 0
+                    Number(
+                        sale.discountAmount || 0
+                    ) > 0
                         ? `
                             <div>
                                 <span>
@@ -214,12 +216,27 @@ export function renderReceipt(sale) {
 
 export function openReceiptModal() {
     elements.receiptModal
-        .classList.remove("hidden");
+        .classList.remove(
+            "hidden"
+        );
 }
 
 export function closeReceiptModal() {
     elements.receiptModal
-        .classList.add("hidden");
+        .classList.add(
+            "hidden"
+        );
+
+    const hasOpenModal =
+        document.querySelector(
+            ".modal:not(.hidden)"
+        );
+
+    if (!hasOpenModal) {
+        document.body.classList.remove(
+            "modal-open"
+        );
+    }
 }
 
 export function printReceipt() {

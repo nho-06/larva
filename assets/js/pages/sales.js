@@ -15,7 +15,8 @@ import {
 } from "./sales/sales-state.js";
 
 import {
-    initializeSaleEvents
+    initializeSaleEvents,
+    renderBillTabs
 } from "./sales/sale-events.js";
 
 import {
@@ -31,191 +32,504 @@ import {
     renderDiscountCodes
 } from "./sales/discount.js";
 
-function syncCartStock(products) {
-    state.cart.forEach((cartItem) => {
-        const product =
-            products.find((item) => {
+import {
+    saveBillsToStorage
+} from "./sales/bill-manager.js";
+
+
+/* =========================================================
+   CHUYỂN GIÁ TRỊ VỀ SỐ AN TOÀN
+========================================================= */
+
+function toNumber(
+    value
+) {
+    const number =
+        Number(value);
+
+    return Number.isFinite(
+        number
+    )
+        ? number
+        : 0;
+}
+
+
+/* =========================================================
+   TÌM SẢN PHẨM THEO ID
+========================================================= */
+
+function findProductById(
+    products,
+    productId
+) {
+    return (
+        products.find(
+            (product) => {
                 return (
-                    String(item.id || "")
-                    === String(cartItem.productId || "")
+                    String(
+                        product.id || ""
+                    ) ===
+                    String(
+                        productId || ""
+                    )
                 );
-            });
+            }
+        ) ||
+        null
+    );
+}
 
-        if (!product) {
-            cartItem.stock =
-                0;
 
-            return;
-        }
+/* =========================================================
+   ĐỒNG BỘ MỘT SẢN PHẨM TRONG BILL VỚI FIREBASE
+========================================================= */
 
-        const stock =
-            toNumber(product.quantity);
-
+function syncCartItemWithProduct(
+    cartItem,
+    product
+) {
+    /*
+        Sản phẩm đã bị xóa khỏi Firebase.
+    */
+    if (!product) {
         cartItem.stock =
-            stock;
+            0;
 
-        /*
-            Đồng bộ lại giá bán mới nhất
-            nếu sản phẩm vừa được chỉnh giá.
-        */
-        cartItem.price =
-            toNumber(product.salePrice);
+        return;
+    }
 
-        /*
-            Nếu số lượng đang có trong giỏ
-            lớn hơn tồn kho mới nhất thì giảm lại.
-        */
-        if (
-            toNumber(cartItem.quantity)
-            > stock
-        ) {
-            cartItem.quantity =
-                stock;
-        }
-    });
+    const stock =
+        Math.max(
+            0,
+            toNumber(
+                product.quantity
+            )
+        );
+
+    cartItem.stock =
+        stock;
 
     /*
-        Xóa khỏi giỏ những sản phẩm:
-
-        - Không còn tồn tại
-        - Đã hết hàng
-        - Số lượng trong giỏ bằng 0
+        Đồng bộ giá bán mới nhất.
     */
-    state.cart =
-        state.cart.filter((item) => {
-            return (
-                toNumber(item.stock) > 0
-                &&
-                toNumber(item.quantity) > 0
-            );
-        });
+    cartItem.price =
+        Math.max(
+            0,
+            toNumber(
+                product.salePrice
+            )
+        );
+
+    /*
+        Đồng bộ lại thông tin hiển thị.
+    */
+    cartItem.name =
+        product.name ||
+        cartItem.name ||
+        "Sản phẩm";
+
+    cartItem.image =
+        product.image ||
+        cartItem.image ||
+        "";
+
+    cartItem.sku =
+        product.sku ||
+        cartItem.sku ||
+        "";
+
+    cartItem.barcode =
+        product.barcode ||
+        cartItem.barcode ||
+        "";
+
+    /*
+        Nếu số lượng khách đang giữ
+        lớn hơn tồn kho mới nhất,
+        giảm số lượng xuống bằng tồn kho.
+    */
+    if (
+        toNumber(
+            cartItem.quantity
+        ) >
+        stock
+    ) {
+        cartItem.quantity =
+            stock;
+    }
 }
+
+
+/* =========================================================
+   ĐỒNG BỘ TỒN KHO CHO TẤT CẢ BILL ĐANG CHỜ
+========================================================= */
+
+function syncAllBillsStock(
+    products
+) {
+    let billsChanged =
+        false;
+
+    state.bills.forEach(
+        (bill) => {
+            if (
+                !Array.isArray(
+                    bill.cart
+                )
+            ) {
+                bill.cart =
+                    [];
+
+                billsChanged =
+                    true;
+
+                return;
+            }
+
+            const oldCartJson =
+                JSON.stringify(
+                    bill.cart
+                );
+
+            bill.cart.forEach(
+                (cartItem) => {
+                    const product =
+                        findProductById(
+                            products,
+                            cartItem.productId
+                        );
+
+                    syncCartItemWithProduct(
+                        cartItem,
+                        product
+                    );
+                }
+            );
+
+            /*
+                Xóa khỏi bill các sản phẩm:
+
+                - Đã bị xóa khỏi Firebase
+                - Đã hết hàng
+                - Số lượng đang giữ bằng 0
+            */
+            bill.cart =
+                bill.cart.filter(
+                    (cartItem) => {
+                        return (
+                            toNumber(
+                                cartItem.stock
+                            ) >
+                            0
+                            &&
+                            toNumber(
+                                cartItem.quantity
+                            ) >
+                            0
+                        );
+                    }
+                );
+
+            const newCartJson =
+                JSON.stringify(
+                    bill.cart
+                );
+
+            if (
+                oldCartJson !==
+                newCartJson
+            ) {
+                bill.updatedAt =
+                    new Date().toISOString();
+
+                billsChanged =
+                    true;
+            }
+        }
+    );
+
+    if (billsChanged) {
+        saveBillsToStorage();
+    }
+}
+
+
+/* =========================================================
+   KIỂM TRA MÃ GIẢM GIÁ CỦA TẤT CẢ BILL
+========================================================= */
+
+function syncAllBillsDiscountCodes() {
+    let billsChanged =
+        false;
+
+    const availableDiscountIds =
+        new Set(
+            state.discountCodes.map(
+                (discountCode) => {
+                    return String(
+                        discountCode.id || ""
+                    );
+                }
+            )
+        );
+
+    state.bills.forEach(
+        (bill) => {
+            const selectedDiscountId =
+                String(
+                    bill.selectedDiscountId ||
+                    ""
+                );
+
+            if (
+                selectedDiscountId
+                &&
+                !availableDiscountIds.has(
+                    selectedDiscountId
+                )
+            ) {
+                bill.selectedDiscountId =
+                    "";
+
+                bill.updatedAt =
+                    new Date().toISOString();
+
+                billsChanged =
+                    true;
+            }
+        }
+    );
+
+    if (billsChanged) {
+        saveBillsToStorage();
+    }
+}
+
+
+/* =========================================================
+   THEO DÕI MÃ GIẢM GIÁ
+========================================================= */
+
+function subscribeDiscountCodes() {
+    listenDiscountCodes(
+        (discountCodes) => {
+            state.discountCodes =
+                Array.isArray(
+                    discountCodes
+                )
+                    ? discountCodes
+                    : [];
+
+            /*
+                Nếu một mã giảm giá đã bị xóa
+                hoặc ngừng hoạt động,
+                bỏ mã đó khỏi tất cả bill đang chờ.
+            */
+            syncAllBillsDiscountCodes();
+
+            renderDiscountCodes();
+
+            renderCart();
+
+            renderBillTabs();
+        }
+    );
+}
+
+
+/* =========================================================
+   THEO DÕI DANH MỤC
+========================================================= */
+
+function subscribeCategories() {
+    listenCategories(
+        (categories) => {
+            state.categories =
+                Array.isArray(
+                    categories
+                )
+                    ? categories
+                    : [];
+
+            /*
+                Sắp xếp danh mục theo tên.
+            */
+            state.categories.sort(
+                (
+                    firstCategory,
+                    secondCategory
+                ) => {
+                    return String(
+                        firstCategory.name ||
+                        ""
+                    ).localeCompare(
+                        String(
+                            secondCategory.name ||
+                            ""
+                        ),
+                        "vi"
+                    );
+                }
+            );
+
+            /*
+                Nếu danh mục đang chọn
+                đã bị xóa thì quay về tất cả.
+            */
+            const selectedCategoryExists =
+                state.categories.some(
+                    (category) => {
+                        return (
+                            String(
+                                category.id ||
+                                ""
+                            ) ===
+                            String(
+                                state.selectedCategoryId ||
+                                ""
+                            )
+                        );
+                    }
+                );
+
+            if (
+                state.selectedCategoryId
+                &&
+                !selectedCategoryExists
+            ) {
+                state.selectedCategoryId =
+                    "";
+            }
+
+            renderCategoryFilter();
+
+            renderProducts();
+        }
+    );
+}
+
+
+/* =========================================================
+   THEO DÕI SẢN PHẨM
+========================================================= */
+
+function subscribeProducts() {
+    listenProducts(
+        (products) => {
+            state.products =
+                Array.isArray(
+                    products
+                )
+                    ? products
+                    : [];
+
+            /*
+                Sản phẩm còn hàng nằm trước.
+                Sản phẩm hết hàng nằm cuối danh sách.
+                Trong cùng một nhóm, sản phẩm mới sửa
+                hoặc mới tạo sẽ nằm phía trên.
+            */
+            state.products.sort(
+                (
+                    firstProduct,
+                    secondProduct
+                ) => {
+                    const firstIsOutOfStock =
+                        toNumber(
+                            firstProduct.quantity
+                            ?? firstProduct.stock
+                            ?? 0
+                        ) <= 0;
+
+                    const secondIsOutOfStock =
+                        toNumber(
+                            secondProduct.quantity
+                            ?? secondProduct.stock
+                            ?? 0
+                        ) <= 0;
+
+                    if (
+                        firstIsOutOfStock !==
+                        secondIsOutOfStock
+                    ) {
+                        return firstIsOutOfStock
+                            ? 1
+                            : -1;
+                    }
+
+                    const firstTime =
+                        toNumber(
+                            firstProduct.updatedAt
+                            || firstProduct.createdAt
+                        );
+
+                    const secondTime =
+                        toNumber(
+                            secondProduct.updatedAt
+                            || secondProduct.createdAt
+                        );
+
+                    return (
+                        secondTime -
+                        firstTime
+                    );
+                }
+            );
+
+            /*
+                Đồng bộ thông tin và tồn kho
+                cho tất cả bill đang chờ,
+                không chỉ bill đang mở.
+            */
+            syncAllBillsStock(
+                state.products
+            );
+
+            renderProducts();
+
+            renderCart();
+
+            renderBillTabs();
+        }
+    );
+}
+
+
+/* =========================================================
+   KHỞI TẠO TRANG BÁN HÀNG
+========================================================= */
 
 function initializeSalesPage() {
     /*
-        Gắn toàn bộ sự kiện của trang bán hàng.
+        Khởi tạo hệ thống bill và
+        gắn toàn bộ sự kiện.
     */
     initializeSaleEvents();
 
     /*
         Hiển thị giao diện ban đầu
-        trước khi Firebase tải xong.
+        trong lúc chờ Firebase tải dữ liệu.
     */
     renderCategoryFilter();
+
     renderProducts();
+
+    renderDiscountCodes();
+
     renderCart();
 
-    /*
-        Theo dõi mã giảm giá từ Firebase.
-
-        Khi thêm mã mới,
-        danh sách mã trên trang bán hàng
-        sẽ tự động cập nhật.
-    */
-    listenDiscountCodes((discountCodes) => {
-        state.discountCodes =
-            Array.isArray(discountCodes)
-                ? discountCodes
-                : [];
-
-        /*
-            Nếu mã đang chọn không còn tồn tại
-            hoặc đã bị tắt thì bỏ chọn.
-        */
-        const selectedStillExists =
-            state.discountCodes.some(
-                (item) => {
-                    return (
-                        String(item.id || "")
-                        ===
-                        String(
-                            state.selectedDiscountId || ""
-                        )
-                    );
-                }
-            );
-
-        if (
-            state.selectedDiscountId
-            &&
-            !selectedStillExists
-        ) {
-            state.selectedDiscountId =
-                "";
-        }
-
-        renderDiscountCodes();
-        renderCart();
-    });
+    renderBillTabs();
 
     /*
-        Theo dõi danh mục từ Firebase.
-
-        Khi thêm, sửa hoặc xóa danh mục
-        bên trang sản phẩm thì bộ lọc ở đây
-        tự cập nhật.
+        Bắt đầu theo dõi dữ liệu Firebase.
     */
-    listenCategories((categories) => {
-        state.categories =
-            Array.isArray(categories)
-                ? categories
-                : [];
+    subscribeDiscountCodes();
 
-        /*
-            Nếu danh mục đang chọn đã bị xóa
-            thì chuyển về Tất cả danh mục.
-        */
-        const selectedCategoryExists =
-            state.categories.some(
-                (category) => {
-                    return (
-                        String(category.id || "")
-                        ===
-                        String(
-                            state.selectedCategoryId || ""
-                        )
-                    );
-                }
-            );
+    subscribeCategories();
 
-        if (
-            state.selectedCategoryId
-            &&
-            !selectedCategoryExists
-        ) {
-            state.selectedCategoryId =
-                "";
-        }
-
-        renderCategoryFilter();
-        renderProducts();
-    });
-
-    /*
-        Theo dõi sản phẩm từ Firebase.
-    */
-    listenProducts((products) => {
-        state.products =
-            Array.isArray(products)
-                ? products
-                : [];
-
-        syncCartStock(
-            state.products
-        );
-
-        renderProducts();
-        renderCart();
-    });
+    subscribeProducts();
 }
 
-function toNumber(value) {
-    const number =
-        Number(value);
-
-    return Number.isFinite(number)
-        ? number
-        : 0;
-}
 
 initializeSalesPage();

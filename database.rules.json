@@ -1,0 +1,164 @@
+{
+    "rules": {
+        ".read": false,
+        ".write": false,
+
+        "users": {
+            ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && (!root.child('users').child(auth.uid).child('status').exists() || root.child('users').child(auth.uid).child('status').val() === 'approved')",
+
+            "$uid": {
+                ".read": "auth != null && (auth.uid === $uid || (root.child('users').child(auth.uid).child('role').val() === 'admin' && (!root.child('users').child(auth.uid).child('status').exists() || root.child('users').child(auth.uid).child('status').val() === 'approved')))",
+
+                ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.exists() && newData.child('uid').val() === auth.uid && newData.child('role').val() === 'staff' && newData.child('status').val() === 'pending' && newData.child('approved').val() === false && newData.child('locked').val() === false && newData.child('deleted').val() === false) || (root.child('users').child(auth.uid).child('role').val() === 'admin' && (!root.child('users').child(auth.uid).child('status').exists() || root.child('users').child(auth.uid).child('status').val() === 'approved')))",
+
+                "uid": {
+                    ".validate": "newData.isString() && newData.val() === $uid"
+                },
+
+                "email": {
+                    ".validate": "newData.isString() && newData.val().length >= 5 && newData.val().length <= 150"
+                },
+
+                "username": {
+                    ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 30"
+                },
+
+                "displayName": {
+                    ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 100"
+                },
+
+                "fullName": {
+                    ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 100"
+                },
+
+                "role": {
+                    ".validate": "newData.val() === 'admin' || newData.val() === 'staff'"
+                },
+
+                "status": {
+                    ".validate": "newData.val() === 'pending' || newData.val() === 'approved' || newData.val() === 'locked' || newData.val() === 'deleted'"
+                },
+
+                "approved": {
+                    ".validate": "newData.isBoolean()"
+                },
+
+                "locked": {
+                    ".validate": "newData.isBoolean()"
+                },
+
+                "deleted": {
+                    ".validate": "newData.isBoolean()"
+                },
+
+                "createdAt": {
+                    ".validate": "newData.isNumber()"
+                },
+
+                "updatedAt": {
+                    ".validate": "newData.isNumber()"
+                },
+
+                "lastLoginAt": {
+                    ".validate": "newData.isNumber()"
+                },
+
+                "approvedAt": {
+                    ".validate": "newData.isNumber()"
+                },
+
+                "approvedBy": {
+                    ".validate": "newData.isString()"
+                },
+
+                "lockedAt": {
+                    ".validate": "newData.isNumber()"
+                },
+
+                "lockedBy": {
+                    ".validate": "newData.isString()"
+                },
+
+                "deletedAt": {
+                    ".validate": "newData.isNumber()"
+                },
+
+                "deletedBy": {
+                    ".validate": "newData.isString()"
+                },
+
+                "$other": {
+                    ".validate": true
+                }
+            }
+        },
+
+        "usernames": {
+            "$username": {
+                ".read": true,
+
+                ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('uid').val() === auth.uid && newData.child('email').isString()) || (root.child('users').child(auth.uid).child('role').val() === 'admin' && (!root.child('users').child(auth.uid).child('status').exists() || root.child('users').child(auth.uid).child('status').val() === 'approved')))",
+
+                "uid": {
+                    ".validate": "newData.isString() && newData.val().length > 0"
+                },
+
+                "email": {
+                    ".validate": "newData.isString() && newData.val().length >= 5 && newData.val().length <= 150"
+                },
+
+                "createdAt": {
+                    ".validate": "newData.isNumber()"
+                },
+
+                "updatedAt": {
+                    ".validate": "newData.isNumber()"
+                },
+
+                "$other": {
+                    ".validate": true
+                }
+            }
+        },
+
+        "products": {
+            ".read": "auth != null && ((root.child('users').child(auth.uid).child('status').val() === 'approved') || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !root.child('users').child(auth.uid).child('status').exists()))",
+
+            ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && (!root.child('users').child(auth.uid).child('status').exists() || root.child('users').child(auth.uid).child('status').val() === 'approved')"
+        },
+
+        "categories": {
+            ".read": "auth != null && ((root.child('users').child(auth.uid).child('status').val() === 'approved') || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !root.child('users').child(auth.uid).child('status').exists()))",
+
+            ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && (!root.child('users').child(auth.uid).child('status').exists() || root.child('users').child(auth.uid).child('status').val() === 'approved')"
+        },
+
+        "discountCodes": {
+            ".read": "auth != null && ((root.child('users').child(auth.uid).child('status').val() === 'approved') || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !root.child('users').child(auth.uid).child('status').exists()))",
+
+            ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && (!root.child('users').child(auth.uid).child('status').exists() || root.child('users').child(auth.uid).child('status').val() === 'approved')"
+        },
+
+        "sales": {
+            ".read": "auth != null && ((root.child('users').child(auth.uid).child('status').val() === 'approved') || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !root.child('users').child(auth.uid).child('status').exists()))",
+
+            "$saleId": {
+                ".write": "auth != null && ((root.child('users').child(auth.uid).child('status').val() === 'approved') || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !root.child('users').child(auth.uid).child('status').exists()))"
+            }
+        },
+
+        "settings": {
+            ".read": "auth != null && ((root.child('users').child(auth.uid).child('status').val() === 'approved') || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !root.child('users').child(auth.uid).child('status').exists()))",
+
+            ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && (!root.child('users').child(auth.uid).child('status').exists() || root.child('users').child(auth.uid).child('status').val() === 'approved')"
+        },
+
+        "stockHistory": {
+            ".read": "auth != null && ((root.child('users').child(auth.uid).child('status').val() === 'approved') || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !root.child('users').child(auth.uid).child('status').exists()))",
+
+            "$historyId": {
+                ".write": "auth != null && ((root.child('users').child(auth.uid).child('status').val() === 'approved') || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !root.child('users').child(auth.uid).child('status').exists()))"
+            }
+        }
+    }
+}

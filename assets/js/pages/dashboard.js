@@ -8,75 +8,111 @@ import {
     placeholderImage
 } from "../utils.js";
 
-const LOW_STOCK_LIMIT = 5;
+const LOW_STOCK_LIMIT =
+    5;
 
-let allProducts = [];
+const UNUSUAL_STOCK_LIMIT =
+    500;
+
+let allProducts =
+    [];
 
 const elements = {
     productCount:
-        document.querySelector("#productCount"),
+        document.querySelector(
+            "#productCount"
+        ),
 
     stockCount:
-        document.querySelector("#stockCount"),
+        document.querySelector(
+            "#stockCount"
+        ),
 
     lowStockCount:
-        document.querySelector("#lowStockCount"),
+        document.querySelector(
+            "#lowStockCount"
+        ),
 
     totalCapital:
-        document.querySelector("#totalCapital"),
+        document.querySelector(
+            "#totalCapital"
+        ),
 
     inventoryValue:
-        document.querySelector("#inventoryValue"),
+        document.querySelector(
+            "#inventoryValue"
+        ),
 
     expectedProfit:
-        document.querySelector("#expectedProfit"),
+        document.querySelector(
+            "#expectedProfit"
+        ),
 
     recentProducts:
-        document.querySelector("#recentProducts"),
+        document.querySelector(
+            "#recentProducts"
+        ),
 
     lowStockCard:
-        document.querySelector("#lowStockCard"),
+        document.querySelector(
+            "#lowStockCard"
+        ),
 
     lowStockModal:
-        document.querySelector("#lowStockModal"),
+        document.querySelector(
+            "#lowStockModal"
+        ),
 
     lowStockProductList:
-        document.querySelector("#lowStockProductList")
+        document.querySelector(
+            "#lowStockProductList"
+        )
 };
 
+/**
+ * Lắng nghe danh sách sản phẩm.
+ *
+ * product-service sẽ:
+ * - trả cache trước;
+ * - đồng bộ Firebase ở nền;
+ * - chỉ gọi lại khi dữ liệu thay đổi.
+ */
 listenProducts((products) => {
     allProducts =
         Array.isArray(products)
             ? products
             : [];
 
+    logUnusualStockProducts(
+        allProducts
+    );
+
     const totalStock =
-        calculateTotalStock(allProducts);
+        calculateTotalStock(
+            allProducts
+        );
 
-    /*
-        Tổng tiền vốn của hàng đang tồn:
-
-        Giá nhập × số lượng còn lại.
-    */
     const totalCapital =
-        calculateTotalCapital(allProducts);
+        calculateTotalCapital(
+            allProducts
+        );
 
-    /*
-        Tổng giá trị kho theo giá bán:
-
-        Giá bán × số lượng còn lại.
-    */
     const inventoryValue =
-        calculateInventorySaleValue(allProducts);
+        calculateInventorySaleValue(
+            allProducts
+        );
 
-    /*
-        Lợi nhuận dự kiến khi bán hết hàng tồn.
-    */
     const expectedProfit =
-        inventoryValue - totalCapital;
+        Math.max(
+            0,
+            inventoryValue
+            - totalCapital
+        );
 
     const lowStockProducts =
-        getLowStockProducts(allProducts);
+        getLowStockProducts(
+            allProducts
+        );
 
     setText(
         elements.productCount,
@@ -95,348 +131,800 @@ listenProducts((products) => {
 
     setText(
         elements.totalCapital,
-        formatMoney(totalCapital)
+        formatMoney(
+            totalCapital
+        )
     );
 
     setText(
         elements.inventoryValue,
-        formatMoney(inventoryValue)
+        formatMoney(
+            inventoryValue
+        )
     );
 
     setText(
         elements.expectedProfit,
-        formatMoney(expectedProfit)
+        formatMoney(
+            expectedProfit
+        )
     );
 
-    renderRecentProducts(allProducts);
+    renderRecentProducts(
+        allProducts
+    );
 
-    /*
-        Nếu modal đang mở, Firebase thay đổi
-        thì danh sách trong modal cũng cập nhật.
-    */
     if (
         elements.lowStockModal
         &&
-        !elements.lowStockModal.classList.contains("hidden")
+        !elements.lowStockModal
+            .classList
+            .contains(
+                "hidden"
+            )
     ) {
-        renderLowStockProducts(lowStockProducts);
+        renderLowStockProducts(
+            lowStockProducts
+        );
     }
 });
 
-function calculateTotalStock(products) {
+/**
+ * Lấy số lượng tồn kho hợp lệ.
+ */
+function getProductQuantity(
+    product
+) {
+    const rawQuantity =
+        product?.quantity
+        ??
+        product?.stock
+        ??
+        product?.stockQuantity
+        ??
+        0;
+
+    const quantity =
+        toNumber(
+            rawQuantity
+        );
+
+    if (quantity < 0) {
+        return 0;
+    }
+
+    return Math.floor(
+        quantity
+    );
+}
+
+/**
+ * Lấy giá vốn sản phẩm.
+ *
+ * Hỗ trợ dữ liệu cũ và mới.
+ */
+function getProductCostPrice(
+    product
+) {
+    const rawCostPrice =
+        product?.purchasePrice
+        ??
+        product?.costPrice
+        ??
+        product?.importPrice
+        ??
+        product?.buyPrice
+        ??
+        product?.entryPrice
+        ??
+        0;
+
+    const costPrice =
+        toNumber(
+            rawCostPrice
+        );
+
+    if (costPrice < 0) {
+        return 0;
+    }
+
+    return Math.round(
+        costPrice
+    );
+}
+
+/**
+ * Lấy giá bán sản phẩm.
+ */
+function getProductSalePrice(
+    product
+) {
+    const rawSalePrice =
+        product?.salePrice
+        ??
+        product?.price
+        ??
+        product?.sellingPrice
+        ??
+        0;
+
+    const salePrice =
+        toNumber(
+            rawSalePrice
+        );
+
+    if (salePrice < 0) {
+        return 0;
+    }
+
+    return Math.round(
+        salePrice
+    );
+}
+
+/**
+ * Lấy đường dẫn ảnh sản phẩm.
+ */
+function getProductImage(
+    product
+) {
+    return String(
+        product?.image
+        ||
+        product?.imageUrl
+        ||
+        ""
+    ).trim()
+    ||
+    placeholderImage();
+}
+
+/**
+ * Tổng số lượng hàng tồn.
+ */
+function calculateTotalStock(
+    products
+) {
     return products.reduce(
-        (total, product) => {
+        (
+            total,
+            product
+        ) => {
             return (
                 total
                 +
-                toNumber(product.quantity)
+                getProductQuantity(
+                    product
+                )
             );
         },
         0
     );
 }
 
-function calculateTotalCapital(products) {
+/**
+ * Tổng tiền vốn hàng tồn.
+ *
+ * Giá vốn × số lượng.
+ */
+function calculateTotalCapital(
+    products
+) {
     return products.reduce(
-        (total, product) => {
+        (
+            total,
+            product
+        ) => {
             const costPrice =
-                toNumber(product.costPrice);
+                getProductCostPrice(
+                    product
+                );
 
             const quantity =
-                toNumber(product.quantity);
+                getProductQuantity(
+                    product
+                );
 
             return (
                 total
                 +
-                costPrice * quantity
+                costPrice
+                *
+                quantity
             );
         },
         0
     );
 }
 
-function calculateInventorySaleValue(products) {
+/**
+ * Tổng giá trị kho theo giá bán.
+ *
+ * Giá bán × số lượng.
+ */
+function calculateInventorySaleValue(
+    products
+) {
     return products.reduce(
-        (total, product) => {
+        (
+            total,
+            product
+        ) => {
             const salePrice =
-                toNumber(product.salePrice);
+                getProductSalePrice(
+                    product
+                );
 
             const quantity =
-                toNumber(product.quantity);
+                getProductQuantity(
+                    product
+                );
 
             return (
                 total
                 +
-                salePrice * quantity
+                salePrice
+                *
+                quantity
             );
         },
         0
     );
 }
 
-function getLowStockProducts(products) {
+/**
+ * Tìm sản phẩm có tồn kho bất thường.
+ *
+ * Chỉ cảnh báo trong Console.
+ */
+function logUnusualStockProducts(
+    products
+) {
+    const unusualProducts =
+        products
+            .map((product) => {
+                const quantity =
+                    getProductQuantity(
+                        product
+                    );
+
+                const salePrice =
+                    getProductSalePrice(
+                        product
+                    );
+
+                const costPrice =
+                    getProductCostPrice(
+                        product
+                    );
+
+                return {
+                    name:
+                        product?.name
+                        ||
+                        "Chưa có tên",
+
+                    sku:
+                        product?.sku
+                        ||
+                        product?.code
+                        ||
+                        product?.barcode
+                        ||
+                        "Chưa có mã",
+
+                    quantity,
+
+                    costPrice,
+
+                    salePrice,
+
+                    capitalValue:
+                        costPrice
+                        *
+                        quantity,
+
+                    inventoryValue:
+                        salePrice
+                        *
+                        quantity
+                };
+            })
+            .filter((product) => {
+                return (
+                    product.quantity
+                    >=
+                    UNUSUAL_STOCK_LIMIT
+                );
+            })
+            .sort(
+                (
+                    firstProduct,
+                    secondProduct
+                ) => {
+                    return (
+                        secondProduct.quantity
+                        -
+                        firstProduct.quantity
+                    );
+                }
+            );
+
+    if (!unusualProducts.length) {
+        return;
+    }
+
+    console.warn(
+        `Có ${unusualProducts.length} sản phẩm tồn kho từ ${UNUSUAL_STOCK_LIMIT} trở lên.`
+    );
+
+    console.table(
+        unusualProducts
+    );
+}
+
+/**
+ * Lấy sản phẩm sắp hết.
+ */
+function getLowStockProducts(
+    products
+) {
     return products
         .filter((product) => {
             const quantity =
-                toNumber(product.quantity);
+                getProductQuantity(
+                    product
+                );
 
             return (
                 quantity > 0
                 &&
-                quantity <= LOW_STOCK_LIMIT
+                quantity
+                <= LOW_STOCK_LIMIT
             );
         })
-        .sort((firstProduct, secondProduct) => {
-            const firstQuantity =
-                toNumber(firstProduct.quantity);
+        .sort(
+            (
+                firstProduct,
+                secondProduct
+            ) => {
+                const firstQuantity =
+                    getProductQuantity(
+                        firstProduct
+                    );
 
-            const secondQuantity =
-                toNumber(secondProduct.quantity);
+                const secondQuantity =
+                    getProductQuantity(
+                        secondProduct
+                    );
 
-            return firstQuantity - secondQuantity;
-        });
+                return (
+                    firstQuantity
+                    -
+                    secondQuantity
+                );
+            }
+        );
 }
 
-function renderRecentProducts(products) {
+/**
+ * Hiển thị tối đa 5 sản phẩm mới nhất.
+ */
+function renderRecentProducts(
+    products
+) {
     if (!elements.recentProducts) {
         return;
     }
 
     const recentProducts =
-        products.slice(0, 5);
+        products.slice(
+            0,
+            5
+        );
 
     if (!recentProducts.length) {
-        elements.recentProducts.innerHTML = `
-            <tr>
-                <td
-                    colspan="4"
-                    class="empty-state"
-                >
-                    Chưa có sản phẩm.
-                </td>
-            </tr>
-        `;
+        elements.recentProducts
+            .innerHTML = `
+                <tr>
+                    <td
+                        colspan="4"
+                        class="empty-state"
+                    >
+                        Chưa có sản phẩm.
+                    </td>
+                </tr>
+            `;
 
         return;
     }
 
-    elements.recentProducts.innerHTML =
-        recentProducts
-            .map((product) => {
-                const productName =
-                    product.name
-                    ||
-                    "Sản phẩm chưa đặt tên";
+    elements.recentProducts
+        .innerHTML =
+            recentProducts
+                .map(
+                    (
+                        product,
+                        index
+                    ) => {
+                        const productName =
+                            product.name
+                            ||
+                            "Sản phẩm chưa đặt tên";
 
-                const sku =
-                    product.sku
-                    ||
-                    "Chưa có mã";
+                        const sku =
+                            product.sku
+                            ||
+                            product.code
+                            ||
+                            "Chưa có mã";
 
-                const image =
-                    product.image
-                    ||
-                    placeholderImage();
+                        const image =
+                            getProductImage(
+                                product
+                            );
 
-                const salePrice =
-                    toNumber(product.salePrice);
+                        const salePrice =
+                            getProductSalePrice(
+                                product
+                            );
 
-                const quantity =
-                    toNumber(product.quantity);
+                        const quantity =
+                            getProductQuantity(
+                                product
+                            );
 
-                return `
-                    <tr>
+                        /*
+                            Ảnh đầu tiên nằm ngay trên màn hình:
+                            tải ngay với ưu tiên cao.
 
-                        <td>
+                            Các ảnh sau:
+                            tải nhẹ hơn để không chặn giao diện.
+                        */
+                        const loading =
+                            index === 0
+                                ? "eager"
+                                : "lazy";
 
-                            <div class="product-cell">
+                        const fetchPriority =
+                            index === 0
+                                ? "high"
+                                : "low";
 
-                                <img
-                                    class="product-image"
-                                    src="${escapeHtml(image)}"
-                                    alt="${escapeHtml(productName)}"
-                                    onerror="
-                                        this.onerror = null;
-                                        this.src = '${placeholderImage()}';
-                                    "
-                                >
+                        return `
+                            <tr>
 
-                                <strong>
-                                    ${escapeHtml(productName)}
-                                </strong>
+                                <td>
 
-                            </div>
+                                    <div class="product-cell">
 
-                        </td>
+                                        <img
+                                            class="product-image js-product-image"
+                                            src="${escapeHtml(
+                                                image
+                                            )}"
+                                            alt="${escapeHtml(
+                                                productName
+                                            )}"
+                                            loading="${loading}"
+                                            decoding="async"
+                                            fetchpriority="${fetchPriority}"
+                                            width="64"
+                                            height="64"
+                                        >
 
-                        <td>
-                            ${escapeHtml(sku)}
-                        </td>
+                                        <strong>
+                                            ${escapeHtml(
+                                                productName
+                                            )}
+                                        </strong>
 
-                        <td>
-                            ${formatMoney(salePrice)}
-                        </td>
+                                    </div>
 
-                        <td>
-                            ${quantity}
-                        </td>
+                                </td>
 
-                    </tr>
-                `;
-            })
-            .join("");
+                                <td>
+                                    ${escapeHtml(
+                                        sku
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${formatMoney(
+                                        salePrice
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${quantity}
+                                </td>
+
+                            </tr>
+                        `;
+                    }
+                )
+                .join("");
+
+    bindImageFallbackEvents(
+        elements.recentProducts
+    );
 }
 
-function renderLowStockProducts(products) {
-    if (!elements.lowStockProductList) {
+/**
+ * Hiển thị danh sách sản phẩm sắp hết.
+ */
+function renderLowStockProducts(
+    products
+) {
+    if (
+        !elements.lowStockProductList
+    ) {
         return;
     }
 
     if (!products.length) {
-        elements.lowStockProductList.innerHTML = `
-            <div class="low-stock-empty">
+        elements.lowStockProductList
+            .innerHTML = `
+                <div class="low-stock-empty">
 
-                <strong>
-                    Không có sản phẩm sắp hết
-                </strong>
+                    <strong>
+                        Không có sản phẩm sắp hết
+                    </strong>
 
-                <p>
-                    Hiện không có sản phẩm nào còn từ
-                    1 đến ${LOW_STOCK_LIMIT}.
-                </p>
+                    <p>
+                        Hiện không có sản phẩm nào còn từ
+                        1 đến ${LOW_STOCK_LIMIT}.
+                    </p>
 
-            </div>
-        `;
+                </div>
+            `;
 
         return;
     }
 
-    elements.lowStockProductList.innerHTML =
-        products
-            .map((product) => {
-                const productName =
-                    product.name
-                    ||
-                    "Sản phẩm chưa đặt tên";
+    elements.lowStockProductList
+        .innerHTML =
+            products
+                .map(
+                    (
+                        product,
+                        index
+                    ) => {
+                        const productName =
+                            product.name
+                            ||
+                            "Sản phẩm chưa đặt tên";
 
-                const sku =
-                    product.sku
-                    ||
-                    "Chưa có mã";
+                        const sku =
+                            product.sku
+                            ||
+                            product.code
+                            ||
+                            "Chưa có mã";
 
-                const image =
-                    product.image
-                    ||
-                    placeholderImage();
+                        const image =
+                            getProductImage(
+                                product
+                            );
 
-                const salePrice =
-                    toNumber(product.salePrice);
+                        const salePrice =
+                            getProductSalePrice(
+                                product
+                            );
 
-                const quantity =
-                    toNumber(product.quantity);
+                        const quantity =
+                            getProductQuantity(
+                                product
+                            );
 
-                return `
-                    <article class="low-stock-item">
+                        const loading =
+                            index < 3
+                                ? "eager"
+                                : "lazy";
 
-                        <img
-                            class="low-stock-image"
-                            src="${escapeHtml(image)}"
-                            alt="${escapeHtml(productName)}"
-                            onerror="
-                                this.onerror = null;
-                                this.src = '${placeholderImage()}';
-                            "
-                        >
+                        const fetchPriority =
+                            index === 0
+                                ? "high"
+                                : "low";
 
-                        <div class="low-stock-info">
+                        return `
+                            <article class="low-stock-item">
 
-                            <strong>
-                                ${escapeHtml(productName)}
-                            </strong>
+                                <img
+                                    class="low-stock-image js-product-image"
+                                    src="${escapeHtml(
+                                        image
+                                    )}"
+                                    alt="${escapeHtml(
+                                        productName
+                                    )}"
+                                    loading="${loading}"
+                                    decoding="async"
+                                    fetchpriority="${fetchPriority}"
+                                    width="72"
+                                    height="72"
+                                >
 
-                            <span>
-                                Mã: ${escapeHtml(sku)}
-                            </span>
+                                <div class="low-stock-info">
 
-                            <span>
-                                Giá bán: ${formatMoney(salePrice)}
-                            </span>
+                                    <strong>
+                                        ${escapeHtml(
+                                            productName
+                                        )}
+                                    </strong>
 
-                        </div>
+                                    <span>
+                                        Mã:
+                                        ${escapeHtml(
+                                            sku
+                                        )}
+                                    </span>
 
-                        <div class="low-stock-quantity">
-                            Còn ${quantity}
-                        </div>
+                                    <span>
+                                        Giá bán:
+                                        ${formatMoney(
+                                            salePrice
+                                        )}
+                                    </span>
 
-                    </article>
-                `;
-            })
-            .join("");
+                                </div>
+
+                                <div class="low-stock-quantity">
+                                    Còn ${quantity}
+                                </div>
+
+                            </article>
+                        `;
+                    }
+                )
+                .join("");
+
+    bindImageFallbackEvents(
+        elements.lowStockProductList
+    );
 }
 
+/**
+ * Khi ảnh sản phẩm bị lỗi,
+ * thay bằng ảnh No Image nội bộ.
+ *
+ * Không dùng onerror viết trực tiếp trong HTML,
+ * giúp code an toàn và dễ quản lý hơn.
+ */
+function bindImageFallbackEvents(
+    container
+) {
+    if (!container) {
+        return;
+    }
+
+    container
+        .querySelectorAll(
+            ".js-product-image"
+        )
+        .forEach((imageElement) => {
+            imageElement.addEventListener(
+                "error",
+                handleImageError,
+                {
+                    once: true
+                }
+            );
+        });
+}
+
+/**
+ * Xử lý ảnh không tải được.
+ */
+function handleImageError(
+    event
+) {
+    const imageElement =
+        event.currentTarget;
+
+    if (!imageElement) {
+        return;
+    }
+
+    imageElement.src =
+        placeholderImage();
+
+    imageElement.removeAttribute(
+        "fetchpriority"
+    );
+
+    imageElement.loading =
+        "lazy";
+}
+
+/**
+ * Mở modal sản phẩm sắp hết.
+ */
 function openLowStockModal() {
     if (!elements.lowStockModal) {
         return;
     }
 
     const lowStockProducts =
-        getLowStockProducts(allProducts);
+        getLowStockProducts(
+            allProducts
+        );
 
     renderLowStockProducts(
         lowStockProducts
     );
 
-    elements.lowStockModal.classList.remove(
-        "hidden"
-    );
+    elements.lowStockModal
+        .classList
+        .remove(
+            "hidden"
+        );
 
-    elements.lowStockModal.setAttribute(
-        "aria-hidden",
-        "false"
-    );
+    elements.lowStockModal
+        .setAttribute(
+            "aria-hidden",
+            "false"
+        );
 
     document.body.style.overflow =
         "hidden";
 }
 
+/**
+ * Đóng modal sản phẩm sắp hết.
+ */
 function closeLowStockModal() {
     if (!elements.lowStockModal) {
         return;
     }
 
-    elements.lowStockModal.classList.add(
-        "hidden"
-    );
+    elements.lowStockModal
+        .classList
+        .add(
+            "hidden"
+        );
 
-    elements.lowStockModal.setAttribute(
-        "aria-hidden",
-        "true"
-    );
+    elements.lowStockModal
+        .setAttribute(
+            "aria-hidden",
+            "true"
+        );
 
     document.body.style.overflow =
         "";
 }
 
-elements.lowStockCard?.addEventListener(
-    "click",
-    openLowStockModal
-);
+/**
+ * Click thẻ sản phẩm sắp hết.
+ */
+elements.lowStockCard
+    ?.addEventListener(
+        "click",
+        openLowStockModal
+    );
 
-elements.lowStockCard?.addEventListener(
-    "keydown",
-    (event) => {
-        if (
-            event.key === "Enter"
-            ||
-            event.key === " "
-        ) {
-            event.preventDefault();
+/**
+ * Mở modal bằng bàn phím.
+ */
+elements.lowStockCard
+    ?.addEventListener(
+        "keydown",
+        (event) => {
+            if (
+                event.key === "Enter"
+                ||
+                event.key === " "
+            ) {
+                event.preventDefault();
 
-            openLowStockModal();
+                openLowStockModal();
+            }
         }
-    }
-);
+    );
 
+/**
+ * Các nút đóng modal.
+ */
 document
     .querySelectorAll(
         "[data-close-low-stock-modal]"
@@ -448,6 +936,9 @@ document
         );
     });
 
+/**
+ * Đóng modal bằng phím Escape.
+ */
 document.addEventListener(
     "keydown",
     (event) => {
@@ -456,16 +947,24 @@ document.addEventListener(
             &&
             elements.lowStockModal
             &&
-            !elements.lowStockModal.classList.contains(
-                "hidden"
-            )
+            !elements.lowStockModal
+                .classList
+                .contains(
+                    "hidden"
+                )
         ) {
             closeLowStockModal();
         }
     }
 );
 
-function setText(element, value) {
+/**
+ * Gán nội dung cho element.
+ */
+function setText(
+    element,
+    value
+) {
     if (!element) {
         return;
     }
@@ -474,11 +973,35 @@ function setText(element, value) {
         String(value);
 }
 
-function toNumber(value) {
-    const number =
-        Number(value);
+/**
+ * Chuyển dữ liệu thành số an toàn.
+ */
+function toNumber(
+    value
+) {
+    if (
+        value === null
+        ||
+        value === undefined
+        ||
+        value === ""
+    ) {
+        return 0;
+    }
 
-    return Number.isFinite(number)
+    const normalizedValue =
+        typeof value === "string"
+            ? value.trim()
+            : value;
+
+    const number =
+        Number(
+            normalizedValue
+        );
+
+    return Number.isFinite(
+        number
+    )
         ? number
         : 0;
 }

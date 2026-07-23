@@ -9,6 +9,11 @@
         content="width=device-width, initial-scale=1.0"
     >
 
+    <meta
+        name="description"
+        content="Đăng ký tài khoản nhân viên hệ thống Larva"
+    >
+
     <title>Larva | Đăng ký nhân viên</title>
 
     <link
@@ -19,7 +24,7 @@
 
     <link
         rel="stylesheet"
-        href="./assets/css/main.css"
+        href="./assets/css/main.css?v=52"
     >
 
     <style>
@@ -27,8 +32,17 @@
             box-sizing: border-box;
         }
 
+        html,
         body {
             margin: 0;
+            min-height: 100%;
+        }
+
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+
+        body {
             min-height: 100vh;
             font-family:
                 Arial,
@@ -43,27 +57,38 @@
             color: #60444f;
         }
 
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            -webkit-tap-highlight-color:
+                transparent;
+        }
+
         .register-page {
             min-height: 100vh;
             display: grid;
             place-items: center;
-            padding: 24px;
+            padding: 28px 18px;
         }
 
         .register-card {
             width: min(
-                470px,
+                520px,
                 100%
             );
             padding: 34px;
             border: 1px solid #f0d8e2;
             border-radius: 24px;
-            background: rgba(
-                255,
-                255,
-                255,
-                0.96
-            );
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.97
+                );
             box-shadow:
                 0 24px 60px
                 rgba(
@@ -105,13 +130,13 @@
         .register-heading h1 {
             margin: 0 0 8px;
             color: #60444f;
-            font-size: 27px;
+            font-size: 28px;
         }
 
         .register-heading p {
             margin: 0;
             color: #9c7785;
-            line-height: 1.5;
+            line-height: 1.55;
         }
 
         .register-form {
@@ -119,11 +144,15 @@
             gap: 17px;
         }
 
-        .register-form label {
+        .register-label {
             display: grid;
             gap: 8px;
             color: #72535f;
             font-weight: 700;
+        }
+
+        .required-mark {
+            color: #cf557f;
         }
 
         .register-input {
@@ -138,7 +167,16 @@
             outline: none;
             transition:
                 border-color 0.2s ease,
-                box-shadow 0.2s ease;
+                box-shadow 0.2s ease,
+                background 0.2s ease;
+        }
+
+        .register-input::placeholder {
+            color: #b49aa4;
+        }
+
+        .register-input:hover:not(:disabled) {
+            border-color: #dda2bc;
         }
 
         .register-input:focus {
@@ -153,30 +191,85 @@
                 );
         }
 
+        .register-input:disabled {
+            background: #f8f3f5;
+            cursor: not-allowed;
+        }
+
+        .field-hint {
+            margin: 0;
+            color: #a18590;
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
         .password-wrap {
             position: relative;
         }
 
         .password-wrap .register-input {
-            padding-right: 90px;
+            padding-right: 82px;
         }
 
         .toggle-password {
             position: absolute;
             top: 50%;
             right: 10px;
-            transform: translateY(-50%);
+            min-width: 54px;
+            min-height: 34px;
+            padding: 0 8px;
+            transform:
+                translateY(-50%);
             border: 0;
+            border-radius: 8px;
             background: transparent;
             color: #b25f83;
             font-weight: 700;
             cursor: pointer;
         }
 
+        .toggle-password:hover {
+            background: #fff3f7;
+        }
+
+        .toggle-password:focus-visible {
+            outline: 2px solid #d987ad;
+            outline-offset: 2px;
+        }
+
+        .toggle-password:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .register-message {
+            margin: 0;
+            padding: 11px 13px;
+            border-radius: 11px;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .register-message.error,
+        .register-message.is-error {
+            border: 1px solid #f0b9c7;
+            background: #fff1f4;
+            color: #b44260;
+        }
+
+        .register-message.success,
+        .register-message.is-success {
+            border: 1px solid #b9dfc6;
+            background: #effbf3;
+            color: #34784c;
+        }
+
         .register-button {
             width: 100%;
             min-height: 50px;
-            margin-top: 3px;
+            margin-top: 4px;
+            padding: 0 18px;
             border: 0;
             border-radius: 13px;
             background: #d987ad;
@@ -186,68 +279,81 @@
             cursor: pointer;
             transition:
                 opacity 0.2s ease,
-                transform 0.2s ease;
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
         }
 
-        .register-button:hover {
-            transform: translateY(-1px);
+        .register-button:hover:not(:disabled) {
+            transform:
+                translateY(-1px);
+            box-shadow:
+                0 10px 24px
+                rgba(
+                    196,
+                    100,
+                    142,
+                    0.24
+                );
         }
 
-        .register-button:disabled {
+        .register-button:active:not(:disabled) {
+            transform:
+                translateY(0);
+        }
+
+        .register-button:focus-visible {
+            outline: 3px solid
+                rgba(
+                    217,
+                    135,
+                    173,
+                    0.35
+                );
+            outline-offset: 3px;
+        }
+
+        .register-button:disabled,
+        .register-button.is-loading {
             opacity: 0.65;
             cursor: wait;
             transform: none;
+            box-shadow: none;
         }
 
-        .register-message {
-            margin: 0;
-            padding: 11px 13px;
-            border-radius: 11px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .register-message.error {
-            border: 1px solid #f0b9c7;
-            background: #fff1f4;
-            color: #b44260;
-        }
-
-        .register-message.success {
-            border: 1px solid #b9dfc7;
-            background: #f0fff5;
-            color: #31754a;
-        }
-
-        .register-footer {
-            margin-top: 22px;
-            padding-top: 18px;
-            border-top: 1px solid #f1dce4;
+        .register-login {
+            margin-top: 20px;
             text-align: center;
         }
 
-        .register-footer p {
-            margin: 0 0 10px;
+        .register-login p {
+            margin: 0 0 8px;
             color: #9a7784;
             font-size: 14px;
         }
 
-        .register-footer a {
+        .register-login a {
             color: #b6537d;
             font-weight: 700;
             text-decoration: none;
         }
 
-        .register-footer a:hover {
+        .register-login a:hover {
             text-decoration: underline;
         }
 
-        .staff-note {
-            margin: 18px 0 0;
-            padding: 12px;
+        .register-login a:focus-visible {
+            outline: 2px solid #d987ad;
+            outline-offset: 4px;
+            border-radius: 3px;
+        }
+
+        .register-note {
+            margin: 22px 0 0;
+            padding: 15px;
+            border: 1px solid #f0d8e2;
             border-radius: 12px;
-            background: #fff6f9;
-            color: #916a79;
+            background: #fff8fb;
+            color: #916f7c;
             font-size: 13px;
             line-height: 1.6;
             text-align: center;
@@ -257,7 +363,7 @@
             display: none !important;
         }
 
-        @media (max-width: 520px) {
+        @media (max-width: 560px) {
             .register-page {
                 padding: 14px;
             }
@@ -267,8 +373,25 @@
                 border-radius: 19px;
             }
 
+            .register-brand {
+                margin-bottom: 22px;
+            }
+
+            .register-brand img {
+                width: 52px;
+                height: 52px;
+            }
+
+            .register-brand strong {
+                font-size: 25px;
+            }
+
             .register-heading h1 {
                 font-size: 24px;
+            }
+
+            .register-input {
+                font-size: 16px;
             }
         }
     </style>
@@ -276,159 +399,280 @@
 
 <body>
 
-<main class="register-page">
+    <main class="register-page">
 
-    <section class="register-card">
-
-        <div class="register-brand">
-
-            <img
-                src="./assets/images/larva-mascot.png"
-                alt="Larva"
-            >
-
-            <strong>
-                LARVA
-            </strong>
-
-        </div>
-
-        <div class="register-heading">
-
-            <h1>
-                Đăng ký nhân viên
-            </h1>
-
-
-
-        </div>
-
-        <form
-            id="registerForm"
-            class="register-form"
+        <section
+            class="register-card"
+            aria-labelledby="registerTitle"
         >
 
-            <label>
+            <div class="register-brand">
 
-                Tên nhân viên
-
-                <input
-                    id="displayNameInput"
-                    class="register-input"
-                    type="text"
-                    autocomplete="name"
-                    placeholder="Ví dụ: Nguyễn Văn An"
-                    required
+                <img
+                    src="./assets/images/larva-mascot.png"
+                    alt="Logo Larva"
                 >
 
-            </label>
+                <strong>
+                    LARVA
+                </strong>
 
-            <label>
+            </div>
 
-                Tên đăng nhập
+            <div class="register-heading">
 
-                <input
-                    id="usernameInput"
-                    class="register-input"
-                    type="text"
-                    autocomplete="username"
-                    placeholder="Ví dụ: nhan vien 01"
-                    required
-                >
+                <h1 id="registerTitle">
+                    Đăng ký nhân viên
+                </h1>
 
-            </label>
+                <p>
+                    Tạo tài khoản để sử dụng trang bán hàng.
+                </p>
 
-            <label>
+            </div>
 
-                Mật khẩu
-
-                <div class="password-wrap">
-
-                    <input
-                        id="passwordInput"
-                        class="register-input"
-                        type="password"
-                        autocomplete="new-password"
-                        minlength="6"
-                        placeholder="Tối thiểu 6 ký tự"
-                        required
-                    >
-
-                    <button
-                        id="togglePasswordButton"
-                        class="toggle-password"
-                        type="button"
-                    >
-                        Hiện
-                    </button>
-
-                </div>
-
-            </label>
-
-            <label>
-
-                Nhập lại mật khẩu
-
-                <div class="password-wrap">
-
-                    <input
-                        id="confirmPasswordInput"
-                        class="register-input"
-                        type="password"
-                        autocomplete="new-password"
-                        minlength="6"
-                        placeholder="Nhập lại mật khẩu"
-                        required
-                    >
-
-                    <button
-                        id="toggleConfirmPasswordButton"
-                        class="toggle-password"
-                        type="button"
-                    >
-                        Hiện
-                    </button>
-
-                </div>
-
-            </label>
-
-            <p
-                id="registerMessage"
-                class="register-message hidden"
-            ></p>
-
-            <button
-                id="registerButton"
-                class="register-button"
-                type="submit"
+            <form
+                id="registerForm"
+                class="register-form"
+                novalidate
             >
-                Đăng ký nhân viên
-            </button>
 
-        </form>
+                <label
+                    class="register-label"
+                    for="displayNameInput"
+                >
 
-        <div class="register-footer">
+                    <span>
+                        Họ và tên
 
-            <p>
-                Đã có tài khoản?
+                        <span
+                            class="required-mark"
+                            aria-hidden="true"
+                        >
+                            *
+                        </span>
+                    </span>
+
+                    <input
+                        id="displayNameInput"
+                        class="register-input"
+                        type="text"
+                        name="displayName"
+                        autocomplete="name"
+                        maxlength="100"
+                        placeholder="Ví dụ: Nguyễn Văn An"
+                        required
+                    >
+
+                </label>
+
+                <label
+                    class="register-label"
+                    for="usernameInput"
+                >
+
+                    <span>
+                        Tên đăng nhập
+
+                        <span
+                            class="required-mark"
+                            aria-hidden="true"
+                        >
+                            *
+                        </span>
+                    </span>
+
+                    <input
+                        id="usernameInput"
+                        class="register-input"
+                        type="text"
+                        name="username"
+                        autocomplete="username"
+                        autocapitalize="none"
+                        autocorrect="off"
+                        spellcheck="false"
+                        minlength="3"
+                        maxlength="30"
+                        placeholder="Ví dụ: nhanvien01"
+                        required
+                    >
+
+                    <small class="field-hint">
+                        Chỉ dùng chữ thường không dấu, số, dấu chấm hoặc dấu gạch dưới.
+                    </small>
+
+                </label>
+
+                <label
+                    class="register-label"
+                    for="emailInput"
+                >
+
+                    <span>
+                        Email
+
+                        <span
+                            class="required-mark"
+                            aria-hidden="true"
+                        >
+                            *
+                        </span>
+                    </span>
+
+                    <input
+                        id="emailInput"
+                        class="register-input"
+                        type="email"
+                        name="email"
+                        autocomplete="email"
+                        autocapitalize="none"
+                        autocorrect="off"
+                        spellcheck="false"
+                        inputmode="email"
+                        maxlength="150"
+                        placeholder="Ví dụ: nhanvien@gmail.com"
+                        required
+                    >
+
+                </label>
+
+                <label
+                    class="register-label"
+                    for="passwordInput"
+                >
+
+                    <span>
+                        Mật khẩu
+
+                        <span
+                            class="required-mark"
+                            aria-hidden="true"
+                        >
+                            *
+                        </span>
+                    </span>
+
+                    <div class="password-wrap">
+
+                        <input
+                            id="passwordInput"
+                            class="register-input"
+                            type="password"
+                            name="password"
+                            autocomplete="new-password"
+                            minlength="6"
+                            maxlength="128"
+                            placeholder="Ít nhất 6 ký tự"
+                            required
+                        >
+
+                        <button
+                            id="togglePasswordButton"
+                            class="toggle-password"
+                            type="button"
+                            aria-label="Hiện mật khẩu"
+                            aria-controls="passwordInput"
+                            aria-pressed="false"
+                        >
+                            Hiện
+                        </button>
+
+                    </div>
+
+                </label>
+
+                <label
+                    class="register-label"
+                    for="confirmPasswordInput"
+                >
+
+                    <span>
+                        Nhập lại mật khẩu
+
+                        <span
+                            class="required-mark"
+                            aria-hidden="true"
+                        >
+                            *
+                        </span>
+                    </span>
+
+                    <div class="password-wrap">
+
+                        <input
+                            id="confirmPasswordInput"
+                            class="register-input"
+                            type="password"
+                            name="confirmPassword"
+                            autocomplete="new-password"
+                            minlength="6"
+                            maxlength="128"
+                            placeholder="Nhập lại mật khẩu"
+                            required
+                        >
+
+                        <button
+                            id="toggleConfirmPasswordButton"
+                            class="toggle-password"
+                            type="button"
+                            aria-label="Hiện mật khẩu"
+                            aria-controls="confirmPasswordInput"
+                            aria-pressed="false"
+                        >
+                            Hiện
+                        </button>
+
+                    </div>
+
+                </label>
+
+                <p
+                    id="registerMessage"
+                    class="register-message hidden"
+                    role="alert"
+                    aria-live="assertive"
+                    hidden
+                ></p>
+
+                <button
+                    id="registerButton"
+                    class="register-button"
+                    type="submit"
+                >
+                    Đăng ký tài khoản
+                </button>
+
+            </form>
+
+            <div class="register-login">
+
+                <p>
+                    Đã có tài khoản?
+                </p>
+
+                <a href="./login.html">
+                    Quay lại đăng nhập
+                </a>
+
+            </div>
+
+            <p class="register-note">
+                Sau khi đăng ký, tài khoản sẽ ở trạng thái chờ duyệt. Admin phải xác nhận thì nhân viên mới đăng nhập được.
             </p>
 
-            <a href="./login.html">
-                Quay lại đăng nhập
-            </a>
+        </section>
 
-        </div>
+    </main>
 
-    </section>
+    <script
+        type="module"
+        src="./assets/js/auth/auth-guard.js?v=52"
+    ></script>
 
-</main>
-
-<script
-    type="module"
-    src="./assets/js/pages/register.js"
-></script>
+    <script
+        type="module"
+        src="./assets/js/pages/register.js?v=52"
+    ></script>
 
 </body>
 

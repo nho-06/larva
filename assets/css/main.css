@@ -4359,3 +4359,1514 @@ th {
         min-width: 120px;
     }
 }
+/* =========================================================
+   MÃ GIẢM GIÁ TẠI TRANG BÁN HÀNG
+========================================================= */
+
+.discount-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(
+        --border-color,
+        #eadfe4
+    );
+}
+
+.discount-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.discount-heading .eyebrow {
+    margin-bottom: 2px;
+}
+
+.discount-code-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 2px 8px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+}
+
+.discount-code-list::-webkit-scrollbar {
+    height: 6px;
+}
+
+.discount-code-list::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #e3b8c9;
+}
+
+.discount-code-chip {
+    flex: 0 0 auto;
+    min-width: 108px;
+    padding: 9px 11px;
+    border: 1px solid #e7cfd9;
+    border-radius: 14px;
+    background: #fff7fa;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    scroll-snap-align: start;
+
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.discount-code-chip:hover {
+    border-color: #d997b0;
+    background: #fff0f5;
+    transform: translateY(-1px);
+}
+
+.discount-code-chip strong,
+.discount-code-chip span {
+    display: block;
+}
+
+.discount-code-chip strong {
+    color: #54333f;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+}
+
+.discount-code-chip span {
+    margin-top: 3px;
+    color: #7a626b;
+    font-size: 12px;
+}
+
+.discount-code-chip.active {
+    border-color: #d45f8b;
+    background: #ffe8f0;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(
+            212,
+            95,
+            139,
+            0.12
+        );
+}
+
+.discount-code-chip.active strong {
+    color: #a7315e;
+}
+
+.discount-empty-state {
+    margin: 0 0 10px;
+    color: #8a777e;
+    font-size: 13px;
+}
+
+.discount-management-note {
+    margin: 10px 0 0;
+    color: var(
+        --muted-text,
+        #6f6370
+    );
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.discount-summary-row strong {
+    color: #c24774;
+}
+
+
+/* =========================================================
+   TRANG QUẢN LÝ MÃ GIẢM GIÁ
+========================================================= */
+
+.discount-management-page {
+    min-height: 100vh;
+}
+
+.discount-management-main {
+    min-width: 0;
+}
+
+.discount-management-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.discount-management-header h1 {
+    margin: 0;
+}
+
+.discount-management-header > div > p:last-child {
+    max-width: 620px;
+    margin: 8px 0 0;
+    color: var(
+        --muted-text,
+        #7b6971
+    );
+    line-height: 1.6;
+}
+
+.discount-summary-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            3,
+            minmax(0, 1fr)
+        );
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.discount-summary-card {
+    position: relative;
+    overflow: hidden;
+    min-height: 118px;
+    padding: 22px;
+    border: 1px solid #f0dce4;
+    border-radius: 20px;
+    background:
+        linear-gradient(
+            145deg,
+            #ffffff,
+            #fff8fa
+        );
+    box-shadow:
+        0 12px 30px
+        rgba(
+            102,
+            57,
+            75,
+            0.07
+        );
+}
+
+.discount-summary-card::after {
+    position: absolute;
+    right: -20px;
+    bottom: -32px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(
+        221,
+        143,
+        175,
+        0.12
+    );
+    content: "";
+}
+
+.discount-summary-card.active::after {
+    background: rgba(
+        77,
+        177,
+        123,
+        0.13
+    );
+}
+
+.discount-summary-card.inactive::after {
+    background: rgba(
+        149,
+        133,
+        141,
+        0.13
+    );
+}
+
+.discount-summary-card span {
+    position: relative;
+    z-index: 1;
+    display: block;
+    margin-bottom: 9px;
+    color: #8c727c;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.discount-summary-card strong {
+    position: relative;
+    z-index: 1;
+    display: block;
+    color: #593946;
+    font-size: 34px;
+    line-height: 1;
+}
+
+.discount-management-panel {
+    padding: 22px;
+    border: 1px solid #efdce4;
+    border-radius: 22px;
+    background: #ffffff;
+    box-shadow:
+        0 15px 38px
+        rgba(
+            91,
+            53,
+            69,
+            0.07
+        );
+}
+
+.discount-management-controls {
+    display: grid;
+    grid-template-columns:
+        minmax(
+            220px,
+            1fr
+        )
+        minmax(
+            180px,
+            260px
+        );
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.discount-control {
+    display: grid;
+    gap: 7px;
+}
+
+.discount-control > span {
+    color: #765963;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.discount-page-message {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.discount-page-message.success {
+    border: 1px solid #bde4cd;
+    background: #edf9f2;
+    color: #267348;
+}
+
+.discount-page-message.error {
+    border: 1px solid #f0c6c6;
+    background: #fff1f1;
+    color: #b42318;
+}
+
+.discount-state-card {
+    padding: 34px 18px;
+    border: 1px dashed #e6cbd6;
+    border-radius: 16px;
+    background: #fff9fb;
+    color: #8a6f79;
+    text-align: center;
+}
+
+.discount-table-wrap {
+    overflow-x: auto;
+    border: 1px solid #f0e1e6;
+    border-radius: 16px;
+}
+
+.discount-management-table {
+    width: 100%;
+    min-width: 840px;
+    border-collapse: collapse;
+    background: #ffffff;
+}
+
+.discount-management-table th,
+.discount-management-table td {
+    padding: 15px 14px;
+    border-bottom: 1px solid #f1e5e9;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.discount-management-table th {
+    background: #fff8fa;
+    color: #735863;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.discount-management-table td {
+    color: #69565e;
+    font-size: 14px;
+}
+
+.discount-management-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.discount-management-table tbody tr:hover {
+    background: #fffbfc;
+}
+
+.discount-code-name {
+    display: inline-flex;
+    align-items: center;
+    min-height: 31px;
+    padding: 5px 10px;
+    border: 1px dashed #daa5ba;
+    border-radius: 9px;
+    background: #fff1f6;
+    color: #a63f69;
+    letter-spacing: 0.5px;
+}
+
+.discount-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 29px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.discount-status-badge.is-active {
+    border: 1px solid #bfe5cf;
+    background: #edf9f2;
+    color: #237347;
+}
+
+.discount-status-badge.is-inactive {
+    border: 1px solid #dfd4d8;
+    background: #f7f3f5;
+    color: #796971;
+}
+
+.discount-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.discount-action-button {
+    min-height: 34px;
+    padding: 7px 11px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.discount-action-button:hover {
+    transform: translateY(-1px);
+}
+
+.discount-action-button.edit {
+    border-color: #d9c2cb;
+    background: #fff8fa;
+    color: #8f5069;
+}
+
+.discount-action-button.toggle {
+    border-color: #c9daca;
+    background: #f4faf5;
+    color: #477653;
+}
+
+.discount-action-button.delete {
+    border-color: #efcaca;
+    background: #fff4f4;
+    color: #bd3b3b;
+}
+
+
+/* =========================================================
+   MODAL QUẢN LÝ MÃ GIẢM GIÁ
+========================================================= */
+
+.discount-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10020;
+    display: grid;
+    place-items: center;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.discount-modal.hidden {
+    display: none;
+}
+
+.discount-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(
+        48,
+        29,
+        38,
+        0.48
+    );
+    backdrop-filter: blur(3px);
+}
+
+.discount-modal-card {
+    position: relative;
+    z-index: 1;
+    width: min(
+        510px,
+        100%
+    );
+    padding: 24px;
+    border: 1px solid #efd5df;
+    border-radius: 22px;
+    background: #ffffff;
+    box-shadow:
+        0 28px 70px
+        rgba(
+            62,
+            34,
+            47,
+            0.3
+        );
+}
+
+.discount-confirm-card {
+    width: min(
+        430px,
+        100%
+    );
+    text-align: center;
+}
+
+.discount-confirm-card h2 {
+    margin: 0 0 10px;
+    color: #654451;
+}
+
+.discount-confirm-card p {
+    margin: 0;
+    color: #846d76;
+    line-height: 1.6;
+}
+
+.discount-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.discount-modal-header h2 {
+    margin: 0;
+    color: #654451;
+}
+
+.discount-modal-close {
+    display: inline-grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid #ead5dd;
+    border-radius: 50%;
+    background: #fff7fa;
+    color: #875d6d;
+    font: inherit;
+    font-size: 25px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.discount-modal-close:hover {
+    background: #ffeef4;
+}
+
+.discount-form-field {
+    display: grid;
+    gap: 7px;
+    margin-bottom: 15px;
+}
+
+.discount-form-field > span {
+    color: #735761;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.discount-form-message {
+    margin: 4px 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.discount-form-message.error {
+    border: 1px solid #efc3c3;
+    background: #fff1f1;
+    color: #b42318;
+}
+
+.discount-form-message.success {
+    border: 1px solid #bde2cb;
+    background: #eff9f3;
+    color: #247348;
+}
+
+.discount-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.discount-modal-actions .button {
+    min-width: 110px;
+}
+
+.discount-modal-actions .danger-button {
+    border-color: #c94552;
+    background: #c94552;
+    color: #ffffff;
+}
+
+.discount-modal-actions .danger-button:hover {
+    background: #b63643;
+}
+
+
+/* =========================================================
+   RESPONSIVE QUẢN LÝ MÃ GIẢM GIÁ
+========================================================= */
+
+@media (max-width: 900px) {
+    .discount-summary-grid {
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(
+                    140px,
+                    1fr
+                )
+            );
+        overflow-x: auto;
+        padding-bottom: 5px;
+    }
+
+    .discount-summary-card {
+        min-width: 160px;
+    }
+}
+
+@media (max-width: 720px) {
+    .discount-management-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .discount-management-header
+    #openDiscountFormButton {
+        width: 100%;
+    }
+
+    .discount-management-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .discount-summary-grid {
+        grid-template-columns: 1fr;
+        overflow: visible;
+    }
+
+    .discount-summary-card {
+        min-width: 0;
+        min-height: 98px;
+    }
+
+    .discount-management-panel {
+        padding: 15px;
+        border-radius: 17px;
+    }
+
+    .discount-code-chip {
+        min-width: 115px;
+    }
+
+    .discount-modal-card {
+        padding: 20px 16px;
+        border-radius: 18px;
+    }
+
+    .discount-modal-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .discount-modal-actions .button {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 420px) {
+    .discount-code-list {
+        margin-right: -4px;
+    }
+
+    .discount-code-chip {
+        min-width: 120px;
+    }
+
+    .discount-summary-card strong {
+        font-size: 30px;
+    }
+
+    .discount-modal {
+        align-items: end;
+        padding: 10px;
+    }
+
+    .discount-modal-card {
+        width: 100%;
+        max-height: calc(
+            100vh - 20px
+        );
+        overflow-y: auto;
+        border-radius: 20px;
+    }
+
+    .discount-modal-actions {
+        grid-template-columns: 1fr;
+    }
+}
+/* =========================================================
+   QUẢN LÝ NHIỀU BILL ĐANG CHỜ
+========================================================= */
+
+.pending-bills-panel {
+    margin-bottom: 18px;
+    overflow: hidden;
+}
+
+.pending-bills-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 16px;
+}
+
+.pending-bills-header h2 {
+    margin: 2px 0 0;
+}
+
+.pending-bills-description {
+    margin: 7px 0 0;
+    color: var(--text-muted, #7d6b73);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.add-bill-button {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.bill-tabs {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    padding: 3px 2px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color:
+        rgba(221, 133, 166, 0.55)
+        transparent;
+}
+
+.bill-tabs::-webkit-scrollbar {
+    height: 7px;
+}
+
+.bill-tabs::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.bill-tabs::-webkit-scrollbar-thumb {
+    background:
+        rgba(
+            221,
+            133,
+            166,
+            0.55
+        );
+    border-radius: 999px;
+}
+
+.bill-tab {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    min-width: 210px;
+    padding: 13px 15px;
+    border: 1px solid
+        rgba(
+            225,
+            181,
+            197,
+            0.7
+        );
+    border-radius: 16px;
+    background: #fffafb;
+    color: #5f4650;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease,
+        box-shadow 0.18s ease;
+}
+
+.bill-tab:hover {
+    transform: translateY(-1px);
+    border-color:
+        rgba(
+            218,
+            116,
+            155,
+            0.9
+        );
+    background: #ffffff;
+    box-shadow:
+        0 8px 20px
+        rgba(
+            140,
+            78,
+            100,
+            0.09
+        );
+}
+
+.bill-tab.active {
+    border-color: #df7fa4;
+    background:
+        linear-gradient(
+            135deg,
+            #fff2f7,
+            #ffffff
+        );
+    box-shadow:
+        0 10px 24px
+        rgba(
+            217,
+            106,
+            149,
+            0.16
+        );
+}
+
+.bill-tab-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.bill-tab-name {
+    max-width: 130px;
+    overflow: hidden;
+    color: #54303f;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bill-tab.active .bill-tab-name {
+    color: #b63f70;
+}
+
+.bill-tab-info {
+    color: #957c86;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.bill-tab-total {
+    flex-shrink: 0;
+    color: #b63f70;
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   TÊN VÀ THAO TÁC BILL ĐANG CHỌN
+========================================================= */
+
+.active-bill-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-top: 2px;
+}
+
+.active-bill-title-row h2 {
+    max-width: 100%;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.bill-action-button {
+    min-height: 30px;
+    padding: 5px 9px;
+    border: 1px solid
+        rgba(
+            218,
+            130,
+            163,
+            0.45
+        );
+    border-radius: 9px;
+    background: #fff8fb;
+    color: #a7496e;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease,
+        color 0.18s ease;
+}
+
+.bill-action-button:hover {
+    border-color: #d9779d;
+    background: #fff0f6;
+    color: #9b315d;
+}
+
+.bill-action-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.bill-delete-button {
+    border-color:
+        rgba(
+            201,
+            91,
+            91,
+            0.34
+        );
+    background: #fff8f8;
+    color: #b34848;
+}
+
+.bill-delete-button:hover {
+    border-color: #d26565;
+    background: #fff0f0;
+    color: #a63535;
+}
+
+
+/* =========================================================
+   MODAL ĐỔI TÊN BILL
+========================================================= */
+
+.rename-bill-modal-card {
+    width: min(
+        440px,
+        calc(
+            100vw - 28px
+        )
+    );
+}
+
+.rename-bill-modal-card label {
+    display: grid;
+    gap: 8px;
+    color: #614a53;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   TÊN BILL TRONG MODAL THANH TOÁN
+========================================================= */
+
+.payment-bill-name {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    margin: 7px 0 0;
+    padding: 5px 10px;
+    border: 1px solid
+        rgba(
+            222,
+            126,
+            162,
+            0.34
+        );
+    border-radius: 999px;
+    background: #fff3f7;
+    color: #ad3f69;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   TRẠNG THÁI NÚT BILL
+========================================================= */
+
+.add-bill-button:disabled,
+#renameBillButton:disabled,
+#deleteBillButton:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   RESPONSIVE MÁY TÍNH BẢNG
+========================================================= */
+
+@media (max-width: 900px) {
+    .pending-bills-header {
+        align-items: center;
+    }
+
+    .bill-tab {
+        min-width: 190px;
+    }
+
+    .bill-tab-name {
+        max-width: 112px;
+    }
+}
+
+
+/* =========================================================
+   RESPONSIVE ĐIỆN THOẠI
+========================================================= */
+
+@media (max-width: 640px) {
+    .pending-bills-panel {
+        padding-right: 14px;
+        padding-left: 14px;
+    }
+
+    .pending-bills-header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .add-bill-button {
+        width: 100%;
+    }
+
+    .bill-tabs {
+        gap: 8px;
+        margin-right: -14px;
+        margin-left: -2px;
+        padding-right: 14px;
+    }
+
+    .bill-tab {
+        min-width: 172px;
+        gap: 10px;
+        padding: 11px 12px;
+        border-radius: 14px;
+    }
+
+    .bill-tab-name {
+        max-width: 98px;
+        font-size: 14px;
+    }
+
+    .bill-tab-info {
+        font-size: 11px;
+    }
+
+    .bill-tab-total {
+        font-size: 12px;
+    }
+
+    .active-bill-title-row {
+        align-items: flex-start;
+    }
+
+    .active-bill-title-row h2 {
+        width: 100%;
+    }
+
+    .bill-action-button {
+        flex: 1;
+        justify-content: center;
+        min-height: 34px;
+    }
+
+    .rename-bill-modal-card {
+        width: calc(
+            100vw - 20px
+        );
+    }
+}
+
+
+/* =========================================================
+   RESPONSIVE ĐIỆN THOẠI NHỎ
+========================================================= */
+
+@media (max-width: 420px) {
+    .bill-tab {
+        min-width: 158px;
+        padding: 10px;
+    }
+
+    .bill-tab-name {
+        max-width: 86px;
+    }
+
+    .bill-tab-total {
+        font-size: 11px;
+    }
+
+    .active-bill-title-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .active-bill-title-row h2 {
+        grid-column: 1 / -1;
+    }
+}
+/* =========================================================
+   MODAL XÁC NHẬN XÓA BILL
+========================================================= */
+
+.delete-bill-modal-card {
+    width: min(
+        430px,
+        calc(
+            100vw - 28px
+        )
+    );
+    text-align: center;
+}
+
+.delete-bill-icon-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.delete-bill-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: #fff0f2;
+    color: #c8455c;
+    font-size: 28px;
+    font-weight: 900;
+    box-shadow:
+        0 8px 22px
+        rgba(
+            200,
+            69,
+            92,
+            0.14
+        );
+}
+
+.delete-bill-content {
+    display: grid;
+    gap: 8px;
+}
+
+.delete-bill-content h2 {
+    margin: 0;
+    color: #5d3544;
+}
+
+.delete-bill-message {
+    margin: 0;
+    color: #806971;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.delete-bill-actions {
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.delete-bill-actions .button {
+    min-width: 120px;
+}
+
+.delete-confirm-button {
+    background: #c94f66;
+    border-color: #c94f66;
+}
+
+.delete-confirm-button:hover {
+    background: #b83f56;
+    border-color: #b83f56;
+}
+
+.delete-confirm-button:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+
+/* =========================================================
+   RESPONSIVE MODAL XÓA BILL
+========================================================= */
+
+@media (max-width: 520px) {
+    .delete-bill-modal-card {
+        width: calc(
+            100vw - 20px
+        );
+        padding: 22px 18px;
+    }
+
+    .delete-bill-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+    }
+
+    .delete-bill-actions .button {
+        width: 100%;
+        min-width: 0;
+    }
+}
+/* =========================================================
+   LỊCH SỬ ĐƠN HÀNG
+========================================================= */
+
+.order-history-subtitle {
+    margin: 8px 0 0;
+    color: #806971;
+    line-height: 1.6;
+}
+
+.order-history-toolbar {
+    display: grid;
+    grid-template-columns:
+        minmax(260px, 1fr)
+        repeat(
+            3,
+            minmax(150px, 210px)
+        );
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.order-history-list {
+    display: grid;
+    gap: 16px;
+}
+
+.order-history-card {
+    display: grid;
+    gap: 16px;
+}
+
+.order-history-card.cancelled {
+    opacity: 0.72;
+}
+
+.order-history-card-head,
+.order-history-title-row,
+.order-history-actions,
+.order-history-summary {
+    display: flex;
+    align-items: center;
+}
+
+.order-history-card-head {
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.order-history-title-row {
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.order-history-title-row h2 {
+    margin: 0;
+}
+
+.order-history-card-head p,
+.order-history-card-head small {
+    display: block;
+    margin: 6px 0 0;
+    color: #806971;
+}
+
+.order-history-total {
+    display: grid;
+    gap: 5px;
+    text-align: right;
+}
+
+.order-history-total span {
+    color: #806971;
+    font-size: 13px;
+}
+
+.order-history-total strong {
+    color: #c8455c;
+    font-size: 23px;
+}
+
+.order-status-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #e9f8ef;
+    color: #27804d;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.order-status-badge.cancelled {
+    background: #fff0f2;
+    color: #c8455c;
+}
+
+.order-history-summary {
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    padding: 14px 0;
+    border-top: 1px solid #f2dfe6;
+    border-bottom: 1px solid #f2dfe6;
+    color: #806971;
+    font-size: 14px;
+}
+
+.order-history-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.order-cancel-button {
+    background: #fff0f2;
+    border-color: #f2c7d1;
+    color: #b83f56;
+}
+
+.order-detail-card {
+    width: min(
+        820px,
+        calc(
+            100vw - 24px
+        )
+    );
+    max-height: calc(
+        100vh - 30px
+    );
+    overflow: auto;
+}
+
+.order-detail-meta,
+.order-detail-totals {
+    display: grid;
+    gap: 10px;
+}
+
+.order-detail-meta {
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+    padding: 15px;
+    border-radius: 14px;
+    background: #fff7f9;
+    color: #806971;
+    font-size: 14px;
+}
+
+.order-detail-items {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.order-detail-item {
+    display: grid;
+    grid-template-columns:
+        70px
+        minmax(0, 1fr)
+        auto;
+    gap: 14px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #f0d9e1;
+    border-radius: 15px;
+}
+
+.order-detail-item img {
+    width: 70px;
+    height: 70px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: #fff7f9;
+}
+
+.order-detail-item-info,
+.order-detail-item-total {
+    display: grid;
+    gap: 5px;
+}
+
+.order-detail-item-info small,
+.order-detail-item-info span {
+    color: #806971;
+}
+
+.order-detail-item-total {
+    justify-items: end;
+    text-align: right;
+}
+
+.order-item-actions {
+    display: flex;
+    gap: 7px;
+}
+
+.order-detail-totals {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #f0d9e1;
+}
+
+.order-detail-totals > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.order-detail-grand-total {
+    padding: 12px 0;
+    border-top: 1px dashed #e7bec9;
+    border-bottom: 1px dashed #e7bec9;
+    color: #c8455c;
+    font-size: 18px;
+}
+
+.history-confirm-card {
+    width: min(
+        460px,
+        calc(
+            100vw - 24px
+        )
+    );
+}
+
+.history-confirm-message {
+    color: #806971;
+    line-height: 1.65;
+}
+
+
+/* =========================================================
+   RESPONSIVE LỊCH SỬ ĐƠN HÀNG
+========================================================= */
+
+@media (max-width: 950px) {
+    .order-history-toolbar {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            );
+    }
+}
+
+@media (max-width: 620px) {
+    .order-history-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .order-history-card-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .order-history-total {
+        text-align: left;
+    }
+
+    .order-history-actions .button {
+        width: 100%;
+    }
+
+    .order-detail-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .order-detail-item {
+        grid-template-columns:
+            58px
+            minmax(0, 1fr);
+    }
+
+    .order-detail-item img {
+        width: 58px;
+        height: 58px;
+    }
+
+    .order-detail-item-total {
+        grid-column: 1 / -1;
+        justify-items: stretch;
+        text-align: left;
+    }
+
+    .order-item-actions button {
+        flex: 1;
+    }
+}

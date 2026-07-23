@@ -9,6 +9,11 @@
         content="width=device-width, initial-scale=1.0"
     >
 
+    <meta
+        name="description"
+        content="Đăng nhập hệ thống quản lý và bán hàng Larva"
+    >
+
     <title>Larva | Đăng nhập</title>
 
     <link
@@ -19,7 +24,7 @@
 
     <link
         rel="stylesheet"
-        href="./assets/css/main.css"
+        href="./assets/css/main.css?v=52"
     >
 
     <style>
@@ -27,8 +32,22 @@
             box-sizing: border-box;
         }
 
+        html,
         body {
             margin: 0;
+            min-height: 100%;
+        }
+
+        /*
+            Trong lúc auth-guard đang kiểm tra Firebase,
+            tạm ẩn trang để tránh giao diện chớp hoặc
+            hiện trang đăng nhập trước khi chuyển hướng.
+        */
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+
+        body {
             min-height: 100vh;
             font-family:
                 Arial,
@@ -41,6 +60,16 @@
                     #fbdce8
                 );
             color: #60444f;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            -webkit-tap-highlight-color:
+                transparent;
         }
 
         .login-page {
@@ -58,12 +87,13 @@
             padding: 34px;
             border: 1px solid #f0d8e2;
             border-radius: 24px;
-            background: rgba(
-                255,
-                255,
-                255,
-                0.95
-            );
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.96
+                );
             box-shadow:
                 0 24px 60px
                 rgba(
@@ -92,9 +122,9 @@
         }
 
         .login-brand strong {
+            color: #bd6088;
             font-size: 28px;
             letter-spacing: 2px;
-            color: #bd6088;
         }
 
         .login-heading {
@@ -104,8 +134,8 @@
 
         .login-heading h1 {
             margin: 0 0 8px;
-            font-size: 28px;
             color: #60444f;
+            font-size: 28px;
         }
 
         .login-heading p {
@@ -119,11 +149,15 @@
             gap: 17px;
         }
 
-        .login-form label {
+        .login-label {
             display: grid;
             gap: 8px;
-            font-weight: 700;
             color: #72535f;
+            font-weight: 700;
+        }
+
+        .required-mark {
+            color: #cf557f;
         }
 
         .login-input {
@@ -138,7 +172,16 @@
             outline: none;
             transition:
                 border-color 0.2s ease,
-                box-shadow 0.2s ease;
+                box-shadow 0.2s ease,
+                background 0.2s ease;
+        }
+
+        .login-input::placeholder {
+            color: #b49aa4;
+        }
+
+        .login-input:hover:not(:disabled) {
+            border-color: #dda2bc;
         }
 
         .login-input:focus {
@@ -153,30 +196,55 @@
                 );
         }
 
+        .login-input:disabled {
+            background: #f8f3f5;
+            cursor: not-allowed;
+        }
+
         .password-wrap {
             position: relative;
         }
 
         .password-wrap .login-input {
-            padding-right: 90px;
+            padding-right: 82px;
         }
 
         .toggle-password {
             position: absolute;
             top: 50%;
             right: 10px;
-            transform: translateY(-50%);
+            min-width: 54px;
+            min-height: 34px;
+            padding: 0 8px;
+            transform:
+                translateY(-50%);
             border: 0;
+            border-radius: 8px;
             background: transparent;
             color: #b25f83;
             font-weight: 700;
             cursor: pointer;
         }
 
+        .toggle-password:hover {
+            background: #fff3f7;
+        }
+
+        .toggle-password:focus-visible {
+            outline: 2px solid #d987ad;
+            outline-offset: 2px;
+        }
+
+        .toggle-password:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .login-button {
             width: 100%;
             min-height: 50px;
             margin-top: 4px;
+            padding: 0 18px;
             border: 0;
             border-radius: 13px;
             background: #d987ad;
@@ -185,18 +253,46 @@
             font-weight: 700;
             cursor: pointer;
             transition:
+                opacity 0.2s ease,
                 transform 0.2s ease,
-                opacity 0.2s ease;
+                box-shadow 0.2s ease;
         }
 
-        .login-button:hover {
-            transform: translateY(-1px);
+        .login-button:hover:not(:disabled) {
+            transform:
+                translateY(-1px);
+            box-shadow:
+                0 10px 24px
+                rgba(
+                    196,
+                    100,
+                    142,
+                    0.24
+                );
         }
 
-        .login-button:disabled {
+        .login-button:active:not(:disabled) {
+            transform:
+                translateY(0);
+        }
+
+        .login-button:focus-visible {
+            outline: 3px solid
+                rgba(
+                    217,
+                    135,
+                    173,
+                    0.35
+                );
+            outline-offset: 3px;
+        }
+
+        .login-button:disabled,
+        .login-button.is-loading {
             opacity: 0.65;
             cursor: wait;
             transform: none;
+            box-shadow: none;
         }
 
         .login-error {
@@ -210,23 +306,9 @@
             line-height: 1.5;
         }
 
-        .hidden {
-            display: none !important;
-        }
-
-        .login-note {
-            margin: 22px 0 0;
-            padding-top: 18px;
-            border-top: 1px solid #f1dce4;
-            color: #9a7784;
-            font-size: 13px;
-            line-height: 1.6;
-            text-align: center;
-        }
-
         .login-register {
-    margin-top: 18px;
-    text-align: center;
+            margin-top: 18px;
+            text-align: center;
         }
 
         .login-register p {
@@ -245,6 +327,26 @@
             text-decoration: underline;
         }
 
+        .login-register a:focus-visible {
+            outline: 2px solid #d987ad;
+            outline-offset: 4px;
+            border-radius: 3px;
+        }
+
+        .login-note {
+            margin: 22px 0 0;
+            padding-top: 18px;
+            border-top: 1px solid #f1dce4;
+            color: #9a7784;
+            font-size: 13px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
         @media (max-width: 520px) {
             .login-page {
                 padding: 14px;
@@ -255,8 +357,25 @@
                 border-radius: 19px;
             }
 
+            .login-brand {
+                margin-bottom: 22px;
+            }
+
+            .login-brand img {
+                width: 52px;
+                height: 52px;
+            }
+
+            .login-brand strong {
+                font-size: 25px;
+            }
+
             .login-heading h1 {
                 font-size: 24px;
+            }
+
+            .login-input {
+                font-size: 16px;
             }
         }
     </style>
@@ -264,114 +383,177 @@
 
 <body>
 
-<main class="login-page">
+    <main class="login-page">
 
-    <section class="login-card">
-
-        <div class="login-brand">
-
-            <img
-                src="./assets/images/larva-mascot.png"
-                alt="Larva"
-            >
-
-            <strong>
-                LARVA
-            </strong>
-
-        </div>
-
-        <div class="login-heading">
-
-            <h1>
-                Đăng nhập
-            </h1>
-
-
-        </div>
-
-        <form
-            id="loginForm"
-            class="login-form"
+        <section
+            class="login-card"
+            aria-labelledby="loginTitle"
         >
 
-            <label>
+            <div class="login-brand">
 
-                Tên đăng nhập
-
-                <input
-                    id="usernameInput"
-                    class="login-input"
-                    type="text"
-                    autocomplete="username"
-                    placeholder="Ví dụ: admin"
-                    required
+                <img
+                    src="./assets/images/larva-mascot.png"
+                    alt="Logo Larva"
                 >
 
-            </label>
+                <strong>
+                    LARVA
+                </strong>
 
-            <label>
+            </div>
 
-                Mật khẩu
+            <div class="login-heading">
 
-                <div class="password-wrap">
+                <h1 id="loginTitle">
+                    Đăng nhập
+                </h1>
+
+                <p>
+                    Nhập tài khoản để tiếp tục sử dụng hệ thống.
+                </p>
+
+            </div>
+
+            <form
+                id="loginForm"
+                class="login-form"
+                novalidate
+            >
+
+                <label
+                    class="login-label"
+                    for="usernameInput"
+                >
+
+                    <span>
+                        Tên đăng nhập hoặc email
+
+                        <span
+                            class="required-mark"
+                            aria-hidden="true"
+                        >
+                            *
+                        </span>
+                    </span>
 
                     <input
-                        id="passwordInput"
+                        id="usernameInput"
                         class="login-input"
-                        type="password"
-                        autocomplete="current-password"
-                        placeholder="Nhập mật khẩu"
+                        type="text"
+                        name="username"
+                        autocomplete="username"
+                        autocapitalize="none"
+                        autocorrect="off"
+                        spellcheck="false"
+                        inputmode="email"
+                        maxlength="150"
+                        placeholder="Nhập username hoặc email"
                         required
                     >
 
-                    <button
-                        id="togglePasswordButton"
-                        class="toggle-password"
-                        type="button"
-                    >
-                        Hiện
-                    </button>
+                </label>
 
-                </div>
+                <label
+                    class="login-label"
+                    for="passwordInput"
+                >
 
-            </label>
+                    <span>
+                        Mật khẩu
 
-            <p
-                id="loginError"
-                class="login-error hidden"
-            ></p>
+                        <span
+                            class="required-mark"
+                            aria-hidden="true"
+                        >
+                            *
+                        </span>
+                    </span>
 
-            <button
-                id="loginButton"
-                class="login-button"
-                type="submit"
-            >
-                Đăng nhập
-            </button>
+                    <div class="password-wrap">
 
-        </form>
+                        <input
+                            id="passwordInput"
+                            class="login-input"
+                            type="password"
+                            name="password"
+                            autocomplete="current-password"
+                            minlength="6"
+                            maxlength="128"
+                            placeholder="Nhập mật khẩu"
+                            required
+                        >
 
-<div class="login-register">
+                        <button
+                            id="togglePasswordButton"
+                            class="toggle-password"
+                            type="button"
+                            aria-label="Hiện mật khẩu"
+                            aria-controls="passwordInput"
+                            aria-pressed="false"
+                        >
+                            Hiện
+                        </button>
 
-    <p>
-        Chưa có tài khoản nhân viên?
-    </p>
+                    </div>
 
-    <a href="./register.html">
-        Đăng ký nhân viên
-    </a>
+                </label>
 
-</div>
+                <p
+                    id="loginError"
+                    class="login-error hidden"
+                    role="alert"
+                    aria-live="assertive"
+                    hidden
+                ></p>
 
-    </section>
+                <button
+                    id="loginButton"
+                    class="login-button"
+                    type="submit"
+                >
+                    Đăng nhập
+                </button>
 
-</main>
+            </form>
 
-<script
-    type="module"
-    src="./assets/js/pages/login.js"
-></script>
+            <div class="login-register">
+
+                <p>
+                    Chưa có tài khoản nhân viên?
+                </p>
+
+                <a href="./register.html">
+                    Đăng ký nhân viên
+                </a>
+
+            </div>
+
+            <p class="login-note">
+                Tài khoản nhân viên mới phải được admin xác nhận trước khi đăng nhập.
+            </p>
+
+        </section>
+
+    </main>
+
+    <!--
+        Auth guard phải chạy trước login.js.
+
+        File này:
+        - Kiểm tra người dùng đã đăng nhập chưa.
+        - Nếu đã đăng nhập thì chuyển đến trang đúng quyền.
+        - Nếu chưa đăng nhập thì mở trang login.
+    -->
+    <script
+        type="module"
+        src="./assets/js/auth/auth-guard.js?v=52"
+    ></script>
+
+    <script
+        type="module"
+        src="./assets/js/pages/login.js?v=52"
+    ></script>
 
 </body>
 

@@ -25,7 +25,7 @@
 
     <link
         rel="stylesheet"
-        href="./assets/css/main.css?v=62"
+        href="./assets/css/main.css?v=65"
     >
 
     <!-- Tạo mã vạch Code 128 -->
@@ -41,7 +41,8 @@
     <style>
         .category-field-row {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-columns:
+                minmax(0, 1fr) auto;
             gap: 10px;
             align-items: end;
         }
@@ -98,6 +99,64 @@
             background: #f8f4f6;
         }
 
+        /* =================================================
+           PHÂN TRANG SẢN PHẨM
+        ================================================= */
+
+        .product-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 4px 2px;
+        }
+
+        .product-pagination-info {
+            color: #777;
+            font-size: 14px;
+        }
+
+        .product-pagination-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .product-page-indicator {
+            min-width: 90px;
+            color: #6f5360;
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .product-pagination .button {
+            min-width: 92px;
+        }
+
+        .product-pagination .button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .product-code-text {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: #f8eef3;
+            color: #87566d;
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .missing-barcode {
+            color: #999;
+            font-size: 13px;
+        }
+
         @media (max-width: 640px) {
             .category-field-row {
                 grid-template-columns: 1fr;
@@ -105,6 +164,24 @@
 
             .category-field-row .button {
                 width: 100%;
+            }
+
+            .product-pagination {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .product-pagination-info {
+                text-align: center;
+            }
+
+            .product-pagination-actions {
+                justify-content: center;
+            }
+
+            .product-pagination .button {
+                flex: 1;
+                min-width: 0;
             }
         }
     </style>
@@ -138,6 +215,14 @@
             </div>
 
             <div class="page-actions">
+
+                <button
+                    class="button button-light"
+                    id="migrateProductImagesButton"
+                    type="button"
+                >
+                    Chuyển ảnh cũ
+                </button>
 
                 <button
                     class="button button-light"
@@ -492,7 +577,7 @@
 
                 </div>
 
-                <div
+                                <div
                     id="imageCameraBox"
                     class="image-source-box hidden"
                 >
@@ -555,7 +640,8 @@
                 </div>
 
             </div>
-                    <label class="full-width">
+
+            <label class="full-width">
 
                 Mô tả
 
@@ -922,12 +1008,17 @@
 
 <script
     type="module"
-    src="./assets/js/sidebar.js?v=10"
+    src="./assets/js/sidebar.js?v=65"
 ></script>
 
 <script
     type="module"
-    src="./assets/js/pages/products.js?v=63"
+    src="./assets/js/pages/products.js?v=65"
+></script>
+
+<script
+    type="module"
+    src="./assets/js/tools/migrate-product-images-ui.js?v=1"
 ></script>
 
 </body>

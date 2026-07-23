@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Larva | Lịch sử đơn hàng
+    </title>
+
+    <link
+        rel="preconnect"
+        href="https://www.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        rel="stylesheet"
+        href="./assets/css/main.css?v=73"
+    >
+
+    <script
+        type="module"
+        src="./assets/js/auth/auth-guard.js?v=73"
+    ></script>
+</head>
+
+<body>
+
+<div class="app-layout">
+
+    <div id="sidebarContainer"></div>
+
+    <main class="main-content">
+
+        <header class="page-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    ĐƠN ĐÃ THANH TOÁN
+                </p>
+
+                <h1>
+                    Lịch sử đơn hàng
+                </h1>
+
+                <p class="order-history-subtitle">
+                    Xem bill, sửa số lượng hoặc xóa món thanh toán nhầm.
+                    Doanh thu và tồn kho sẽ tự cập nhật.
+                </p>
+
+            </div>
+
+        </header>
+
+        <section class="panel order-history-toolbar">
+
+            <input
+                id="historySearchInput"
+                class="input"
+                type="search"
+                placeholder="Tìm tên bill, mã hóa đơn, tên hoặc mã sản phẩm"
+                autocomplete="off"
+            >
+
+            <input
+                id="historyDateInput"
+                class="input"
+                type="date"
+                aria-label="Lọc theo ngày"
+            >
+
+            <select
+                id="historyPaymentFilter"
+                class="input"
+                aria-label="Lọc theo phương thức thanh toán"
+            >
+                <option value="">
+                    Tất cả thanh toán
+                </option>
+
+                <option value="cash">
+                    Tiền mặt
+                </option>
+
+                <option value="transfer">
+                    Chuyển khoản
+                </option>
+            </select>
+
+            <select
+                id="historyStatusFilter"
+                class="input"
+                aria-label="Lọc theo trạng thái"
+            >
+                <option value="paid">
+                    Đã thanh toán
+                </option>
+
+                <option value="cancelled">
+                    Đã hủy
+                </option>
+
+                <option value="">
+                    Tất cả trạng thái
+                </option>
+            </select>
+
+        </section>
+
+        <p
+            id="historyMessage"
+            class="pos-message hidden"
+        ></p>
+
+        <section
+            id="orderHistoryList"
+            class="order-history-list"
+        ></section>
+
+        <section
+            id="emptyHistoryState"
+            class="panel empty-state hidden"
+        >
+            Chưa có hóa đơn phù hợp.
+        </section>
+
+    </main>
+
+</div>
+
+<!-- MODAL CHI TIẾT HÓA ĐƠN -->
+<div
+    id="orderDetailModal"
+    class="modal hidden"
+>
+
+    <div
+        class="modal-backdrop"
+        data-close-order-detail
+    ></div>
+
+    <section class="modal-card order-detail-card">
+
+        <div class="modal-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    CHI TIẾT HÓA ĐƠN
+                </p>
+
+                <h2 id="orderDetailTitle">
+                    Hóa đơn
+                </h2>
+
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-order-detail
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div id="orderDetailContent"></div>
+
+    </section>
+
+</div>
+
+<!-- MODAL XÁC NHẬN SỬA HÓA ĐƠN -->
+<div
+    id="historyConfirmModal"
+    class="modal hidden"
+>
+
+    <div
+        class="modal-backdrop"
+        data-close-history-confirm
+    ></div>
+
+    <section class="modal-card history-confirm-card">
+
+        <div class="modal-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    XÁC NHẬN CHỈNH BILL
+                </p>
+
+                <h2 id="historyConfirmTitle">
+                    Xác nhận
+                </h2>
+
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-history-confirm
+            >
+                ×
+            </button>
+
+        </div>
+
+        <p
+            id="historyConfirmMessage"
+            class="history-confirm-message"
+        ></p>
+
+        <div class="form-actions">
+
+            <button
+                class="button button-light"
+                type="button"
+                data-close-history-confirm
+            >
+                Hủy
+            </button>
+
+            <button
+                id="historyConfirmButton"
+                class="button delete-confirm-button"
+                type="button"
+            >
+                Xác nhận
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+<script
+    type="module"
+    src="./assets/js/sidebar.js?v=73"
+></script>
+
+<script
+    type="module"
+    src="./assets/js/pages/order-history.js?v=73"
+></script>
+
+</body>
+
+</html>

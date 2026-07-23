@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Quản lý mã giảm giá hệ thống Larva"
+    >
+
+    <title>Larva | Quản lý mã giảm giá</title>
+
+    <link
+        rel="stylesheet"
+        href="./assets/css/main.css?v=68"
+    >
+</head>
+
+<body>
+    <div class="app-layout discount-management-page">
+
+        <div id="sidebarContainer"></div>
+
+        <main class="main-content discount-management-main">
+
+            <header class="discount-management-header">
+
+                <div>
+                    <p class="eyebrow">
+                        KHUYẾN MÃI
+                    </p>
+
+                    <h1>
+                        Quản lý mã giảm giá
+                    </h1>
+
+                    <p>
+                        Thêm, chỉnh sửa, bật hoặc tắt mã giảm giá
+                        dùng trong trang bán hàng.
+                    </p>
+                </div>
+
+                <button
+                    id="openDiscountFormButton"
+                    class="button primary-button"
+                    type="button"
+                >
+                    + Thêm mã giảm giá
+                </button>
+
+            </header>
+
+            <section class="discount-summary-grid">
+
+                <article class="discount-summary-card">
+                    <span>
+                        Tổng mã
+                    </span>
+
+                    <strong id="discountTotalCount">
+                        0
+                    </strong>
+                </article>
+
+                <article class="discount-summary-card active">
+                    <span>
+                        Đang hoạt động
+                    </span>
+
+                    <strong id="discountActiveCount">
+                        0
+                    </strong>
+                </article>
+
+                <article class="discount-summary-card inactive">
+                    <span>
+                        Đã tắt
+                    </span>
+
+                    <strong id="discountInactiveCount">
+                        0
+                    </strong>
+                </article>
+
+            </section>
+
+            <section class="discount-management-panel">
+
+                <div class="discount-management-controls">
+
+                    <label class="discount-control">
+
+                        <span>
+                            Tìm mã giảm giá
+                        </span>
+
+                        <input
+                            id="discountSearchInput"
+                            class="input"
+                            type="search"
+                            placeholder="Ví dụ: SALE10"
+                            autocomplete="off"
+                        >
+
+                    </label>
+
+                    <label class="discount-control">
+
+                        <span>
+                            Trạng thái
+                        </span>
+
+                        <select
+                            id="discountStatusFilter"
+                            class="input"
+                        >
+                            <option value="all">
+                                Tất cả
+                            </option>
+
+                            <option value="active">
+                                Đang hoạt động
+                            </option>
+
+                            <option value="inactive">
+                                Đã tắt
+                            </option>
+                        </select>
+
+                    </label>
+
+                </div>
+
+                <p
+                    id="discountPageMessage"
+                    class="discount-page-message hidden"
+                    role="status"
+                ></p>
+
+                <div
+                    id="discountLoadingState"
+                    class="discount-state-card"
+                >
+                    Đang tải danh sách mã giảm giá...
+                </div>
+
+                <div
+                    id="discountEmptyState"
+                    class="discount-state-card hidden"
+                >
+                    Chưa có mã giảm giá phù hợp.
+                </div>
+
+                <div class="discount-table-wrap">
+
+                    <table class="discount-management-table">
+
+                        <thead>
+                            <tr>
+                                <th>
+                                    Mã
+                                </th>
+
+                                <th>
+                                    Loại giảm
+                                </th>
+
+                                <th>
+                                    Giá trị
+                                </th>
+
+                                <th>
+                                    Trạng thái
+                                </th>
+
+                                <th>
+                                    Ngày tạo
+                                </th>
+
+                                <th>
+                                    Thao tác
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="discountTableBody"></tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <div
+        id="discountFormModal"
+        class="discount-modal hidden"
+        aria-hidden="true"
+    >
+
+        <div
+            class="discount-modal-backdrop"
+            data-close-discount-form
+        ></div>
+
+        <section class="discount-modal-card">
+
+            <div class="discount-modal-header">
+
+                <div>
+                    <p class="eyebrow">
+                        MÃ GIẢM GIÁ
+                    </p>
+
+                    <h2 id="discountFormTitle">
+                        Thêm mã giảm giá
+                    </h2>
+                </div>
+
+                <button
+                    class="discount-modal-close"
+                    type="button"
+                    data-close-discount-form
+                    aria-label="Đóng"
+                >
+                    ×
+                </button>
+
+            </div>
+
+            <form id="discountForm">
+
+                <label class="discount-form-field">
+
+                    <span>
+                        Mã giảm giá
+                    </span>
+
+                    <input
+                        id="discountCodeInput"
+                        class="input"
+                        type="text"
+                        maxlength="30"
+                        placeholder="Ví dụ: SALE10"
+                        required
+                    >
+
+                </label>
+
+                <label class="discount-form-field">
+
+                    <span>
+                        Loại giảm
+                    </span>
+
+                    <select
+                        id="discountTypeInput"
+                        class="input"
+                    >
+                        <option value="percent">
+                            Phần trăm (%)
+                        </option>
+
+                        <option value="amount">
+                            Số tiền (đ)
+                        </option>
+                    </select>
+
+                </label>
+
+                <label class="discount-form-field">
+
+                    <span>
+                        Giá trị giảm
+                    </span>
+
+                    <input
+                        id="discountValueInput"
+                        class="input"
+                        type="number"
+                        min="1"
+                        step="1"
+                        placeholder="Nhập giá trị"
+                        required
+                    >
+
+                </label>
+
+                <p
+                    id="discountFormMessage"
+                    class="discount-form-message hidden"
+                ></p>
+
+                <div class="discount-modal-actions">
+
+                    <button
+                        class="button secondary-button"
+                        type="button"
+                        data-close-discount-form
+                    >
+                        Hủy
+                    </button>
+
+                    <button
+                        id="saveDiscountButton"
+                        class="button primary-button"
+                        type="submit"
+                    >
+                        Lưu mã
+                    </button>
+
+                </div>
+
+            </form>
+
+        </section>
+
+    </div>
+
+    <div
+        id="discountConfirmModal"
+        class="discount-modal hidden"
+        aria-hidden="true"
+    >
+
+        <div
+            class="discount-modal-backdrop"
+            data-close-discount-confirm
+        ></div>
+
+        <section class="discount-modal-card discount-confirm-card">
+
+            <h2 id="discountConfirmTitle">
+                Xác nhận
+            </h2>
+
+            <p id="discountConfirmMessage"></p>
+
+            <div class="discount-modal-actions">
+
+                <button
+                    class="button secondary-button"
+                    type="button"
+                    data-close-discount-confirm
+                >
+                    Hủy
+                </button>
+
+                <button
+                    id="discountConfirmButton"
+                    class="button danger-button"
+                    type="button"
+                >
+                    Xác nhận
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    <script
+        type="module"
+        src="./assets/js/auth/auth-guard.js?v=68"
+    ></script>
+
+    <script
+        type="module"
+        src="./assets/js/sidebar.js?v=68"
+    ></script>
+
+    <script
+        type="module"
+        src="./assets/js/pages/discount-management.js?v=68"
+    ></script>
+
+</body>
+
+</html>

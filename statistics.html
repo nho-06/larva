@@ -9,7 +9,9 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Larva | Doanh thu & Tiền lời</title>
+    <title>
+        Larva | Doanh thu & Tiền lời
+    </title>
 
     <link
         rel="preconnect"
@@ -29,20 +31,225 @@
     >
 
     <style>
-        /*
-            Vì đã bỏ cột Hóa đơn gần đây,
-            phần Sản phẩm bán chạy sẽ chiếm toàn bộ chiều rộng.
-        */
+        .statistics-summary-grid {
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(0, 1fr)
+                );
+        }
+
+        .statistics-chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        .statistics-chart-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .statistics-chart-legend i {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+
+        .statistics-chart-legend .revenue-dot,
+        .statistics-chart-bar.revenue {
+            background: #f28fb2;
+        }
+
+        .statistics-chart-legend .cost-dot,
+        .statistics-chart-bar.cost {
+            background: #aab2c5;
+        }
+
+        .statistics-chart-legend .profit-dot,
+        .statistics-chart-bar.profit {
+            background: #75c9a5;
+        }
+
+        .daily-revenue-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 18px;
+            min-height: 290px;
+            padding-top: 24px;
+            overflow-x: auto;
+        }
+
+        .statistics-chart-column {
+            min-width: 72px;
+            text-align: center;
+        }
+
+        .statistics-chart-bars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 4px;
+            height: 220px;
+            padding: 0 4px;
+        }
+
+        .statistics-chart-bar {
+            width: 14px;
+            min-height: 0;
+            border-radius: 7px 7px 3px 3px;
+            transition: height 0.2s ease;
+        }
+
+        .statistics-chart-column small {
+            display: block;
+            margin-top: 4px;
+            color: var(
+                --text-muted,
+                #8f7580
+            );
+            font-size: 11px;
+        }
+
+        .daily-revenue-date {
+            display: block;
+            margin-top: 8px;
+        }
+
         .statistics-product-section {
             width: 100%;
         }
+
+        .statistics-product-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            min-width: 220px;
+        }
+
+        .statistics-product-image {
+            display: block !important;
+            width: 48px !important;
+            min-width: 48px !important;
+            max-width: 48px !important;
+            height: 58px !important;
+            min-height: 58px !important;
+            max-height: 58px !important;
+            flex: 0 0 48px !important;
+            object-fit: cover !important;
+            object-position: center !important;
+            background: #f8e9ef;
+            border: 1px solid #f1d9e3;
+            border-radius: 9px;
+        }
+
+        .statistics-product-info {
+            min-width: 0;
+            max-width: 260px;
+        }
+
+        .statistics-product-info strong {
+            display: block;
+            overflow: hidden;
+            color: #7a5666;
+            font-size: 13px;
+            line-height: 1.35;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .statistics-product-info small {
+            display: block;
+            margin-top: 5px;
+            overflow: hidden;
+            color: var(
+                --text-muted,
+                #8f7580
+            );
+            font-size: 11px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .statistics-product-table-cell {
+            min-width: 260px;
+        }
+
+        .statistics-index-cell,
+        .statistics-number-cell,
+        .statistics-money-cell {
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .statistics-number-cell {
+            text-align: center;
+        }
+
+        .profit-value {
+            color: #6a8f7d;
+            font-weight: 700;
+        }
+
+        .statistics-product-section table img {
+            width: 48px !important;
+            height: 58px !important;
+            max-width: 48px !important;
+            max-height: 58px !important;
+        }
+
+        @media (max-width: 1100px) {
+            .statistics-summary-grid {
+                grid-template-columns:
+                    repeat(
+                        2,
+                        minmax(0, 1fr)
+                    );
+            }
+        }
+
+        @media (max-width: 640px) {
+            .statistics-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .statistics-chart-bars {
+                height: 170px;
+            }
+
+            .daily-revenue-chart {
+                min-height: 235px;
+            }
+
+            .statistics-product-cell {
+                min-width: 190px;
+            }
+
+            .statistics-product-info {
+                max-width: 150px;
+            }
+
+            .statistics-product-image,
+            .statistics-product-section table img {
+                width: 44px !important;
+                min-width: 44px !important;
+                max-width: 44px !important;
+                height: 52px !important;
+                min-height: 52px !important;
+                max-height: 52px !important;
+            }
+        }
     </style>
 
-
-<script
-    type="module"
-    src="./assets/js/auth/auth-guard.js?v=50"
-></script>
+    <script
+        type="module"
+        src="./assets/js/auth/auth-guard.js?v=50"
+    ></script>
 </head>
 
 <body>
@@ -64,6 +271,11 @@
                 <h1>
                     Doanh thu & Tiền lời
                 </h1>
+
+                <p>
+                    Theo dõi kết quả kinh doanh
+                    của cửa hàng.
+                </p>
 
             </div>
 
@@ -122,6 +334,13 @@
 
         </section>
 
+        <!--
+            Giữ lại 6 ô thống kê:
+
+            - Hôm nay
+            - Tháng này
+            - Năm nay
+        -->
         <section class="stats-grid statistics-summary-grid">
 
             <article class="stat-card">
@@ -131,30 +350,6 @@
                 </span>
 
                 <strong id="todayRevenue">
-                    0 ₫
-                </strong>
-
-            </article>
-
-            <article class="stat-card">
-
-                <span>
-                    Doanh thu tháng này
-                </span>
-
-                <strong id="monthRevenue">
-                    0 ₫
-                </strong>
-
-            </article>
-
-            <article class="stat-card">
-
-                <span>
-                    Doanh thu năm nay
-                </span>
-
-                <strong id="yearRevenue">
                     0 ₫
                 </strong>
 
@@ -175,10 +370,34 @@
             <article class="stat-card">
 
                 <span>
+                    Doanh thu tháng này
+                </span>
+
+                <strong id="monthRevenue">
+                    0 ₫
+                </strong>
+
+            </article>
+
+            <article class="stat-card">
+
+                <span>
                     Tiền lời tháng này
                 </span>
 
                 <strong id="monthProfit">
+                    0 ₫
+                </strong>
+
+            </article>
+
+            <article class="stat-card">
+
+                <span>
+                    Doanh thu năm nay
+                </span>
+
+                <strong id="yearRevenue">
                     0 ₫
                 </strong>
 
@@ -196,30 +415,6 @@
 
             </article>
 
-            <article class="stat-card">
-
-                <span>
-                    Tổng hóa đơn trong khoảng chọn
-                </span>
-
-                <strong id="totalInvoices">
-                    0
-                </strong>
-
-            </article>
-
-            <article class="stat-card">
-
-                <span>
-                    Sản phẩm đã bán trong khoảng chọn
-                </span>
-
-                <strong id="totalSoldQuantity">
-                    0
-                </strong>
-
-            </article>
-
         </section>
 
         <section class="panel statistics-chart-panel">
@@ -233,12 +428,32 @@
                     </p>
 
                     <h2>
-                        Doanh thu và tiền lời theo ngày
+                        Doanh thu, giá vốn và
+                        tiền lời theo ngày
                     </h2>
 
                     <p>
                         Dữ liệu trong khoảng ngày đã chọn.
                     </p>
+
+                    <div class="statistics-chart-legend">
+
+                        <span>
+                            <i class="revenue-dot"></i>
+                            Doanh thu
+                        </span>
+
+                        <span>
+                            <i class="cost-dot"></i>
+                            Giá vốn
+                        </span>
+
+                        <span>
+                            <i class="profit-dot"></i>
+                            Tiền lời
+                        </span>
+
+                    </div>
 
                 </div>
 
@@ -253,7 +468,8 @@
                 id="emptyDailyRevenue"
                 class="empty-state hidden"
             >
-                Chưa có doanh thu trong khoảng thời gian này.
+                Chưa có doanh thu trong khoảng
+                thời gian này.
             </p>
 
         </section>
@@ -269,11 +485,12 @@
                     </p>
 
                     <h2>
-                        Bán chạy nhất
+                        Sản phẩm bán chạy
                     </h2>
 
                     <p>
-                        Sản phẩm bán chạy trong khoảng ngày đã chọn.
+                        Doanh thu sản phẩm đã được
+                        trừ phần giảm giá tương ứng.
                     </p>
 
                 </div>
@@ -288,11 +505,26 @@
 
                     <tr>
                         <th>#</th>
-                        <th>Sản phẩm</th>
-                        <th>Đã bán</th>
-                        <th>Doanh thu</th>
-                        <th>Giá vốn</th>
-                        <th>Tiền lời</th>
+
+                        <th>
+                            Sản phẩm
+                        </th>
+
+                        <th>
+                            Đã bán
+                        </th>
+
+                        <th>
+                            Doanh thu thực nhận
+                        </th>
+
+                        <th>
+                            Giá vốn
+                        </th>
+
+                        <th>
+                            Tiền lời
+                        </th>
                     </tr>
 
                     </thead>
@@ -307,7 +539,8 @@
                 id="emptyBestSelling"
                 class="empty-state hidden"
             >
-                Chưa có sản phẩm bán ra trong khoảng thời gian này.
+                Chưa có sản phẩm bán ra trong
+                khoảng thời gian này.
             </p>
 
         </section>
@@ -323,7 +556,7 @@
 
 <script
     type="module"
-    src="./assets/js/pages/statistics.js"
+    src="./assets/js/pages/statistics.js?v=6"
 ></script>
 
 </body>

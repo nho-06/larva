@@ -19,26 +19,55 @@ import {
     renderDiscountCodes
 } from "./discount.js";
 
+import {
+    getActiveBill,
+    saveBillsToStorage
+} from "./bill-manager.js";
+
+
+/* =========================================================
+   TỔNG TIỀN CỦA BILL ĐANG MỞ
+========================================================= */
+
 export function getCartTotal() {
     return getFinalTotal();
 }
 
+
+/* =========================================================
+   TỔNG SỐ LƯỢNG SẢN PHẨM CỦA BILL ĐANG MỞ
+========================================================= */
+
 export function getCartQuantity() {
     return state.cart.reduce(
-        (total, item) => {
+        (
+            total,
+            item
+        ) => {
             return (
-                total
-                + Number(item.quantity || 0)
+                total +
+                Number(
+                    item.quantity || 0
+                )
             );
         },
         0
     );
 }
 
+
+/* =========================================================
+   HIỂN THỊ THÔNG BÁO BÁN HÀNG
+========================================================= */
+
 export function showSaleMessage(
     message,
     type = "success"
 ) {
+    if (!elements.saleMessage) {
+        return;
+    }
+
     elements.saleMessage.textContent =
         message;
 
@@ -50,18 +79,52 @@ export function showSaleMessage(
     );
 
     showSaleMessage.timer =
-        window.setTimeout(() => {
-            elements.saleMessage
-                .classList.add("hidden");
-        }, 2200);
+        window.setTimeout(
+            () => {
+                elements.saleMessage
+                    ?.classList.add(
+                        "hidden"
+                    );
+            },
+            2200
+        );
 }
 
+
+/* =========================================================
+   ĐÁNH DẤU BILL VỪA ĐƯỢC CẬP NHẬT
+========================================================= */
+
+function updateActiveBillTime() {
+    const activeBill =
+        getActiveBill();
+
+    if (!activeBill) {
+        return;
+    }
+
+    activeBill.updatedAt =
+        new Date().toISOString();
+
+    saveBillsToStorage();
+}
+
+
+/* =========================================================
+   HIỂN THỊ GIỎ HÀNG CỦA BILL ĐANG MỞ
+========================================================= */
+
 export function renderCart() {
+    const activeBill =
+        getActiveBill();
+
     const subtotal =
         getCartSubtotal();
 
     const discountAmount =
-        getDiscountAmount(subtotal);
+        getDiscountAmount(
+            subtotal
+        );
 
     const total =
         getFinalTotal();
@@ -69,127 +132,222 @@ export function renderCart() {
     const quantity =
         getCartQuantity();
 
-    elements.cartItems.innerHTML =
-        state.cart
-            .map((item) => {
-                const image =
-                    item.image
-                    || placeholderImage();
+    /*
+        Hiển thị tên bill đang chọn.
+    */
+    if (
+        elements.activeBillName
+    ) {
+        elements.activeBillName.textContent =
+            activeBill?.name ||
+            "Bill";
+    }
 
-                const lineTotal =
-                    Number(item.price || 0)
-                    * Number(item.quantity || 0);
+    /*
+        Hiển thị tên bill trong
+        cửa sổ thanh toán.
+    */
+    if (
+        elements.paymentBillName
+    ) {
+        elements.paymentBillName.textContent =
+            activeBill?.name ||
+            "Bill";
+    }
 
-                return `
-                    <div class="cart-item">
+    if (
+        elements.cartItems
+    ) {
+        elements.cartItems.innerHTML =
+            state.cart
+                .map(
+                    (item) => {
+                        const image =
+                            item.image ||
+                            placeholderImage();
 
-                        <img
-                            class="cart-item-image"
-                            src="${escapeHtml(image)}"
-                            alt="${escapeHtml(item.name)}"
-                            onerror="this.src='${placeholderImage()}'"
-                        >
+                        const lineTotal =
+                            Number(
+                                item.price || 0
+                            ) *
+                            Number(
+                                item.quantity || 0
+                            );
 
-                        <div class="cart-item-info">
+                        return `
+                            <div class="cart-item">
 
-                            <strong>
-                                ${escapeHtml(item.name)}
-                            </strong>
-
-                            <small>
-                                ${escapeHtml(
-                                    item.sku
-                                    || item.barcode
-                                    || ""
-                                )}
-                            </small>
-
-                            <span>
-                                ${formatMoney(item.price)}
-                            </span>
-
-                        </div>
-
-                        <div class="cart-item-actions">
-
-                            <div class="quantity-control">
-
-                                <button
-                                    type="button"
-                                    data-decrease="${item.productId}"
-                                    aria-label="Giảm số lượng"
+                                <img
+                                    class="cart-item-image"
+                                    src="${escapeHtml(
+                                        image
+                                    )}"
+                                    alt="${escapeHtml(
+                                        item.name
+                                    )}"
+                                    onerror="this.src='${placeholderImage()}'"
                                 >
-                                    −
-                                </button>
 
-                                <span>
-                                    ${item.quantity}
-                                </span>
+                                <div class="cart-item-info">
 
-                                <button
-                                    type="button"
-                                    data-increase="${item.productId}"
-                                    aria-label="Tăng số lượng"
-                                >
-                                    +
-                                </button>
+                                    <strong>
+                                        ${escapeHtml(
+                                            item.name
+                                        )}
+                                    </strong>
+
+                                    <small>
+                                        ${escapeHtml(
+                                            item.sku ||
+                                            item.barcode ||
+                                            ""
+                                        )}
+                                    </small>
+
+                                    <span>
+                                        ${formatMoney(
+                                            item.price
+                                        )}
+                                    </span>
+
+                                </div>
+
+                                <div class="cart-item-actions">
+
+                                    <div class="quantity-control">
+
+                                        <button
+                                            type="button"
+                                            data-decrease="${escapeHtml(
+                                                item.productId
+                                            )}"
+                                            aria-label="Giảm số lượng"
+                                        >
+                                            −
+                                        </button>
+
+                                        <span>
+                                            ${Number(
+                                                item.quantity || 0
+                                            )}
+                                        </span>
+
+                                        <button
+                                            type="button"
+                                            data-increase="${escapeHtml(
+                                                item.productId
+                                            )}"
+                                            aria-label="Tăng số lượng"
+                                        >
+                                            +
+                                        </button>
+
+                                    </div>
+
+                                    <strong>
+                                        ${formatMoney(
+                                            lineTotal
+                                        )}
+                                    </strong>
+
+                                    <button
+                                        class="remove-cart-item"
+                                        type="button"
+                                        data-remove="${escapeHtml(
+                                            item.productId
+                                        )}"
+                                    >
+                                        Xóa
+                                    </button>
+
+                                </div>
 
                             </div>
-
-                            <strong>
-                                ${formatMoney(lineTotal)}
-                            </strong>
-
-                            <button
-                                class="remove-cart-item"
-                                type="button"
-                                data-remove="${item.productId}"
-                            >
-                                Xóa
-                            </button>
-
-                        </div>
-
-                    </div>
-                `;
-            })
-            .join("");
+                        `;
+                    }
+                )
+                .join("");
+    }
 
     elements.emptyCartState
-        .classList.toggle(
+        ?.classList.toggle(
             "hidden",
             state.cart.length > 0
         );
 
-    elements.cartCount.textContent =
-        quantity;
+    if (
+        elements.cartCount
+    ) {
+        elements.cartCount.textContent =
+            String(quantity);
+    }
 
-    if (elements.cartSubtotal) {
+    if (
+        elements.cartSubtotal
+    ) {
         elements.cartSubtotal.textContent =
-            formatMoney(subtotal);
+            formatMoney(
+                subtotal
+            );
     }
 
-    if (elements.cartDiscount) {
+    if (
+        elements.cartDiscount
+    ) {
         elements.cartDiscount.textContent =
-            `− ${formatMoney(discountAmount)}`;
+            `− ${formatMoney(
+                discountAmount
+            )}`;
     }
 
-    elements.cartTotal.textContent =
-        formatMoney(total);
+    if (
+        elements.cartTotal
+    ) {
+        elements.cartTotal.textContent =
+            formatMoney(
+                total
+            );
+    }
 
+    /*
+        Mã giảm giá được hiển thị
+        theo bill đang mở.
+    */
     renderDiscountCodes();
 
-    elements.openPaymentButton.disabled =
-        state.cart.length === 0;
+    if (
+        elements.openPaymentButton
+    ) {
+        elements.openPaymentButton.disabled =
+            state.cart.length === 0;
+    }
 
-    elements.clearCartButton.disabled =
-        state.cart.length === 0;
+    if (
+        elements.clearCartButton
+    ) {
+        elements.clearCartButton.disabled =
+            state.cart.length === 0;
+    }
 }
+
+
+/* =========================================================
+   THÊM SẢN PHẨM VÀO BILL ĐANG MỞ
+========================================================= */
 
 export function addProductToCart(
     product,
     fromScanner = false
 ) {
+    if (!product) {
+        showSaleMessage(
+            "Không tìm thấy sản phẩm.",
+            "error"
+        );
+
+        return false;
+    }
+
     const stock =
         Number(
             product.quantity || 0
@@ -207,8 +365,10 @@ export function addProductToCart(
     const currentItem =
         state.cart.find(
             (item) => {
-                return item.productId
-                    === product.id;
+                return (
+                    item.productId ===
+                    product.id
+                );
             }
         );
 
@@ -217,7 +377,10 @@ export function addProductToCart(
             currentItem?.quantity || 0
         );
 
-    if (currentQuantity >= stock) {
+    if (
+        currentQuantity >=
+        stock
+    ) {
         showSaleMessage(
             `Không thể thêm. Sản phẩm chỉ còn ${stock}.`,
             "error"
@@ -227,23 +390,31 @@ export function addProductToCart(
     }
 
     if (currentItem) {
-        currentItem.quantity += 1;
+        currentItem.quantity =
+            currentQuantity + 1;
+
+        currentItem.stock =
+            stock;
     } else {
         state.cart.push({
             productId:
                 product.id,
 
             name:
-                product.name || "Sản phẩm",
+                product.name ||
+                "Sản phẩm",
 
             sku:
-                product.sku || "",
+                product.sku ||
+                "",
 
             barcode:
-                product.barcode || "",
+                product.barcode ||
+                "",
 
             image:
-                product.image || "",
+                product.image ||
+                "",
 
             price:
                 Number(
@@ -257,6 +428,11 @@ export function addProductToCart(
         });
     }
 
+    /*
+        Lưu lại đúng bill đang mở.
+    */
+    updateActiveBillTime();
+
     renderCart();
 
     showSaleMessage(
@@ -268,6 +444,11 @@ export function addProductToCart(
     return true;
 }
 
+
+/* =========================================================
+   TĂNG HOẶC GIẢM SỐ LƯỢNG
+========================================================= */
+
 export function updateCartQuantity(
     productId,
     change
@@ -275,8 +456,10 @@ export function updateCartQuantity(
     const item =
         state.cart.find(
             (cartItem) => {
-                return cartItem.productId
-                    === productId;
+                return (
+                    cartItem.productId ===
+                    productId
+                );
             }
         );
 
@@ -287,32 +470,43 @@ export function updateCartQuantity(
     const product =
         state.products.find(
             (currentProduct) => {
-                return currentProduct.id
-                    === productId;
+                return (
+                    currentProduct.id ===
+                    productId
+                );
             }
         );
 
     const currentStock =
         Number(
-            product?.quantity
-            || item.stock
-            || 0
+            product?.quantity ||
+            item.stock ||
+            0
         );
 
     const nextQuantity =
-        Number(item.quantity)
-        + Number(change);
+        Number(
+            item.quantity
+        ) +
+        Number(
+            change
+        );
 
-    if (nextQuantity <= 0) {
+    if (
+        nextQuantity <= 0
+    ) {
         state.cart =
             state.cart.filter(
                 (cartItem) => {
-                    return cartItem.productId
-                        !== productId;
+                    return (
+                        cartItem.productId !==
+                        productId
+                    );
                 }
             );
     } else if (
-        nextQuantity > currentStock
+        nextQuantity >
+        currentStock
     ) {
         showSaleMessage(
             `Sản phẩm chỉ còn ${currentStock}.`,
@@ -328,8 +522,15 @@ export function updateCartQuantity(
             currentStock;
     }
 
+    updateActiveBillTime();
+
     renderCart();
 }
+
+
+/* =========================================================
+   XÓA MỘT SẢN PHẨM KHỎI BILL
+========================================================= */
 
 export function removeCartItem(
     productId
@@ -337,35 +538,68 @@ export function removeCartItem(
     state.cart =
         state.cart.filter(
             (item) => {
-                return item.productId
-                    !== productId;
+                return (
+                    item.productId !==
+                    productId
+                );
             }
         );
+
+    updateActiveBillTime();
 
     renderCart();
 }
 
+
+/* =========================================================
+   XÓA TOÀN BỘ SẢN PHẨM TRONG BILL ĐANG MỞ
+========================================================= */
+
 export function clearCart() {
-    if (state.cart.length === 0) {
+    if (
+        state.cart.length === 0
+    ) {
         return;
     }
 
+    const activeBill =
+        getActiveBill();
+
     const accepted =
-        confirm(
-            "Xóa toàn bộ sản phẩm trong giỏ?"
+        window.confirm(
+            `Xóa toàn bộ sản phẩm trong "${activeBill?.name || "bill này"}"?`
         );
 
     if (!accepted) {
         return;
     }
 
-    state.cart = [];
+    /*
+        Chỉ xóa giỏ hàng của bill đang mở.
+        Những bill khác không bị ảnh hưởng.
+    */
+    state.cart =
+        [];
 
     /*
-        Khi xóa toàn bộ giỏ hàng,
-        đồng thời bỏ mã giảm giá đang chọn.
+        Khi xóa toàn bộ giỏ,
+        bỏ mã giảm giá của bill này.
     */
-    state.selectedDiscountId = "";
+    state.selectedDiscountId =
+        "";
+
+    /*
+        Xóa nội dung chuyển khoản cũ
+        của bill này.
+    */
+    state.transferCode =
+        "";
+
+    updateActiveBillTime();
 
     renderCart();
+
+    showSaleMessage(
+        `Đã xóa sản phẩm trong ${activeBill?.name || "bill"}.`
+    );
 }

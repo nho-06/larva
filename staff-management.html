@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Quản lý tài khoản nhân viên hệ thống Larva"
+    >
+
+    <title>Larva | Quản lý nhân viên</title>
+
+    <link
+        rel="stylesheet"
+        href="./assets/css/main.css?v=52"
+    >
+
+    <style>
+        html:not(.auth-ready) body {
+            visibility: hidden;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #fff8fb;
+            color: #5f4650;
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        button {
+            -webkit-tap-highlight-color:
+                transparent;
+        }
+
+        .staff-page {
+            min-height: 100vh;
+        }
+
+        .staff-main {
+            min-width: 0;
+            padding: 26px;
+            margin-left: 260px;
+        }
+
+        .staff-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .staff-header-content h1 {
+            margin: 0 0 8px;
+            color: #5d414c;
+            font-size: clamp(
+                25px,
+                3vw,
+                34px
+            );
+        }
+
+        .staff-header-content p {
+            margin: 0;
+            color: #967581;
+            line-height: 1.6;
+        }
+
+        .staff-refresh-button {
+            min-height: 43px;
+            padding: 0 18px;
+            border: 1px solid #e3b9ca;
+            border-radius: 11px;
+            background: #ffffff;
+            color: #ad5f80;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition:
+                background 0.2s ease,
+                border-color 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .staff-refresh-button:hover:not(:disabled) {
+            background: #fff1f6;
+            border-color: #d991ae;
+            transform: translateY(-1px);
+        }
+
+        .staff-refresh-button:disabled {
+            opacity: 0.65;
+            cursor: wait;
+        }
+
+        .staff-summary-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(
+                    5,
+                    minmax(130px, 1fr)
+                );
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .staff-summary-card {
+            min-width: 0;
+            padding: 19px;
+            border: 1px solid #f0d9e2;
+            border-radius: 17px;
+            background: #ffffff;
+            box-shadow:
+                0 12px 30px
+                rgba(
+                    155,
+                    89,
+                    116,
+                    0.08
+                );
+        }
+
+        .staff-summary-card span {
+            display: block;
+            margin-bottom: 8px;
+            color: #9a7b87;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .staff-summary-card strong {
+            display: block;
+            color: #704d5b;
+            font-size: 27px;
+        }
+
+        .staff-summary-card.pending {
+            border-color: #efd7a9;
+            background: #fffaf0;
+        }
+
+        .staff-summary-card.approved {
+            border-color: #c9e5d2;
+            background: #f5fcf7;
+        }
+
+        .staff-summary-card.locked {
+            border-color: #e4c6cc;
+            background: #fff7f8;
+        }
+
+        .staff-summary-card.deleted {
+            border-color: #d9d4d6;
+            background: #f9f8f8;
+        }
+
+        .staff-controls {
+            display: grid;
+            grid-template-columns:
+                minmax(220px, 1fr)
+                minmax(180px, 230px);
+            gap: 14px;
+            margin-bottom: 16px;
+            padding: 18px;
+            border: 1px solid #f0d9e2;
+            border-radius: 17px;
+            background: #ffffff;
+            box-shadow:
+                0 10px 25px
+                rgba(
+                    155,
+                    89,
+                    116,
+                    0.06
+                );
+        }
+
+        .staff-control {
+            display: grid;
+            gap: 7px;
+        }
+
+        .staff-control label {
+            color: #785966;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .staff-control input,
+        .staff-control select {
+            width: 100%;
+            min-height: 45px;
+            padding: 0 13px;
+            border: 1px solid #ead2dc;
+            border-radius: 11px;
+            background: #ffffff;
+            color: #5c444d;
+            outline: none;
+            transition:
+                border-color 0.2s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .staff-control input:focus,
+        .staff-control select:focus {
+            border-color: #d78cab;
+            box-shadow:
+                0 0 0 4px
+                rgba(
+                    215,
+                    140,
+                    171,
+                    0.13
+                );
+        }
+
+        .staff-page-message {
+            margin: 0 0 16px;
+            padding: 12px 14px;
+            border-radius: 11px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .staff-page-message.success {
+            border: 1px solid #bde0c8;
+            background: #effbf3;
+            color: #34764b;
+        }
+
+        .staff-page-message.error {
+            border: 1px solid #efbcc8;
+            background: #fff1f4;
+            color: #b24360;
+        }
+
+        .staff-table-card {
+            min-width: 0;
+            overflow: hidden;
+            border: 1px solid #efdbe3;
+            border-radius: 18px;
+            background: #ffffff;
+            box-shadow:
+                0 12px 32px
+                rgba(
+                    155,
+                    89,
+                    116,
+                    0.08
+                );
+        }
+
+        .staff-table-scroll {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .staff-table {
+            width: 100%;
+            min-width: 1030px;
+            border-collapse: collapse;
+        }
+
+        .staff-table th,
+        .staff-table td {
+            padding: 15px 14px;
+            border-bottom: 1px solid #f2e3e9;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .staff-table th {
+            background: #fff6f9;
+            color: #835f6d;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .staff-table td {
+            color: #654c56;
+            font-size: 14px;
+        }
+
+        .staff-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .staff-table tbody tr:hover {
+            background: #fffbfc;
+        }
+
+        .staff-index-cell {
+            width: 62px;
+            color: #9c7e89;
+            text-align: center !important;
+        }
+
+        .staff-user-cell {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            min-width: 210px;
+        }
+
+        .staff-avatar {
+            flex:
+                0 0
+                42px;
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background:
+                linear-gradient(
+                    135deg,
+                    #f4c5d8,
+                    #db8fb0
+                );
+            color: #ffffff;
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .staff-user-info {
+            min-width: 0;
+        }
+
+        .staff-user-info strong {
+            display: block;
+            overflow: hidden;
+            color: #624651;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .staff-user-info span {
+            display: block;
+            margin-top: 4px;
+            overflow: hidden;
+            color: #a0818d;
+            font-size: 13px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .staff-email {
+            display: inline-block;
+            max-width: 230px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .staff-status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 30px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .staff-status-badge.is-pending {
+            background: #fff3d9;
+            color: #9b6a12;
+        }
+
+        .staff-status-badge.is-approved {
+            background: #e9f8ee;
+            color: #35794d;
+        }
+
+        .staff-status-badge.is-locked {
+            background: #fdecef;
+            color: #ad455e;
+        }
+
+        .staff-status-badge.is-deleted {
+            background: #efeded;
+            color: #777071;
+        }
+
+        .staff-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            min-width: 145px;
+        }
+
+        .staff-action-button {
+            min-height: 34px;
+            padding: 0 11px;
+            border: 0;
+            border-radius: 9px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition:
+                transform 0.2s ease,
+                opacity 0.2s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .staff-action-button:hover:not(:disabled) {
+            transform:
+                translateY(-1px);
+        }
+
+        .staff-action-button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .staff-action-button.approve {
+            background: #e8f7ed;
+            color: #317347;
+        }
+
+        .staff-action-button.lock {
+            background: #fff0d9;
+            color: #95620d;
+        }
+
+        .staff-action-button.unlock {
+            background: #e8f1ff;
+            color: #3f66a1;
+        }
+
+        .staff-action-button.delete {
+            background: #fdecef;
+            color: #ae405b;
+        }
+
+        .staff-action-button.restore {
+            background: #eeeafb;
+            color: #6c54a0;
+        }
+
+        .staff-loading-state,
+        .staff-empty-state {
+            padding: 50px 20px;
+            color: #947782;
+            text-align: center;
+        }
+
+        .staff-loading-state strong,
+        .staff-empty-state strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #755460;
+            font-size: 18px;
+        }
+
+        .staff-loading-state p,
+        .staff-empty-state p {
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .staff-confirm-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            display: grid;
+            place-items: center;
+            padding: 18px;
+            background:
+                rgba(
+                    66,
+                    43,
+                    52,
+                    0.48
+                );
+        }
+
+        .staff-confirm-modal[hidden] {
+            display: none;
+        }
+
+        .staff-confirm-dialog {
+            width: min(
+                450px,
+                100%
+            );
+            padding: 25px;
+            border: 1px solid #f0d7e1;
+            border-radius: 20px;
+            background: #ffffff;
+            box-shadow:
+                0 25px 70px
+                rgba(
+                    55,
+                    32,
+                    42,
+                    0.25
+                );
+        }
+
+        .staff-confirm-dialog h2 {
+            margin: 0 0 11px;
+            color: #60444f;
+            font-size: 23px;
+        }
+
+        .staff-confirm-dialog p {
+            margin: 0;
+            color: #8e717c;
+            line-height: 1.65;
+        }
+
+        .staff-confirm-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .staff-confirm-button {
+            min-height: 42px;
+            padding: 0 16px;
+            border: 0;
+            border-radius: 10px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .staff-confirm-button.cancel {
+            background: #f2edef;
+            color: #745963;
+        }
+
+        .staff-confirm-button.confirm {
+            background: #d986aa;
+            color: #ffffff;
+        }
+
+        .staff-confirm-button.confirm.approve {
+            background: #57a46e;
+        }
+
+        .staff-confirm-button.confirm.lock {
+            background: #d39734;
+        }
+
+        .staff-confirm-button.confirm.unlock {
+            background: #5b81ba;
+        }
+
+        .staff-confirm-button.confirm.delete {
+            background: #cf5d76;
+        }
+
+        .staff-confirm-button.confirm.restore {
+            background: #7e68ae;
+        }
+
+        .staff-confirm-button:disabled {
+            opacity: 0.65;
+            cursor: wait;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        @media (max-width: 1200px) {
+            .staff-summary-grid {
+                grid-template-columns:
+                    repeat(
+                        3,
+                        minmax(140px, 1fr)
+                    );
+            }
+        }
+
+        @media (max-width: 900px) {
+            .staff-main {
+                margin-left: 0;
+                padding:
+                    76px
+                    16px
+                    22px;
+            }
+
+            .staff-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .staff-refresh-button {
+                width: 100%;
+            }
+
+            .staff-summary-grid {
+                grid-template-columns:
+                    repeat(
+                        2,
+                        minmax(130px, 1fr)
+                    );
+            }
+        }
+
+        @media (max-width: 650px) {
+            .staff-main {
+                padding:
+                    72px
+                    12px
+                    18px;
+            }
+
+            .staff-summary-grid {
+                gap: 10px;
+            }
+
+            .staff-summary-card {
+                padding: 15px;
+            }
+
+            .staff-summary-card strong {
+                font-size: 23px;
+            }
+
+            .staff-controls {
+                grid-template-columns: 1fr;
+                padding: 14px;
+            }
+
+            .staff-table-card {
+                overflow: visible;
+                border: 0;
+                background: transparent;
+                box-shadow: none;
+            }
+
+            .staff-table-scroll {
+                overflow: visible;
+            }
+
+            .staff-table {
+                min-width: 0;
+            }
+
+            .staff-table thead {
+                display: none;
+            }
+
+            .staff-table,
+            .staff-table tbody,
+            .staff-table tr,
+            .staff-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .staff-table tbody {
+                display: grid;
+                gap: 12px;
+            }
+
+            .staff-table tr {
+                overflow: hidden;
+                padding: 8px 14px;
+                border: 1px solid #efdbe3;
+                border-radius: 16px;
+                background: #ffffff;
+                box-shadow:
+                    0 10px 26px
+                    rgba(
+                        155,
+                        89,
+                        116,
+                        0.07
+                    );
+            }
+
+            .staff-table td {
+                display: grid;
+                grid-template-columns:
+                    120px
+                    minmax(0, 1fr);
+                align-items: center;
+                gap: 10px;
+                padding: 10px 0;
+                border-bottom: 1px solid #f2e5ea;
+                text-align: right;
+            }
+
+            .staff-table td::before {
+                content:
+                    attr(data-label);
+                color: #8b6c78;
+                font-size: 12px;
+                font-weight: 800;
+                text-align: left;
+            }
+
+            .staff-table td:last-child {
+                border-bottom: 0;
+            }
+
+            .staff-index-cell {
+                width: 100%;
+                text-align: right !important;
+            }
+
+            .staff-user-cell {
+                justify-content: flex-end;
+                min-width: 0;
+                text-align: left;
+            }
+
+            .staff-user-info {
+                max-width: 190px;
+            }
+
+            .staff-email {
+                max-width: 100%;
+            }
+
+            .staff-actions {
+                justify-content: flex-end;
+                min-width: 0;
+            }
+
+            .staff-confirm-actions {
+                flex-direction: column-reverse;
+            }
+
+            .staff-confirm-button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .staff-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .staff-table td {
+                grid-template-columns:
+                    100px
+                    minmax(0, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div
+        id="sidebarContainer"
+        class="sidebar-container"
+    ></div>
+
+    <div class="staff-page">
+
+        <main class="staff-main">
+
+            <header class="staff-header">
+
+                <div class="staff-header-content">
+
+                    <h1>
+                        Quản lý nhân viên
+                    </h1>
+
+                    <p>
+                        Duyệt, khóa, mở khóa, xóa hoặc khôi phục tài khoản nhân viên.
+                    </p>
+
+                </div>
+
+                <button
+                    id="staffRefreshButton"
+                    class="staff-refresh-button"
+                    type="button"
+                >
+                    Làm mới
+                </button>
+
+            </header>
+
+            <section
+                class="staff-summary-grid"
+                aria-label="Thống kê tài khoản nhân viên"
+            >
+
+                <article class="staff-summary-card">
+
+                    <span>
+                        Tổng tài khoản
+                    </span>
+
+                    <strong id="staffTotalCount">
+                        0
+                    </strong>
+
+                </article>
+
+                <article class="staff-summary-card pending">
+
+                    <span>
+                        Chờ duyệt
+                    </span>
+
+                    <strong id="staffPendingCount">
+                        0
+                    </strong>
+
+                </article>
+
+                <article class="staff-summary-card approved">
+
+                    <span>
+                        Đang hoạt động
+                    </span>
+
+                    <strong id="staffApprovedCount">
+                        0
+                    </strong>
+
+                </article>
+
+                <article class="staff-summary-card locked">
+
+                    <span>
+                        Đã khóa
+                    </span>
+
+                    <strong id="staffLockedCount">
+                        0
+                    </strong>
+
+                </article>
+
+                <article class="staff-summary-card deleted">
+
+                    <span>
+                        Đã xóa
+                    </span>
+
+                    <strong id="staffDeletedCount">
+                        0
+                    </strong>
+
+                </article>
+
+            </section>
+
+            <section
+                class="staff-controls"
+                aria-label="Tìm kiếm và lọc tài khoản"
+            >
+
+                <div class="staff-control">
+
+                    <label for="staffSearchInput">
+                        Tìm nhân viên
+                    </label>
+
+                    <input
+                        id="staffSearchInput"
+                        type="search"
+                        autocomplete="off"
+                        placeholder="Nhập họ tên, username hoặc email"
+                    >
+
+                </div>
+
+                <div class="staff-control">
+
+                    <label for="staffStatusFilter">
+                        Trạng thái
+                    </label>
+
+                    <select id="staffStatusFilter">
+
+                        <option value="all">
+                            Tất cả trạng thái
+                        </option>
+
+                        <option value="pending">
+                            Chờ duyệt
+                        </option>
+
+                        <option value="approved">
+                            Đang hoạt động
+                        </option>
+
+                        <option value="locked">
+                            Đã khóa
+                        </option>
+
+                        <option value="deleted">
+                            Đã xóa
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </section>
+
+            <p
+                id="staffPageMessage"
+                class="staff-page-message"
+                role="alert"
+                aria-live="assertive"
+                hidden
+            ></p>
+
+            <section class="staff-table-card">
+
+                <div
+                    id="staffLoadingState"
+                    class="staff-loading-state"
+                >
+
+                    <strong>
+                        Đang tải dữ liệu
+                    </strong>
+
+                    <p>
+                        Hệ thống đang kiểm tra danh sách tài khoản nhân viên.
+                    </p>
+
+                </div>
+
+                <div
+                    id="staffEmptyState"
+                    class="staff-empty-state"
+                    hidden
+                >
+
+                    <strong>
+                        Không có tài khoản phù hợp
+                    </strong>
+
+                    <p>
+                        Chưa có nhân viên hoặc không tìm thấy tài khoản theo bộ lọc hiện tại.
+                    </p>
+
+                </div>
+
+                <div class="staff-table-scroll">
+
+                    <table class="staff-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th scope="col">
+                                    STT
+                                </th>
+
+                                <th scope="col">
+                                    Nhân viên
+                                </th>
+
+                                <th scope="col">
+                                    Email
+                                </th>
+
+                                <th scope="col">
+                                    Trạng thái
+                                </th>
+
+                                <th scope="col">
+                                    Ngày đăng ký
+                                </th>
+
+                                <th scope="col">
+                                    Đăng nhập gần nhất
+                                </th>
+
+                                <th scope="col">
+                                    Thao tác
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="staffTableBody"></tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <div
+        id="staffConfirmModal"
+        class="staff-confirm-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-hidden="true"
+        aria-labelledby="staffConfirmModalTitle"
+        hidden
+    >
+
+        <div class="staff-confirm-dialog">
+
+            <h2 id="staffConfirmModalTitle">
+                Xác nhận thao tác
+            </h2>
+
+            <p id="staffConfirmModalMessage">
+                Bạn có chắc muốn thực hiện thao tác này?
+            </p>
+
+            <div class="staff-confirm-actions">
+
+                <button
+                    id="staffConfirmModalCancel"
+                    class="staff-confirm-button cancel"
+                    type="button"
+                >
+                    Hủy
+                </button>
+
+                <button
+                    id="staffConfirmModalConfirm"
+                    class="staff-confirm-button confirm"
+                    type="button"
+                >
+                    Xác nhận
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!--
+        Thứ tự script bắt buộc:
+
+        1. auth-guard:
+           Kiểm tra đăng nhập và quyền admin.
+
+        2. sidebar:
+           Chờ auth-guard xong rồi tải sidebar đúng quyền.
+
+        3. staff-management:
+           Tải và quản lý danh sách nhân viên.
+    -->
+    <script
+        type="module"
+        src="./assets/js/auth/auth-guard.js?v=52"
+    ></script>
+
+    <script
+        type="module"
+        src="./assets/js/sidebar.js?v=52"
+    ></script>
+
+    <script
+        type="module"
+        src="./assets/js/pages/staff-management.js?v=52"
+    ></script>
+
+</body>
+
+</html>

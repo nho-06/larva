@@ -28,33 +28,77 @@ import {
 } from "./receipt.js";
 
 import {
+    completeActiveBill,
+    getActiveBill,
+    saveBillsToStorage
+} from "./bill-manager.js";
+
+import {
     formatMoney
 } from "../../utils.js";
 
-export function showPaymentError(message) {
+
+/* =========================================================
+   HIỂN THỊ LỖI THANH TOÁN
+========================================================= */
+
+export function showPaymentError(
+    message
+) {
+    if (
+        !elements.paymentError
+    ) {
+        return;
+    }
+
     elements.paymentError.textContent =
         message;
 
     elements.paymentError
-        .classList.remove("hidden");
+        .classList.remove(
+            "hidden"
+        );
 }
 
+
+/* =========================================================
+   ẨN LỖI THANH TOÁN
+========================================================= */
+
 export function hidePaymentError() {
+    if (
+        !elements.paymentError
+    ) {
+        return;
+    }
+
     elements.paymentError.textContent =
         "";
 
     elements.paymentError
-        .classList.add("hidden");
+        .classList.add(
+            "hidden"
+        );
 }
+
+
+/* =========================================================
+   LẤY PHƯƠNG THỨC THANH TOÁN ĐANG CHỌN
+========================================================= */
 
 export function getSelectedPaymentMethod() {
     return (
         document.querySelector(
             'input[name="paymentMethod"]:checked'
-        )?.value
-        || "cash"
+        )?.value ||
+        "cash"
     );
 }
+
+
+/* =========================================================
+   TẠO NỘI DUNG CHUYỂN KHOẢN
+========================================================= */
 
 function generateTransferCode() {
     const now =
@@ -66,79 +110,154 @@ function generateTransferCode() {
     const month =
         String(
             now.getMonth() + 1
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
 
     const day =
         String(
             now.getDate()
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
 
     const hour =
         String(
             now.getHours()
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
 
     const minute =
         String(
             now.getMinutes()
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
 
     const second =
         String(
             now.getSeconds()
-        ).padStart(2, "0");
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const random =
+        Math.floor(
+            100 +
+            Math.random() * 900
+        );
 
     return (
-        "LARVA"
-        + `${year}${month}${day}`
-        + `${hour}${minute}${second}`
+        "LARVA" +
+        `${year}${month}${day}` +
+        `${hour}${minute}${second}` +
+        random
     );
 }
 
-export function resetPaymentQr() {
-    state.transferCode =
-        "";
 
-    elements.paymentQrImage.src =
-        "";
+/* =========================================================
+   ĐẶT LẠI MÃ QR
+========================================================= */
 
-    elements.transferContent.textContent =
-        "";
+export function resetPaymentQr(
+    clearTransferCode = true
+) {
+    if (clearTransferCode) {
+        /*
+            Chỉ xóa mã chuyển khoản
+            của bill đang mở.
+        */
+        state.transferCode =
+            "";
 
-    elements.qrBankName.textContent =
-        "";
+        saveBillsToStorage();
+    }
 
-    elements.qrAccountNumber.textContent =
-        "";
+    if (
+        elements.paymentQrImage
+    ) {
+        elements.paymentQrImage.src =
+            "";
+    }
 
-    elements.qrAccountHolder.textContent =
-        "";
+    if (
+        elements.transferContent
+    ) {
+        elements.transferContent.textContent =
+            "";
+    }
 
-    elements.qrAmount.textContent =
-        "";
+    if (
+        elements.qrBankName
+    ) {
+        elements.qrBankName.textContent =
+            "";
+    }
+
+    if (
+        elements.qrAccountNumber
+    ) {
+        elements.qrAccountNumber.textContent =
+            "";
+    }
+
+    if (
+        elements.qrAccountHolder
+    ) {
+        elements.qrAccountHolder.textContent =
+            "";
+    }
+
+    if (
+        elements.qrAmount
+    ) {
+        elements.qrAmount.textContent =
+            "";
+    }
 
     elements.paymentQrBox
-        .classList.add("hidden");
+        ?.classList.add(
+            "hidden"
+        );
 }
+
+
+/* =========================================================
+   TẠO QR THANH TOÁN CHO BILL ĐANG MỞ
+========================================================= */
 
 export function createPaymentQr() {
     hidePaymentError();
 
+    const activeBill =
+        getActiveBill();
+
     const total =
         getCartTotal();
 
-    if (total <= 0) {
+    if (
+        !activeBill ||
+        state.cart.length === 0 ||
+        total <= 0
+    ) {
         showPaymentError(
-            "Giỏ hàng đang trống."
+            "Bill đang trống."
         );
 
         return;
     }
 
     if (
-        !BANK_CONFIG.accountNumber
-        || BANK_CONFIG.accountNumber
-            === "NHAP_SO_TAI_KHOAN"
+        !BANK_CONFIG.accountNumber ||
+        BANK_CONFIG.accountNumber ===
+        "NHAP_SO_TAI_KHOAN"
     ) {
         showPaymentError(
             "Bạn chưa nhập số tài khoản trong BANK_CONFIG."
@@ -168,37 +287,78 @@ export function createPaymentQr() {
 
             amount:
                 String(
-                    Math.round(total)
+                    Math.round(
+                        total
+                    )
                 ),
 
             des:
                 transferCode
         });
 
-    elements.paymentQrImage.src =
-        `https://qr.sepay.vn/img?${parameters.toString()}`;
+    if (
+        elements.paymentQrImage
+    ) {
+        elements.paymentQrImage.src =
+            `https://qr.sepay.vn/img?${parameters.toString()}`;
+    }
 
-    elements.qrBankName.textContent =
-        BANK_CONFIG.bank;
+    if (
+        elements.qrBankName
+    ) {
+        elements.qrBankName.textContent =
+            BANK_CONFIG.bank;
+    }
 
-    elements.qrAccountNumber.textContent =
-        BANK_CONFIG.accountNumber;
+    if (
+        elements.qrAccountNumber
+    ) {
+        elements.qrAccountNumber.textContent =
+            BANK_CONFIG.accountNumber;
+    }
 
-    elements.qrAccountHolder.textContent =
-        BANK_CONFIG.accountHolder;
+    if (
+        elements.qrAccountHolder
+    ) {
+        elements.qrAccountHolder.textContent =
+            BANK_CONFIG.accountHolder;
+    }
 
-    elements.qrAmount.textContent =
-        formatMoney(total);
+    if (
+        elements.qrAmount
+    ) {
+        elements.qrAmount.textContent =
+            formatMoney(
+                total
+            );
+    }
 
-    elements.transferContent.textContent =
-        transferCode;
+    if (
+        elements.transferContent
+    ) {
+        elements.transferContent.textContent =
+            transferCode;
+    }
 
     elements.paymentQrBox
-        .classList.remove("hidden");
+        ?.classList.remove(
+            "hidden"
+        );
 
+    /*
+        Lưu mã chuyển khoản riêng
+        vào bill đang mở.
+    */
     state.transferCode =
         transferCode;
+
+    saveBillsToStorage();
 }
+
+
+/* =========================================================
+   CẬP NHẬT GIAO DIỆN THANH TOÁN
+========================================================= */
 
 export function updatePaymentView() {
     const total =
@@ -209,7 +369,9 @@ export function updatePaymentView() {
 
     const paidAmount =
         Number(
-            elements.paidAmountInput.value || 0
+            elements.paidAmountInput
+                ?.value ||
+            0
         );
 
     const changeAmount =
@@ -220,98 +382,274 @@ export function updatePaymentView() {
             )
             : 0;
 
-    elements.paymentTotal.textContent =
-        formatMoney(total);
+    if (
+        elements.paymentTotal
+    ) {
+        elements.paymentTotal.textContent =
+            formatMoney(
+                total
+            );
+    }
 
-    elements.changeAmount.textContent =
-        formatMoney(changeAmount);
+    if (
+        elements.changeAmount
+    ) {
+        elements.changeAmount.textContent =
+            formatMoney(
+                changeAmount
+            );
+    }
 
     elements.cashPaymentBox
-        .classList.toggle(
+        ?.classList.toggle(
             "hidden",
             method !== "cash"
         );
 
     elements.bankTransferBox
-        .classList.toggle(
+        ?.classList.toggle(
             "hidden",
             method !== "transfer"
         );
 
     elements.confirmPaymentButton
-        .classList.toggle(
+        ?.classList.toggle(
             "hidden",
             method === "transfer"
         );
 
-    if (method !== "transfer") {
+    /*
+        Nếu chuyển về tiền mặt,
+        xóa QR và mã chuyển khoản
+        của bill hiện tại.
+    */
+    if (
+        method !== "transfer"
+    ) {
         resetPaymentQr();
     }
 
     hidePaymentError();
 }
 
+
+/* =========================================================
+   MỞ MODAL THANH TOÁN
+========================================================= */
+
 export function openPaymentModal() {
-    if (state.cart.length === 0) {
+    const activeBill =
+        getActiveBill();
+
+    if (
+        !activeBill ||
+        state.cart.length === 0
+    ) {
         return;
     }
 
     const total =
         getCartTotal();
 
+    /*
+        Mỗi lần mở thanh toán sẽ tạo QR mới
+        nếu khách chọn chuyển khoản.
+    */
     resetPaymentQr();
 
     elements.paymentModal
-        .classList.remove("hidden");
+        ?.classList.remove(
+            "hidden"
+        );
 
-    elements.paymentTotal.textContent =
-        formatMoney(total);
+    document.body.classList.add(
+        "modal-open"
+    );
 
-    elements.paidAmountInput.value =
-        total;
+    if (
+        elements.paymentBillName
+    ) {
+        elements.paymentBillName.textContent =
+            activeBill.name ||
+            "Bill";
+    }
+
+    if (
+        elements.paymentTotal
+    ) {
+        elements.paymentTotal.textContent =
+            formatMoney(
+                total
+            );
+    }
+
+    if (
+        elements.paidAmountInput
+    ) {
+        elements.paidAmountInput.value =
+            total;
+    }
 
     updatePaymentView();
 }
 
-export function closePaymentModal() {
-    if (state.isPaying) {
-        return;
-    }
 
-    elements.paymentModal
-        .classList.add("hidden");
+/* =========================================================
+   ĐÓNG MODAL THANH TOÁN
+========================================================= */
 
-    resetPaymentQr();
-    hidePaymentError();
-}
-
-export async function confirmPayment(
-    forcedMethod = null
+export function closePaymentModal(
+    forceClose = false
 ) {
     if (
         state.isPaying
-        || state.cart.length === 0
+        &&
+        !forceClose
     ) {
         return;
     }
 
-    const totalAmount =
-        getCartTotal();
+    elements.paymentModal
+        ?.classList.add(
+            "hidden"
+        );
+
+    resetPaymentQr();
+
+    hidePaymentError();
+
+    const hasOpenModal =
+        document.querySelector(
+            ".modal:not(.hidden)"
+        );
+
+    if (!hasOpenModal) {
+        document.body.classList.remove(
+            "modal-open"
+        );
+    }
+}
+
+
+/* =========================================================
+   ĐẶT TRẠNG THÁI NÚT THANH TOÁN
+========================================================= */
+
+function setPaymentLoading(
+    isLoading
+) {
+    if (
+        elements.confirmPaymentButton
+    ) {
+        elements.confirmPaymentButton.disabled =
+            isLoading;
+
+        elements.confirmPaymentButton.textContent =
+            isLoading
+                ? "Đang thanh toán..."
+                : "Xác nhận thanh toán";
+    }
+
+    if (
+        elements.confirmReceivedButton
+    ) {
+        elements.confirmReceivedButton.disabled =
+            isLoading;
+
+        elements.confirmReceivedButton.textContent =
+            isLoading
+                ? "Đang lưu hóa đơn..."
+                : "Đã nhận được tiền";
+    }
+
+    if (
+        elements.createQrButton
+    ) {
+        elements.createQrButton.disabled =
+            isLoading;
+    }
+}
+/* =========================================================
+   XÁC NHẬN THANH TOÁN
+========================================================= */
+
+export async function confirmPayment(
+    forcedMethod = ""
+) {
+    if (
+        state.isPaying
+    ) {
+        return;
+    }
+
+    const activeBill =
+        getActiveBill();
+
+    if (
+        !activeBill
+        ||
+        state.cart.length === 0
+    ) {
+        showPaymentError(
+            "Bill đang trống."
+        );
+
+        return;
+    }
 
     const paymentMethod =
         forcedMethod
-        || getSelectedPaymentMethod();
+        ||
+        getSelectedPaymentMethod();
+
+    const subtotalAmount =
+        getCartSubtotal();
+
+    const discountAmount =
+        getDiscountAmount();
+
+    const selectedDiscount =
+        getSelectedDiscount();
+
+    const totalAmount =
+        getCartTotal();
 
     const paidAmount =
-        paymentMethod === "cash"
+        paymentMethod ===
+            "cash"
             ? Number(
-                elements.paidAmountInput.value || 0
+                elements.paidAmountInput
+                    ?.value ||
+                0
             )
             : totalAmount;
 
+    const changeAmount =
+        paymentMethod ===
+            "cash"
+            ? Math.max(
+                0,
+                paidAmount -
+                totalAmount
+            )
+            : 0;
+
     if (
-        paymentMethod === "cash"
-        && paidAmount < totalAmount
+        totalAmount <= 0
+    ) {
+        showPaymentError(
+            "Tổng thanh toán không hợp lệ."
+        );
+
+        return;
+    }
+
+    if (
+        paymentMethod ===
+            "cash"
+        &&
+        paidAmount <
+            totalAmount
     ) {
         showPaymentError(
             "Số tiền khách đưa chưa đủ."
@@ -321,47 +659,49 @@ export async function confirmPayment(
     }
 
     if (
-        paymentMethod === "transfer"
-        && !state.transferCode
+        paymentMethod ===
+            "transfer"
+        &&
+        !state.transferCode
     ) {
         showPaymentError(
-            "Hãy tạo mã QR trước khi xác nhận."
+            "Hãy tạo mã QR trước khi xác nhận đã nhận tiền."
         );
 
         return;
     }
 
+    hidePaymentError();
+
     state.isPaying =
         true;
 
-    elements.confirmPaymentButton.disabled =
-        true;
+    setPaymentLoading(
+        true
+    );
 
-    elements.confirmReceivedButton.disabled =
-        true;
+    /*
+        Lưu tên bill trước khi hoàn tất,
+        vì completeActiveBill() sẽ chuyển
+        sang bill tiếp theo hoặc tạo bill mới.
+    */
+    const payingBillName =
+        String(
+            activeBill.name ||
+            "Bill"
+        );
 
-    elements.confirmPaymentButton.textContent =
-        "Đang thanh toán...";
-
-    elements.confirmReceivedButton.textContent =
-        "Đang lưu hóa đơn...";
+    const payingBillId =
+        String(
+            activeBill.id ||
+            ""
+        );
 
     try {
-        const subtotalAmount =
-            getCartSubtotal();
-
-        const discountAmount =
-            getDiscountAmount(
-                subtotalAmount
-            );
-
-        const selectedDiscount =
-            getSelectedDiscount();
-
         const sale =
             await checkoutSale({
-                items:
-                    state.cart,
+    items:
+        state.cart,
 
                 paymentMethod,
 
@@ -373,43 +713,91 @@ export async function confirmPayment(
 
                 discountAmount,
 
+                discountId:
+                    selectedDiscount?.id
+                    ||
+                    "",
+
                 discountCode:
                     selectedDiscount?.code
-                    || "",
+                    ||
+                    "",
 
                 discountType:
                     selectedDiscount?.type
-                    || "",
+                    ||
+                    "",
 
                 discountValue:
                     Number(
                         selectedDiscount?.value
-                        || 0
+                        ||
+                        0
                     ),
 
                 transferCode:
-                    paymentMethod === "transfer"
+                    paymentMethod ===
+                        "transfer"
                         ? state.transferCode
-                        : ""
+                        : "",
+
+                /*
+                    Lưu tên bill vào Firebase
+                    để trang lịch sử hiển thị được.
+                */
+                billName:
+                    payingBillName,
+
+                pendingBillId:
+                    payingBillId
             });
 
-        state.cart =
-            [];
+        /*
+            Dùng tên bill vừa thanh toán
+            để in hóa đơn ngay sau đó.
+        */
+        const receiptSale = {
+            ...sale,
 
-        state.selectedDiscountId =
-            "";
+            billName:
+                sale.billName
+                ||
+                payingBillName,
+
+            pendingBillName:
+                sale.billName
+                ||
+                payingBillName
+        };
+
+        completeActiveBill();
+
+        saveBillsToStorage();
+
+        /*
+            Đang ở trong quá trình thanh toán nên cần
+            đóng cưỡng bức modal thanh toán. Nếu không,
+            closePaymentModal() sẽ bị chặn bởi state.isPaying
+            và khi đóng hóa đơn thành công modal thanh toán
+            cũ sẽ hiện lại với tổng tiền 0 đ.
+        */
+        closePaymentModal(
+            true
+        );
 
         renderCart();
 
-        elements.paymentModal
-            .classList.add("hidden");
-
-        resetPaymentQr();
-
-        renderReceipt(sale);
+        renderReceipt(
+            receiptSale
+        );
 
         openReceiptModal();
 
+        window.dispatchEvent(
+            new CustomEvent(
+                "larva:bill-changed"
+            )
+        );
     } catch (error) {
         console.error(
             "Lỗi thanh toán:",
@@ -418,23 +806,15 @@ export async function confirmPayment(
 
         showPaymentError(
             error.message
-            || "Không thể thanh toán."
+            ||
+            "Không thể hoàn tất thanh toán."
         );
-
     } finally {
         state.isPaying =
             false;
 
-        elements.confirmPaymentButton.disabled =
-            false;
-
-        elements.confirmReceivedButton.disabled =
-            false;
-
-        elements.confirmPaymentButton.textContent =
-            "Xác nhận thanh toán";
-
-        elements.confirmReceivedButton.textContent =
-            "Đã nhận được tiền";
+        setPaymentLoading(
+            false
+        );
     }
 }

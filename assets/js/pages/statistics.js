@@ -3,7 +3,6 @@ import {
     filterSalesByDate,
     calculateRevenue,
     calculateProfit,
-    calculateSoldQuantity,
     calculateBestSellingProducts,
     calculateDailyRevenue,
     getMonthSales,
@@ -17,13 +16,12 @@ import {
     placeholderImage
 } from "../utils.js";
 
-const state = {
-    sales:
-        [],
 
-    filteredSales:
-        []
+const state = {
+    sales: [],
+    filteredSales: []
 };
+
 
 const elements = {
     startDateInput:
@@ -51,19 +49,14 @@ const elements = {
             "#todayRevenue"
         ),
 
-    monthRevenue:
-        document.querySelector(
-            "#monthRevenue"
-        ),
-
-    yearRevenue:
-        document.querySelector(
-            "#yearRevenue"
-        ),
-
     todayProfit:
         document.querySelector(
             "#todayProfit"
+        ),
+
+    monthRevenue:
+        document.querySelector(
+            "#monthRevenue"
         ),
 
     monthProfit:
@@ -71,19 +64,14 @@ const elements = {
             "#monthProfit"
         ),
 
+    yearRevenue:
+        document.querySelector(
+            "#yearRevenue"
+        ),
+
     yearProfit:
         document.querySelector(
             "#yearProfit"
-        ),
-
-    totalInvoices:
-        document.querySelector(
-            "#totalInvoices"
-        ),
-
-    totalSoldQuantity:
-        document.querySelector(
-            "#totalSoldQuantity"
         ),
 
     bestSellingTableBody:
@@ -112,10 +100,30 @@ const elements = {
         )
 };
 
-/*
-    Mặc định chọn từ ngày đầu tháng hiện tại
-    đến ngày hôm nay.
-*/
+
+function toNumber(value) {
+    const number =
+        Number(value);
+
+    return Number.isFinite(number)
+        ? number
+        : 0;
+}
+
+
+function setText(
+    element,
+    value
+) {
+    if (!element) {
+        return;
+    }
+
+    element.textContent =
+        String(value);
+}
+
+
 function setDefaultDateRange() {
     const today =
         new Date();
@@ -142,6 +150,7 @@ function setDefaultDateRange() {
     }
 }
 
+
 function showStatisticsMessage(
     message,
     type = "error"
@@ -166,12 +175,10 @@ function showStatisticsMessage(
                 .classList.add(
                     "hidden"
                 );
-        }, 2600);
+        }, 2800);
 }
 
-/*
-    Lấy hóa đơn trong ngày hôm nay.
-*/
+
 function getTodaySales() {
     const today =
         toDateInputValue(
@@ -185,14 +192,7 @@ function getTodaySales() {
     );
 }
 
-/*
-    Lọc dữ liệu theo khoảng ngày để dùng cho:
 
-    - Tổng hóa đơn
-    - Tổng sản phẩm đã bán
-    - Biểu đồ
-    - Sản phẩm bán chạy
-*/
 function applyDateFilter() {
     const startDate =
         elements.startDateInput?.value
@@ -202,15 +202,17 @@ function applyDateFilter() {
         elements.endDateInput?.value
         || "";
 
-    if (
-        startDate
-        &&
-        endDate
-        &&
-        startDate > endDate
-    ) {
+    if (!startDate || !endDate) {
         showStatisticsMessage(
-            "Ngày bắt đầu không được lớn hơn ngày kết thúc."
+            "Vui lòng chọn đầy đủ từ ngày và đến ngày."
+        );
+
+        return;
+    }
+
+    if (startDate > endDate) {
+        showStatisticsMessage(
+            "Từ ngày không được lớn hơn đến ngày."
         );
 
         return;
@@ -223,23 +225,25 @@ function applyDateFilter() {
             endDate
         );
 
+    /*
+        Bộ lọc ngày chỉ áp dụng cho:
+
+        - Biểu đồ
+        - Sản phẩm bán chạy
+
+        Sáu ô doanh thu hôm nay, tháng này
+        và năm nay vẫn tính theo thời gian thực.
+    */
     renderStatistics();
 }
+
 
 function resetDateFilter() {
     setDefaultDateRange();
     applyDateFilter();
 }
 
-/*
-    Hiển thị các ô doanh thu và tiền lời.
 
-    Doanh thu:
-    Tổng số tiền bán hàng thu được.
-
-    Tiền lời:
-    Doanh thu trừ giá vốn.
-*/
 function renderSummaryCards() {
     const now =
         new Date();
@@ -270,9 +274,27 @@ function renderSummaryCards() {
     );
 
     setText(
+        elements.todayProfit,
+        formatMoney(
+            calculateProfit(
+                todaySales
+            )
+        )
+    );
+
+    setText(
         elements.monthRevenue,
         formatMoney(
             calculateRevenue(
+                monthSales
+            )
+        )
+    );
+
+    setText(
+        elements.monthProfit,
+        formatMoney(
+            calculateProfit(
                 monthSales
             )
         )
@@ -288,24 +310,6 @@ function renderSummaryCards() {
     );
 
     setText(
-        elements.todayProfit,
-        formatMoney(
-            calculateProfit(
-                todaySales
-            )
-        )
-    );
-
-    setText(
-        elements.monthProfit,
-        formatMoney(
-            calculateProfit(
-                monthSales
-            )
-        )
-    );
-
-    setText(
         elements.yearProfit,
         formatMoney(
             calculateProfit(
@@ -313,23 +317,9 @@ function renderSummaryCards() {
             )
         )
     );
-
-    setText(
-        elements.totalInvoices,
-        state.filteredSales.length
-    );
-
-    setText(
-        elements.totalSoldQuantity,
-        calculateSoldQuantity(
-            state.filteredSales
-        )
-    );
 }
 
-/*
-    Hiển thị tối đa 10 sản phẩm bán chạy.
-*/
+
 function renderBestSellingProducts() {
     if (
         !elements.bestSellingTableBody
@@ -342,14 +332,20 @@ function renderBestSellingProducts() {
     const products =
         calculateBestSellingProducts(
             state.filteredSales
-        ).slice(0, 10);
+        ).slice(
+            0,
+            10
+        );
+
+    const fallbackImage =
+        placeholderImage();
 
     elements.bestSellingTableBody.innerHTML =
         products
             .map((product, index) => {
                 const image =
                     product.image
-                    || placeholderImage();
+                    || fallbackImage;
 
                 const productName =
                     product.name
@@ -382,11 +378,11 @@ function renderBestSellingProducts() {
                 return `
                     <tr>
 
-                        <td>
+                        <td class="statistics-index-cell">
                             ${index + 1}
                         </td>
 
-                        <td>
+                        <td class="statistics-product-table-cell">
 
                             <div class="statistics-product-cell">
 
@@ -394,15 +390,18 @@ function renderBestSellingProducts() {
                                     class="statistics-product-image"
                                     src="${escapeHtml(image)}"
                                     alt="${escapeHtml(productName)}"
+                                    loading="lazy"
                                     onerror="
                                         this.onerror = null;
-                                        this.src = '${placeholderImage()}';
+                                        this.src = '${escapeHtml(fallbackImage)}';
                                     "
                                 >
 
-                                <div>
+                                <div class="statistics-product-info">
 
-                                    <strong>
+                                    <strong
+                                        title="${escapeHtml(productName)}"
+                                    >
                                         ${escapeHtml(productName)}
                                     </strong>
 
@@ -416,24 +415,29 @@ function renderBestSellingProducts() {
 
                         </td>
 
-                        <td>
-                            ${quantity}
+                        <td class="statistics-number-cell">
+                            <strong>
+                                ${quantity}
+                            </strong>
                         </td>
 
-                        <td>
+                        <td class="statistics-money-cell">
                             ${formatMoney(revenue)}
                         </td>
 
-                        <td>
+                        <td class="statistics-money-cell">
                             ${formatMoney(cost)}
                         </td>
 
-                        <td>
-
+                        <td
+                            class="
+                                statistics-money-cell
+                                profit-value
+                            "
+                        >
                             <strong>
                                 ${formatMoney(profit)}
                             </strong>
-
                         </td>
 
                     </tr>
@@ -448,10 +452,7 @@ function renderBestSellingProducts() {
         );
 }
 
-/*
-    Hiển thị biểu đồ doanh thu và tiền lời
-    theo từng ngày trong khoảng đã chọn.
-*/
+
 function renderDailyRevenueChart() {
     if (
         !elements.dailyRevenueChart
@@ -479,13 +480,29 @@ function renderDailyRevenueChart() {
         return;
     }
 
-    const maxRevenue =
+    const values =
+        dailyData.flatMap((day) => {
+            return [
+                Math.max(
+                    0,
+                    toNumber(day.revenue)
+                ),
+
+                Math.max(
+                    0,
+                    toNumber(day.cost)
+                ),
+
+                Math.max(
+                    0,
+                    toNumber(day.profit)
+                )
+            ];
+        });
+
+    const maxValue =
         Math.max(
-            ...dailyData.map((day) => {
-                return toNumber(
-                    day.revenue
-                );
-            }),
+            ...values,
             1
         );
 
@@ -495,20 +512,48 @@ function renderDailyRevenueChart() {
                 day.revenue
             );
 
+        const cost =
+            toNumber(
+                day.cost
+            );
+
         const profit =
             toNumber(
                 day.profit
             );
 
-        const heightPercent =
-            Math.max(
-                4,
-                (
-                    revenue
-                    / maxRevenue
+        const revenueHeight =
+            revenue > 0
+                ? Math.max(
+                    3,
+                    (
+                        revenue
+                        / maxValue
+                    ) * 100
                 )
-                * 100
-            );
+                : 0;
+
+        const costHeight =
+            cost > 0
+                ? Math.max(
+                    3,
+                    (
+                        cost
+                        / maxValue
+                    ) * 100
+                )
+                : 0;
+
+        const profitHeight =
+            profit > 0
+                ? Math.max(
+                    3,
+                    (
+                        profit
+                        / maxValue
+                    ) * 100
+                )
+                : 0;
 
         const dateText =
             new Date(
@@ -516,11 +561,8 @@ function renderDailyRevenueChart() {
             ).toLocaleDateString(
                 "vi-VN",
                 {
-                    day:
-                        "2-digit",
-
-                    month:
-                        "2-digit"
+                    day: "2-digit",
+                    month: "2-digit"
                 }
             );
 
@@ -530,31 +572,37 @@ function renderDailyRevenueChart() {
             );
 
         column.className =
-            "daily-revenue-column";
+            "statistics-chart-column";
 
         column.innerHTML = `
-            <div
-                class="daily-revenue-value"
-                title="${formatMoney(revenue)}"
-            >
-                ${formatMoney(revenue)}
-            </div>
-
-            <div class="daily-revenue-bar-wrap">
+            <div class="statistics-chart-bars">
 
                 <div
-                    class="daily-revenue-bar"
-                    style="height: ${heightPercent}%"
+                    class="statistics-chart-bar revenue"
+                    style="height: ${revenueHeight}%"
+                    title="Doanh thu: ${formatMoney(revenue)}"
+                ></div>
+
+                <div
+                    class="statistics-chart-bar cost"
+                    style="height: ${costHeight}%"
+                    title="Giá vốn: ${formatMoney(cost)}"
+                ></div>
+
+                <div
+                    class="statistics-chart-bar profit"
+                    style="height: ${profitHeight}%"
+                    title="Tiền lời: ${formatMoney(profit)}"
                 ></div>
 
             </div>
 
-            <div class="daily-revenue-date">
+            <strong class="daily-revenue-date">
                 ${escapeHtml(dateText)}
-            </div>
+            </strong>
 
             <small>
-                Lời ${formatMoney(profit)}
+                ${toNumber(day.invoiceCount)} hóa đơn
             </small>
         `;
 
@@ -565,32 +613,13 @@ function renderDailyRevenueChart() {
     });
 }
 
+
 function renderStatistics() {
     renderSummaryCards();
-    renderBestSellingProducts();
     renderDailyRevenueChart();
+    renderBestSellingProducts();
 }
 
-function setText(
-    element,
-    value
-) {
-    if (!element) {
-        return;
-    }
-
-    element.textContent =
-        String(value);
-}
-
-function toNumber(value) {
-    const number =
-        Number(value);
-
-    return Number.isFinite(number)
-        ? number
-        : 0;
-}
 
 elements.applyFilterButton
     ?.addEventListener(
@@ -598,11 +627,13 @@ elements.applyFilterButton
         applyDateFilter
     );
 
+
 elements.resetFilterButton
     ?.addEventListener(
         "click",
         resetDateFilter
     );
+
 
 elements.startDateInput
     ?.addEventListener(
@@ -610,13 +641,16 @@ elements.startDateInput
         applyDateFilter
     );
 
+
 elements.endDateInput
     ?.addEventListener(
         "change",
         applyDateFilter
     );
 
+
 setDefaultDateRange();
+
 
 listenSales((sales) => {
     state.sales =

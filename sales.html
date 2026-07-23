@@ -25,7 +25,7 @@
 
     <link
         rel="stylesheet"
-        href="./assets/css/main.css"
+        href="./assets/css/main.css?v=72"
     >
 
     <script
@@ -56,7 +56,7 @@
 
     <script
         type="module"
-        src="./assets/js/auth/auth-guard.js?v=50"
+        src="./assets/js/auth/auth-guard.js?v=72"
     ></script>
 
 </head>
@@ -104,6 +104,43 @@
             </div>
 
         </header>
+
+        <section class="panel pending-bills-panel">
+
+            <div class="pending-bills-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        BILL ĐANG CHỜ
+                    </p>
+
+                    <h2>
+                        Thanh toán nhiều khách
+                    </h2>
+
+                    <p class="pending-bills-description">
+                        Chuyển qua bill khác mà không làm mất sản phẩm khách đang chọn.
+                    </p>
+
+                </div>
+
+                <button
+                    id="addBillButton"
+                    class="button add-bill-button"
+                    type="button"
+                >
+                    + Thêm bill
+                </button>
+
+            </div>
+
+            <div
+                id="billTabs"
+                class="bill-tabs"
+            ></div>
+
+        </section>
 
         <div class="pos-layout">
 
@@ -157,12 +194,32 @@
                     <div>
 
                         <p class="eyebrow">
-                            HÓA ĐƠN
+                            HÓA ĐƠN ĐANG CHỌN
                         </p>
 
-                        <h2>
-                            Giỏ hàng
-                        </h2>
+                        <div class="active-bill-title-row">
+
+                            <h2 id="activeBillName">
+                                Bill 1
+                            </h2>
+
+                            <button
+                                id="renameBillButton"
+                                class="bill-action-button"
+                                type="button"
+                            >
+                                Sửa tên
+                            </button>
+
+                            <button
+                                id="deleteBillButton"
+                                class="bill-action-button bill-delete-button"
+                                type="button"
+                            >
+                                Xóa bill
+                            </button>
+
+                        </div>
 
                     </div>
 
@@ -184,7 +241,7 @@
                     id="emptyCartState"
                     class="empty-state"
                 >
-                    Chưa có sản phẩm trong giỏ.
+                    Chưa có sản phẩm trong bill này.
                 </p>
 
                 <section class="discount-section">
@@ -217,52 +274,9 @@
                         Chưa có mã giảm giá.
                     </p>
 
-                    <div class="discount-create-form">
-
-                        <input
-                            id="discountCodeInput"
-                            class="input"
-                            type="text"
-                            maxlength="20"
-                            placeholder="Tên mã, ví dụ: SALE10"
-                        >
-
-                        <select
-                            id="discountTypeInput"
-                            class="input"
-                        >
-                            <option value="percent">
-                                Giảm %
-                            </option>
-
-                            <option value="amount">
-                                Giảm tiền
-                            </option>
-                        </select>
-
-                        <input
-                            id="discountValueInput"
-                            class="input"
-                            type="number"
-                            min="1"
-                            step="1"
-                            placeholder="Giá trị"
-                        >
-
-                        <button
-                            id="addDiscountButton"
-                            class="button discount-add-button"
-                            type="button"
-                        >
-                            Thêm mã
-                        </button>
-
-                    </div>
-
-                    <p
-                        id="discountFormMessage"
-                        class="discount-form-message hidden"
-                    ></p>
+                    <p class="discount-management-note">
+                        Mỗi bill có thể sử dụng một mã giảm giá riêng.
+                    </p>
 
                 </section>
 
@@ -312,7 +326,7 @@
                     type="button"
                     disabled
                 >
-                    Thanh toán
+                    Thanh toán bill này
                 </button>
 
             </aside>
@@ -323,7 +337,153 @@
 
 </div>
 
-<!-- Modal quét mã -->
+<!-- MODAL ĐỔI TÊN BILL -->
+<div
+    class="modal hidden"
+    id="renameBillModal"
+>
+
+    <div
+        class="modal-backdrop"
+        data-close-rename-bill-modal
+    ></div>
+
+    <section class="modal-card rename-bill-modal-card">
+
+        <div class="modal-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    BILL ĐANG CHỜ
+                </p>
+
+                <h2>
+                    Đổi tên bill
+                </h2>
+
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                aria-label="Đóng"
+                data-close-rename-bill-modal
+            >
+                ×
+            </button>
+
+        </div>
+
+        <label>
+
+            Tên bill
+
+            <input
+                id="billNameInput"
+                class="input"
+                type="text"
+                maxlength="40"
+                placeholder="Ví dụ: Chị áo đen"
+                autocomplete="off"
+            >
+
+        </label>
+
+        <p
+            id="renameBillError"
+            class="form-error hidden"
+        ></p>
+
+        <div class="form-actions">
+
+            <button
+                class="button button-light"
+                type="button"
+                data-close-rename-bill-modal
+            >
+                Hủy
+            </button>
+
+            <button
+                id="saveBillNameButton"
+                class="button"
+                type="button"
+            >
+                Lưu tên
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+<!-- MODAL XÁC NHẬN XÓA BILL -->
+<div
+    class="modal hidden"
+    id="deleteBillModal"
+>
+
+    <div
+        class="modal-backdrop"
+        data-close-delete-bill-modal
+    ></div>
+
+    <section class="modal-card delete-bill-modal-card">
+
+        <div class="delete-bill-icon-wrap">
+
+            <span class="delete-bill-icon">
+                !
+            </span>
+
+        </div>
+
+        <div class="delete-bill-content">
+
+            <p class="eyebrow">
+                XÁC NHẬN XÓA
+            </p>
+
+            <h2 id="deleteBillModalTitle">
+                Xóa bill?
+            </h2>
+
+            <p
+                id="deleteBillModalMessage"
+                class="delete-bill-message"
+            >
+                Bill này sẽ bị xóa khỏi danh sách đang chờ.
+            </p>
+
+        </div>
+
+        <div class="form-actions delete-bill-actions">
+
+            <button
+                class="button button-light"
+                type="button"
+                data-close-delete-bill-modal
+            >
+                Hủy
+            </button>
+
+            <button
+                id="confirmDeleteBillButton"
+                class="button delete-confirm-button"
+                type="button"
+            >
+                Xóa bill
+            </button>
+
+        </div>
+
+    </section>
+
+</div>
+
+<!-- MODAL QUÉT MÃ -->
 <div
     class="modal hidden"
     id="scannerModal"
@@ -362,10 +522,54 @@
         </div>
 
         <p class="scanner-help">
-            Quét thành công sẽ tự thêm sản phẩm vào giỏ và đóng camera.
+            Quét thành công sẽ tự thêm sản phẩm vào bill đang chọn và đóng camera.
         </p>
 
         <div id="barcodeReader"></div>
+
+        <div
+            id="cameraControls"
+            class="camera-controls hidden"
+        >
+
+            <div class="camera-zoom-row">
+
+                <button
+                    id="resetCameraZoomButton"
+                    class="button button-light camera-zoom-reset"
+                    type="button"
+                >
+                    1x
+                </button>
+
+                <label class="camera-zoom-field">
+
+                    <span>
+                        Thu phóng:
+
+                        <strong id="cameraZoomValue">
+                            1.0x
+                        </strong>
+                    </span>
+
+                    <input
+                        id="cameraZoomInput"
+                        type="range"
+                        min="1"
+                        max="1"
+                        step="0.1"
+                        value="1"
+                    >
+
+                </label>
+
+            </div>
+
+            <p class="camera-focus-help">
+                Chạm vào hình camera để lấy nét.
+            </p>
+
+        </div>
 
         <p
             id="scannerMessage"
@@ -376,7 +580,7 @@
 
 </div>
 
-<!-- Modal thanh toán -->
+<!-- MODAL THANH TOÁN -->
 <div
     class="modal hidden"
     id="paymentModal"
@@ -400,6 +604,13 @@
                 <h2>
                     Hoàn tất hóa đơn
                 </h2>
+
+                <p
+                    id="paymentBillName"
+                    class="payment-bill-name"
+                >
+                    Bill 1
+                </p>
 
             </div>
 
@@ -600,7 +811,7 @@
 
 </div>
 
-<!-- Modal hóa đơn -->
+<!-- MODAL HÓA ĐƠN -->
 <div
     class="modal hidden"
     id="receiptModal"
@@ -655,7 +866,7 @@
                 type="button"
                 data-close-receipt-modal
             >
-                Bán đơn mới
+                Tiếp tục bán hàng
             </button>
 
         </div>
@@ -666,12 +877,12 @@
 
 <script
     type="module"
-    src="./assets/js/sidebar.js?v=10"
+    src="./assets/js/sidebar.js?v=72"
 ></script>
 
 <script
     type="module"
-    src="./assets/js/pages/sales.js?v=2"
+    src="./assets/js/pages/sales.js?v=72"
 ></script>
 
 </body>

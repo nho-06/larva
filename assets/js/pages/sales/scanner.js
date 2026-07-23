@@ -11,6 +11,13 @@ import {
     showSaleMessage
 } from "./cart.js";
 
+let cameraVideo = null;
+let cameraTrack = null;
+let zoomMin = 1;
+let zoomMax = 1;
+let zoomStep = 0.1;
+let currentZoom = 1;
+
 async function prepareScanSound() {
     try {
         const AudioContextClass =
@@ -57,8 +64,7 @@ async function playScanSound() {
         const gainNode =
             audioContext.createGain();
 
-        oscillator.type =
-            "sine";
+        oscillator.type = "sine";
 
         oscillator.frequency.setValueAtTime(
             1050,
@@ -75,14 +81,8 @@ async function playScanSound() {
             audioContext.currentTime + 0.14
         );
 
-        oscillator.connect(
-            gainNode
-        );
-
-        gainNode.connect(
-            audioContext.destination
-        );
-
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
         oscillator.start();
 
         oscillator.stop(
@@ -104,136 +104,331 @@ function createScanner() {
 }
 
 function getScannerConfig() {
-    const screenWidth =
-        Math.max(
-            window.innerWidth || 320,
-            320
-        );
+    const screenWidth = Math.max(
+        window.innerWidth || 320,
+        320
+    );
 
-    const scanWidth =
-        Math.min(
-            380,
-            Math.max(
-                280,
-                screenWidth - 24
-            )
-        );
+    const scanWidth = Math.min(
+        380,
+        Math.max(
+            280,
+            screenWidth - 24
+        )
+    );
 
     return {
         fps: 30,
 
         qrbox: {
-            width:
-                scanWidth,
-
-            height:
-                190
+            width: scanWidth,
+            height: 190
         },
 
-        aspectRatio:
-            16 / 9,
+        aspectRatio: 16 / 9,
 
-        disableFlip:
-            true,
+        disableFlip: true,
 
         experimentalFeatures: {
-            useBarCodeDetectorIfSupported:
-                true
+            useBarCodeDetectorIfSupported: true
         }
     };
 }
 
-async function applyCameraSettings() {
-    if (
-        !state.scanner
-        || !state.scannerRunning
-    ) {
+function showCameraControls() {
+    elements.cameraControls
+        ?.classList.remove(
+            "hidden"
+        );
+}
+
+function hideCameraControls() {
+    elements.cameraControls
+        ?.classList.add(
+            "hidden"
+        );
+}
+
+function updateZoomText(value) {
+    if (!elements.cameraZoomValue) {
+        return;
+    }
+
+    const numericValue =
+        Number(value);
+
+    elements.cameraZoomValue.textContent =
+        `${
+            Number.isFinite(
+                numericValue
+            )
+                ? numericValue.toFixed(1)
+                : "1.0"
+        }x`;
+}
+
+async function focusCamera() {
+    if (!cameraTrack) {
         return;
     }
 
     try {
         const capabilities =
-            state.scanner
-                .getRunningTrackCameraCapabilities();
-
-        const advancedSettings = {};
+            cameraTrack
+                .getCapabilities?.()
+            || {};
 
         if (
             Array.isArray(
                 capabilities.focusMode
             )
-            && capabilities.focusMode.includes(
+            &&
+            capabilities.focusMode.includes(
                 "continuous"
             )
         ) {
-            advancedSettings.focusMode =
-                "continuous";
-        }
-
-        if (capabilities.zoom) {
-            const minZoom =
-                Number(
-                    capabilities.zoom.min ?? 1
-                );
-
-            const maxZoom =
-                Number(
-                    capabilities.zoom.max ?? 1
-                );
-
-            advancedSettings.zoom =
-                Math.min(
-                    maxZoom,
-                    Math.max(
-                        minZoom,
-                        1.2
-                    )
-                );
-        }
-
-        if (
-            Object.keys(
-                advancedSettings
-            ).length > 0
-        ) {
-            await state.scanner
-                .applyVideoConstraints({
-                    advanced: [
-                        advancedSettings
-                    ]
-                });
+            await cameraTrack.applyConstraints({
+                advanced: [
+                    {
+                        focusMode:
+                            "continuous"
+                    }
+                ]
+            });
         }
     } catch (error) {
         console.warn(
-            "Không thể chỉnh focus hoặc zoom:",
+            "Không thể lấy nét camera:",
             error
         );
     }
 }
 
-export async function clearScannerInstance() {
-    if (!state.scanner) {
+async function configureCameraControls() {
+    hideCameraControls();
+
+    cameraVideo =
+        elements.barcodeReader
+            ?.querySelector(
+                "video"
+            )
+        || null;
+
+    cameraTrack =
+        cameraVideo
+            ?.srcObject
+            ?.getVideoTracks?.()[0]
+        || null;
+
+    if (!cameraTrack) {
         return;
     }
 
+    cameraVideo.addEventListener(
+        "click",
+        focusCamera
+    );
+
+    await focusCamera();
+
     try {
-        if (state.scannerRunning) {
-            await state.scanner.stop();
+        const capabilities =
+            cameraTrack
+                .getCapabilities?.()
+            || {};
+
+        const settings =
+            cameraTrack
+                .getSettings?.()
+            || {};
+
+        const hasZoom =
+            capabilities.zoom
+            &&
+            Number.isFinite(
+                Number(
+                    capabilities.zoom.min
+                )
+            )
+            &&
+            Number.isFinite(
+                Number(
+                    capabilities.zoom.max
+                )
+            )
+            &&
+            elements.cameraZoomInput;
+
+        if (!hasZoom) {
+            return;
         }
+
+        zoomMin =
+            Number(
+                capabilities.zoom.min
+            );
+
+        zoomMax =
+            Number(
+                capabilities.zoom.max
+            );
+
+        zoomStep =
+            Number(
+                capabilities.zoom.step
+                || 0.1
+            );
+
+        currentZoom =
+            Number(
+                settings.zoom
+                || 1
+            );
+
+        currentZoom = Math.min(
+            zoomMax,
+            Math.max(
+                zoomMin,
+                currentZoom
+            )
+        );
+
+        elements.cameraZoomInput.min =
+            String(
+                zoomMin
+            );
+
+        elements.cameraZoomInput.max =
+            String(
+                zoomMax
+            );
+
+        elements.cameraZoomInput.step =
+            String(
+                zoomStep
+            );
+
+        elements.cameraZoomInput.value =
+            String(
+                currentZoom
+            );
+
+        updateZoomText(
+            currentZoom
+        );
+
+        showCameraControls();
     } catch (error) {
         console.warn(
-            "Không thể dừng camera:",
+            "Không thể đọc khả năng zoom camera:",
             error
         );
     }
+}
+
+export async function applyCameraZoom(
+    value
+) {
+    if (!cameraTrack) {
+        return;
+    }
+
+    const numericValue =
+        Number(value);
+
+    if (
+        !Number.isFinite(
+            numericValue
+        )
+    ) {
+        return;
+    }
+
+    const safeZoom = Math.min(
+        zoomMax,
+        Math.max(
+            zoomMin,
+            numericValue
+        )
+    );
 
     try {
-        await state.scanner.clear();
+        await cameraTrack.applyConstraints({
+            advanced: [
+                {
+                    zoom:
+                        safeZoom
+                }
+            ]
+        });
+
+        currentZoom =
+            safeZoom;
+
+        if (
+            elements.cameraZoomInput
+        ) {
+            elements.cameraZoomInput.value =
+                String(
+                    safeZoom
+                );
+        }
+
+        updateZoomText(
+            safeZoom
+        );
     } catch (error) {
         console.warn(
-            "Không thể xóa trình quét:",
+            "Không thể thay đổi zoom camera:",
             error
         );
+    }
+}
+
+export async function resetCameraZoom() {
+    const resetValue = Math.min(
+        zoomMax,
+        Math.max(
+            zoomMin,
+            1
+        )
+    );
+
+    await applyCameraZoom(
+        resetValue
+    );
+}
+
+export async function clearScannerInstance() {
+    if (cameraVideo) {
+        cameraVideo.removeEventListener(
+            "click",
+            focusCamera
+        );
+    }
+
+    if (state.scanner) {
+        try {
+            if (
+                state.scannerRunning
+            ) {
+                await state.scanner.stop();
+            }
+        } catch (error) {
+            console.warn(
+                "Không thể dừng camera:",
+                error
+            );
+        }
+
+        try {
+            await state.scanner.clear();
+        } catch (error) {
+            console.warn(
+                "Không thể xóa trình quét:",
+                error
+            );
+        }
     }
 
     state.scannerRunning =
@@ -242,7 +437,49 @@ export async function clearScannerInstance() {
     state.scanner =
         null;
 
-    if (elements.barcodeReader) {
+    cameraVideo =
+        null;
+
+    cameraTrack =
+        null;
+
+    zoomMin =
+        1;
+
+    zoomMax =
+        1;
+
+    zoomStep =
+        0.1;
+
+    currentZoom =
+        1;
+
+    hideCameraControls();
+
+    updateZoomText(
+        1
+    );
+
+    if (
+        elements.cameraZoomInput
+    ) {
+        elements.cameraZoomInput.min =
+            "1";
+
+        elements.cameraZoomInput.max =
+            "1";
+
+        elements.cameraZoomInput.step =
+            "0.1";
+
+        elements.cameraZoomInput.value =
+            "1";
+    }
+
+    if (
+        elements.barcodeReader
+    ) {
         elements.barcodeReader.innerHTML =
             "";
     }
@@ -252,8 +489,7 @@ async function getBackCameraDeviceId() {
     const stream =
         await navigator.mediaDevices
             .getUserMedia({
-                audio:
-                    false,
+                audio: false,
 
                 video: {
                     facingMode: {
@@ -275,18 +511,26 @@ async function getBackCameraDeviceId() {
 
     try {
         const track =
-            stream.getVideoTracks()[0];
+            stream
+                .getVideoTracks()[0];
 
         const settings =
-            track?.getSettings?.() || {};
+            track
+                ?.getSettings?.()
+            || {};
 
-        return settings.deviceId || "";
+        return (
+            settings.deviceId
+            || ""
+        );
     } finally {
         stream
             .getTracks()
-            .forEach((track) => {
-                track.stop();
-            });
+            .forEach(
+                (track) => {
+                    track.stop();
+                }
+            );
     }
 }
 
@@ -327,11 +571,15 @@ async function startBackCameraFacingMode() {
 
 async function startCameraByDeviceList() {
     const cameras =
-        await Html5Qrcode.getCameras();
+        await Html5Qrcode
+            .getCameras();
 
     if (
-        !Array.isArray(cameras)
-        || !cameras.length
+        !Array.isArray(
+            cameras
+        )
+        ||
+        !cameras.length
     ) {
         throw new Error(
             "Không tìm thấy camera."
@@ -339,16 +587,19 @@ async function startCameraByDeviceList() {
     }
 
     const normalizedCameras =
-        cameras.map((camera) => {
-            return {
-                ...camera,
+        cameras.map(
+            (camera) => {
+                return {
+                    ...camera,
 
-                normalizedLabel:
-                    String(
-                        camera.label || ""
-                    ).toLowerCase()
-            };
-        });
+                    normalizedLabel:
+                        String(
+                            camera.label
+                            || ""
+                        ).toLowerCase()
+                };
+            }
+        );
 
     const rearCamera =
         normalizedCameras.find(
@@ -357,12 +608,19 @@ async function startCameraByDeviceList() {
                     camera.normalizedLabel;
 
                 return (
-                    label.includes("back")
-                    || label.includes("rear")
-                    || label.includes(
+                    label.includes(
+                        "back"
+                    )
+                    ||
+                    label.includes(
+                        "rear"
+                    )
+                    ||
+                    label.includes(
                         "environment"
                     )
-                    || label.includes(
+                    ||
+                    label.includes(
                         "camera sau"
                     )
                 );
@@ -371,7 +629,8 @@ async function startCameraByDeviceList() {
 
     const selectedCamera =
         rearCamera
-        || normalizedCameras[
+        ||
+        normalizedCameras[
             normalizedCameras.length - 1
         ];
 
@@ -380,39 +639,66 @@ async function startCameraByDeviceList() {
     );
 }
 
-function getCameraErrorMessage(error) {
+function getCameraErrorMessage(
+    error
+) {
     const errorName =
-        error?.name || "";
+        error?.name
+        || "";
 
     const errorMessage =
         error?.message
-        || String(error || "");
+        ||
+        String(
+            error
+            || ""
+        );
 
     const lowerMessage =
-        errorMessage.toLowerCase();
+        errorMessage
+            .toLowerCase();
 
     if (
-        errorName === "NotAllowedError"
-        || errorName === "PermissionDeniedError"
-        || lowerMessage.includes("permission")
-        || lowerMessage.includes("denied")
+        errorName ===
+            "NotAllowedError"
+        ||
+        errorName ===
+            "PermissionDeniedError"
+        ||
+        lowerMessage.includes(
+            "permission"
+        )
+        ||
+        lowerMessage.includes(
+            "denied"
+        )
     ) {
         return (
             "Camera đang bị chặn. "
-            + "Hãy cấp quyền camera rồi tải lại trang."
+            +
+            "Hãy cấp quyền camera rồi tải lại trang."
         );
     }
 
     if (
-        errorName === "NotFoundError"
-        || lowerMessage.includes("not found")
+        errorName ===
+            "NotFoundError"
+        ||
+        lowerMessage.includes(
+            "not found"
+        )
     ) {
-        return "Không tìm thấy camera.";
+        return (
+            "Không tìm thấy camera."
+        );
     }
 
     if (
-        errorName === "NotReadableError"
-        || errorName === "TrackStartError"
+        errorName ===
+            "NotReadableError"
+        ||
+        errorName ===
+            "TrackStartError"
     ) {
         return (
             "Camera đang được ứng dụng khác sử dụng."
@@ -421,12 +707,15 @@ function getCameraErrorMessage(error) {
 
     return (
         "Không mở được camera: "
-        + errorMessage
+        +
+        errorMessage
     );
 }
 
 export async function openScanner() {
-    if (state.scannerRunning) {
+    if (
+        state.scannerRunning
+    ) {
         return;
     }
 
@@ -436,16 +725,21 @@ export async function openScanner() {
         false;
 
     elements.scannerModal
-        .classList.remove("hidden");
+        .classList.remove(
+            "hidden"
+        );
 
     elements.scannerMessage.textContent =
         "Đang mở camera sau...";
+
+    hideCameraControls();
 
     try {
         if (
             typeof Html5Qrcode
                 === "undefined"
-            || typeof Html5QrcodeSupportedFormats
+            ||
+            typeof Html5QrcodeSupportedFormats
                 === "undefined"
         ) {
             throw new Error(
@@ -455,7 +749,8 @@ export async function openScanner() {
 
         if (
             !navigator.mediaDevices
-            || !navigator.mediaDevices
+            ||
+            !navigator.mediaDevices
                 .getUserMedia
         ) {
             throw new Error(
@@ -470,7 +765,9 @@ export async function openScanner() {
             const backCameraId =
                 await getBackCameraDeviceId();
 
-            if (backCameraId) {
+            if (
+                backCameraId
+            ) {
                 await startCameraByDeviceId(
                     backCameraId
                 );
@@ -510,17 +807,21 @@ export async function openScanner() {
         elements.scannerMessage.textContent =
             "Đưa toàn bộ mã vạch vào giữa khung.";
 
-        setTimeout(() => {
-            applyCameraSettings();
-        }, 700);
-
+        window.setTimeout(
+            configureCameraControls,
+            700
+        );
     } catch (error) {
-        console.error(error);
+        console.error(
+            error
+        );
 
         await clearScannerInstance();
 
         elements.scannerMessage.textContent =
-            getCameraErrorMessage(error);
+            getCameraErrorMessage(
+                error
+            );
     }
 }
 
@@ -528,7 +829,9 @@ export async function closeScanner() {
     await clearScannerInstance();
 
     elements.scannerModal
-        .classList.add("hidden");
+        .classList.add(
+            "hidden"
+        );
 
     elements.scannerMessage.textContent =
         "";
@@ -540,13 +843,17 @@ export async function closeScanner() {
 async function handleScanSuccess(
     decodedText
 ) {
-    if (state.scanLocked) {
+    if (
+        state.scanLocked
+    ) {
         return;
     }
 
     const scannedCode =
-        String(decodedText || "")
-            .trim();
+        String(
+            decodedText
+            || ""
+        ).trim();
 
     if (!scannedCode) {
         return;
@@ -556,31 +863,41 @@ async function handleScanSuccess(
         true;
 
     const product =
-        state.products.find((item) => {
-            const barcode =
-                String(
-                    item.barcode || ""
-                ).trim();
+        state.products.find(
+            (item) => {
+                const barcode =
+                    String(
+                        item.barcode
+                        || ""
+                    ).trim();
 
-            const sku =
-                String(
-                    item.sku || ""
-                ).trim();
+                const sku =
+                    String(
+                        item.sku
+                        || ""
+                    ).trim();
 
-            return (
-                barcode === scannedCode
-                || sku === scannedCode
-            );
-        });
+                return (
+                    barcode ===
+                        scannedCode
+                    ||
+                    sku ===
+                        scannedCode
+                );
+            }
+        );
 
     if (!product) {
         elements.scannerMessage.textContent =
             `Không tìm thấy mã ${scannedCode}.`;
 
-        setTimeout(() => {
-            state.scanLocked =
-                false;
-        }, 900);
+        window.setTimeout(
+            () => {
+                state.scanLocked =
+                    false;
+            },
+            900
+        );
 
         return;
     }
@@ -592,10 +909,13 @@ async function handleScanSuccess(
         );
 
     if (!added) {
-        setTimeout(() => {
-            state.scanLocked =
-                false;
-        }, 900);
+        window.setTimeout(
+            () => {
+                state.scanLocked =
+                    false;
+            },
+            900
+        );
 
         return;
     }
@@ -605,11 +925,14 @@ async function handleScanSuccess(
     elements.scannerMessage.textContent =
         `Đã thêm ${product.name} vào giỏ.`;
 
-    setTimeout(async () => {
-        await closeScanner();
+    window.setTimeout(
+        async () => {
+            await closeScanner();
 
-        showSaleMessage(
-            `Đã thêm ${product.name} vào giỏ.`
-        );
-    }, 350);
+            showSaleMessage(
+                `Đã thêm ${product.name} vào giỏ.`
+            );
+        },
+        350
+    );
 }

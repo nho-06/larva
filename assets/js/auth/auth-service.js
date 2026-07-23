@@ -1,17 +1,15 @@
 import {
-    browserLocalPersistence,
     createUserWithEmailAndPassword,
+    deleteUser,
     onAuthStateChanged,
-    setPersistence,
     signInWithEmailAndPassword,
-    signOut,
-    updateProfile
+    signOut
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 import {
     get,
     ref,
-    set
+    update
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
 import {
@@ -19,90 +17,282 @@ import {
     db
 } from "../firebase-config.js";
 
-const INTERNAL_EMAIL_DOMAIN =
-    "@gmail.com";
+const SESSION_PROFILE_KEY =
+    "larva_current_profile";
 
-export const USER_ROLES = {
-    ADMIN:
-        "admin",
-
-    STAFF:
-        "staff"
+export const USER_STATUS = {
+    PENDING: "pending",
+    APPROVED: "approved",
+    LOCKED: "locked",
+    DELETED: "deleted"
 };
 
-export const ROLE_HOME_PAGES = {
-    admin:
-        "./index.html",
-
-    staff:
-        "./sales.html"
+export const USER_ROLE = {
+    ADMIN: "admin",
+    STAFF: "staff"
 };
 
-export function normalizeUsername(
-    username
-) {
-    return String(
-        username || ""
-    )
+/**
+ * Chuẩn hóa email.
+ */
+export function normalizeEmail(email) {
+    return String(email || "")
+        .trim()
+        .toLowerCase();
+}
+
+/**
+ * Chuẩn hóa tên đăng nhập.
+ *
+ * Chỉ giữ:
+ * - Chữ cái
+ * - Chữ số
+ * - Dấu gạch dưới
+ * - Dấu chấm
+ */
+export function normalizeUsername(username) {
+    return String(username || "")
         .trim()
         .toLowerCase()
-        .normalize("NFD")
+        .replace(/\s+/g, "")
         .replace(
-            /[\u0300-\u036f]/g,
-            ""
-        )
-        .replace(
-            /đ/g,
-            "d"
-        )
-        .replace(
-            /[^a-z0-9]/g,
+            /[^a-z0-9._]/g,
             ""
         );
 }
 
-export function usernameToEmail(
-    username
+/**
+ * Chuẩn hóa họ và tên.
+ */
+export function normalizeDisplayName(
+    displayName
 ) {
-    const normalizedUsername =
-        normalizeUsername(
-            username
-        );
+    return String(displayName || "")
+        .trim()
+        .replace(/\s+/g, " ");
+}
 
-    if (!normalizedUsername) {
-        throw new Error(
-            "Tên đăng nhập không hợp lệ."
-        );
-    }
+/**
+ * Chuẩn hóa vai trò.
+ */
+export function normalizeRole(role) {
+    const normalizedRole =
+        String(role || "")
+            .trim()
+            .toLowerCase();
 
     if (
-        normalizedUsername.length < 4
+        normalizedRole ===
+        USER_ROLE.ADMIN
     ) {
-        throw new Error(
-            "Tên đăng nhập phải có ít nhất 4 ký tự."
-        );
+        return USER_ROLE.ADMIN;
     }
 
-    return (
-        normalizedUsername
-        +
-        INTERNAL_EMAIL_DOMAIN
-    );
+    return USER_ROLE.STAFF;
 }
 
-export async function getUserProfile(
-    uid
-) {
-    const normalizedUid =
+/**
+ * Chuẩn hóa trạng thái.
+ */
+export function normalizeStatus(status) {
+    const normalizedStatus =
+        String(status || "")
+            .trim()
+            .toLowerCase();
+
+    if (
+        Object.values(USER_STATUS)
+            .includes(normalizedStatus)
+    ) {
+        return normalizedStatus;
+    }
+
+    return USER_STATUS.PENDING;
+}
+
+/**
+ * Kiểm tra email hợp lệ.
+ */
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        .test(
+            String(email || "")
+        );
+}
+
+/**
+ * Kiểm tra username hợp lệ.
+ */
+function isValidUsername(username) {
+    return /^[a-z0-9._]{3,30}$/
+        .test(
+            String(username || "")
+        );
+}
+
+/**
+ * Chuyển dữ liệu profile thành dữ liệu dùng trong phiên.
+ */
+function createSessionProfile({
+    user,
+    profile
+}) {
+    const role =
+        normalizeRole(
+            profile?.role
+        );
+
+    const rawStatus =
         String(
-            uid || ""
-        ).trim();
+            profile?.status || ""
+        )
+            .trim()
+            .toLowerCase();
+
+    /*
+        Hỗ trợ tài khoản admin cũ
+        chưa có trường status.
+    */
+    const status =
+        role === USER_ROLE.ADMIN
+        && !rawStatus
+            ? USER_STATUS.APPROVED
+            : normalizeStatus(
+                rawStatus
+            );
+
+    return {
+        uid:
+            user?.uid
+            || profile?.uid
+            || "",
+
+        email:
+            normalizeEmail(
+                user?.email
+                || profile?.email
+            ),
+
+        username:
+            normalizeUsername(
+                profile?.username
+            ),
+
+        displayName:
+            normalizeDisplayName(
+                profile?.displayName
+                || profile?.fullName
+            ),
+
+        role,
+        status
+    };
+}
+
+/**
+ * Lưu profile trong sessionStorage.
+ */
+export function saveSessionProfile(profile) {
+    try {
+        if (!profile) {
+            sessionStorage.removeItem(
+                SESSION_PROFILE_KEY
+            );
+
+            return;
+        }
+
+        sessionStorage.setItem(
+            SESSION_PROFILE_KEY,
+            JSON.stringify(profile)
+        );
+    } catch (error) {
+        console.warn(
+            "Không lưu được phiên đăng nhập:",
+            error
+        );
+    }
+}
+
+/**
+ * Đọc profile từ sessionStorage.
+ */
+export function getSavedSessionProfile() {
+    try {
+        const rawProfile =
+            sessionStorage.getItem(
+                SESSION_PROFILE_KEY
+            );
+
+        if (!rawProfile) {
+            return null;
+        }
+
+        const profile =
+            JSON.parse(rawProfile);
+
+        if (
+            !profile
+            || typeof profile !== "object"
+            || !profile.uid
+        ) {
+            clearSessionProfile();
+
+            return null;
+        }
+
+        return {
+            ...profile,
+            role:
+                normalizeRole(
+                    profile.role
+                ),
+            status:
+                normalizeStatus(
+                    profile.status
+                )
+        };
+    } catch (error) {
+        console.error(
+            "Không đọc được phiên đăng nhập:",
+            error
+        );
+
+        clearSessionProfile();
+
+        return null;
+    }
+}
+
+/**
+ * Xóa profile đã lưu.
+ */
+export function clearSessionProfile() {
+    try {
+        sessionStorage.removeItem(
+            SESSION_PROFILE_KEY
+        );
+    } catch (error) {
+        console.warn(
+            "Không xóa được phiên đăng nhập:",
+            error
+        );
+    }
+}
+
+/**
+ * Đọc thông tin tài khoản theo UID.
+ */
+export async function getUserProfile(uid) {
+    const normalizedUid =
+        String(uid || "")
+            .trim();
 
     if (!normalizedUid) {
         return null;
     }
 
-    const snapshot =
+    const profileSnapshot =
         await get(
             ref(
                 db,
@@ -110,84 +300,311 @@ export async function getUserProfile(
             )
         );
 
-    if (!snapshot.exists()) {
+    if (!profileSnapshot.exists()) {
         return null;
     }
 
-    const data =
-        snapshot.val()
-        || {};
+    const profile =
+        profileSnapshot.val();
+
+    const role =
+        normalizeRole(
+            profile?.role
+        );
+
+    const rawStatus =
+        String(
+            profile?.status || ""
+        )
+            .trim()
+            .toLowerCase();
+
+    const status =
+        role === USER_ROLE.ADMIN
+        && !rawStatus
+            ? USER_STATUS.APPROVED
+            : normalizeStatus(
+                rawStatus
+            );
 
     return {
+        ...profile,
+
         uid:
             normalizedUid,
 
-        username:
-            data.username
-            || "",
+        email:
+            normalizeEmail(
+                profile?.email
+            ),
 
-        normalizedUsername:
-            data.normalizedUsername
-            ||
+        username:
             normalizeUsername(
-                data.username
+                profile?.username
             ),
 
         displayName:
-            data.displayName
-            ||
-            data.username
-            ||
-            "Người dùng",
-
-        role:
-            normalizeRole(
-                data.role
+            normalizeDisplayName(
+                profile?.displayName
+                || profile?.fullName
             ),
 
-        active:
-            data.active !== false,
-
-        createdAt:
-            Number(
-                data.createdAt || 0
-            ),
-
-        updatedAt:
-            Number(
-                data.updatedAt || 0
-            )
+        role,
+        status
     };
 }
 
-export async function registerStaffAccount({
-    displayName,
-    username,
-    password
-}) {
-    const normalizedDisplayName =
-        String(
-            displayName || ""
-        ).trim();
+/**
+ * Kiểm tra tài khoản được phép đăng nhập không.
+ */
+export function getAccountAccessResult(
+    profile
+) {
+    if (!profile) {
+        return {
+            allowed: false,
+            code: "PROFILE_NOT_FOUND",
+            message:
+                "Không tìm thấy thông tin tài khoản."
+        };
+    }
 
-    const originalUsername =
-        String(
-            username || ""
-        ).trim();
-
-    const normalizedUsername =
-        normalizeUsername(
-            originalUsername
+    const role =
+        normalizeRole(
+            profile.role
         );
 
-    const normalizedPassword =
+    const originalStatus =
         String(
-            password || ""
+            profile.status || ""
+        )
+            .trim()
+            .toLowerCase();
+
+    /*
+        Admin cũ chưa có status
+        vẫn được phép đăng nhập.
+    */
+    if (
+        role === USER_ROLE.ADMIN
+        && !originalStatus
+    ) {
+        return {
+            allowed: true,
+            code: "APPROVED",
+            message:
+                "Tài khoản được phép đăng nhập."
+        };
+    }
+
+    const status =
+        normalizeStatus(
+            profile.status
+        );
+
+    if (
+        status === USER_STATUS.PENDING
+    ) {
+        return {
+            allowed: false,
+            code: "PENDING_APPROVAL",
+            message:
+                "Tài khoản đang chờ admin xác nhận."
+        };
+    }
+
+    if (
+        status === USER_STATUS.LOCKED
+    ) {
+        return {
+            allowed: false,
+            code: "ACCOUNT_LOCKED",
+            message:
+                "Tài khoản đã bị khóa. Vui lòng liên hệ admin."
+        };
+    }
+
+    if (
+        status === USER_STATUS.DELETED
+    ) {
+        return {
+            allowed: false,
+            code: "ACCOUNT_DELETED",
+            message:
+                "Tài khoản đã bị xóa khỏi hệ thống."
+        };
+    }
+
+    if (
+        status !== USER_STATUS.APPROVED
+    ) {
+        return {
+            allowed: false,
+            code: "ACCOUNT_NOT_APPROVED",
+            message:
+                "Tài khoản chưa được phép sử dụng."
+        };
+    }
+
+    return {
+        allowed: true,
+        code: "APPROVED",
+        message:
+            "Tài khoản được phép đăng nhập."
+    };
+}
+
+/**
+ * Đăng nhập bằng email và mật khẩu.
+ */
+export async function loginAccount(
+    email,
+    password
+) {
+    const normalizedEmail =
+        normalizeEmail(email);
+
+    const normalizedPassword =
+        String(password || "");
+
+    if (!normalizedEmail) {
+        throw new Error(
+            "Vui lòng nhập email."
+        );
+    }
+
+    if (
+        !isValidEmail(
+            normalizedEmail
+        )
+    ) {
+        throw new Error(
+            "Email đăng nhập không hợp lệ."
+        );
+    }
+
+    if (!normalizedPassword) {
+        throw new Error(
+            "Vui lòng nhập mật khẩu."
+        );
+    }
+
+    try {
+        const credential =
+            await signInWithEmailAndPassword(
+                auth,
+                normalizedEmail,
+                normalizedPassword
+            );
+
+        const user =
+            credential.user;
+
+        const profile =
+            await getUserProfile(
+                user.uid
+            );
+
+        if (!profile) {
+            await safeSignOut();
+
+            throw new Error(
+                "Tài khoản đã tồn tại trong Firebase Authentication nhưng chưa có dữ liệu trong users."
+            );
+        }
+
+        const accessResult =
+            getAccountAccessResult(
+                profile
+            );
+
+        if (!accessResult.allowed) {
+            await safeSignOut();
+
+            throw new Error(
+                accessResult.message
+            );
+        }
+
+        const sessionProfile =
+            createSessionProfile({
+                user,
+                profile
+            });
+
+        saveSessionProfile(
+            sessionProfile
+        );
+
+        /*
+            Không chờ cập nhật thời gian
+            để đăng nhập nhanh hơn.
+        */
+        update(
+            ref(
+                db,
+                `users/${user.uid}`
+            ),
+            {
+                lastLoginAt:
+                    Date.now(),
+
+                updatedAt:
+                    Date.now()
+            }
+        ).catch((error) => {
+            console.warn(
+                "Không cập nhật được thời gian đăng nhập:",
+                error
+            );
+        });
+
+        return {
+            user,
+            profile:
+                sessionProfile
+        };
+    } catch (error) {
+        clearSessionProfile();
+
+        throw normalizeAuthError(
+            error
+        );
+    }
+}
+
+/**
+ * Nhân viên tự đăng ký.
+ *
+ * Tài khoản mới:
+ * role: staff
+ * status: pending
+ *
+ * Admin phải duyệt trước khi đăng nhập.
+ */
+export async function registerStaffAccount({
+    email,
+    password,
+    username,
+    displayName
+}) {
+    const normalizedEmail =
+        normalizeEmail(email);
+
+    const normalizedPassword =
+        String(password || "");
+
+    const normalizedUsername =
+        normalizeUsername(username);
+
+    const normalizedDisplayName =
+        normalizeDisplayName(
+            displayName
         );
 
     if (!normalizedDisplayName) {
         throw new Error(
-            "Vui lòng nhập tên nhân viên."
+            "Vui lòng nhập họ và tên."
         );
     }
 
@@ -195,21 +612,45 @@ export async function registerStaffAccount({
         normalizedDisplayName.length < 2
     ) {
         throw new Error(
-            "Tên nhân viên quá ngắn."
+            "Họ và tên phải có ít nhất 2 ký tự."
         );
     }
 
     if (!normalizedUsername) {
         throw new Error(
-            "Tên đăng nhập không hợp lệ."
+            "Vui lòng nhập tên đăng nhập."
         );
     }
 
     if (
-        normalizedUsername.length < 4
+        !isValidUsername(
+            normalizedUsername
+        )
     ) {
         throw new Error(
-            "Tên đăng nhập phải có ít nhất 4 ký tự."
+            "Tên đăng nhập phải có từ 3 đến 30 ký tự và chỉ gồm chữ thường không dấu, số, dấu chấm hoặc gạch dưới."
+        );
+    }
+
+    if (!normalizedEmail) {
+        throw new Error(
+            "Vui lòng nhập email."
+        );
+    }
+
+    if (
+        !isValidEmail(
+            normalizedEmail
+        )
+    ) {
+        throw new Error(
+            "Email không hợp lệ."
+        );
+    }
+
+    if (!normalizedPassword) {
+        throw new Error(
+            "Vui lòng nhập mật khẩu."
         );
     }
 
@@ -221,391 +662,235 @@ export async function registerStaffAccount({
         );
     }
 
-    const email =
-        usernameToEmail(
-            originalUsername
-        );
+    /*
+        Kiểm tra username đã tồn tại chưa.
 
-    const usernameSnapshot =
-        await get(
-            ref(
-                db,
-                `usernames/${normalizedUsername}`
+        Database Rules phải cho phép đọc:
+        usernames/{username}
+    */
+    let usernameSnapshot;
+
+    try {
+        usernameSnapshot =
+            await get(
+                ref(
+                    db,
+                    `usernames/${normalizedUsername}`
+                )
+            );
+    } catch (error) {
+        if (
+            String(
+                error?.code || ""
+            ) === "PERMISSION_DENIED"
+            || String(
+                error?.message || ""
+            ).includes(
+                "Permission denied"
             )
-        );
+        ) {
+            throw new Error(
+                "Firebase Database Rules đang chặn kiểm tra tên đăng nhập."
+            );
+        }
 
-    if (usernameSnapshot.exists()) {
+        throw error;
+    }
+
+    if (
+        usernameSnapshot.exists()
+    ) {
         throw new Error(
-            "Tên đăng nhập này đã được sử dụng."
+            "Tên đăng nhập đã được sử dụng."
         );
     }
 
-    await setPersistence(
-        auth,
-        browserLocalPersistence
-    );
-
-    const credential =
-        await createUserWithEmailAndPassword(
-            auth,
-            email,
-            normalizedPassword
-        );
-
-    const firebaseUser =
-        credential.user;
-
-    const now =
-        Date.now();
+    let createdUser = null;
 
     try {
-        await updateProfile(
-            firebaseUser,
-            {
-                displayName:
-                    normalizedDisplayName
-            }
-        );
+        const credential =
+            await createUserWithEmailAndPassword(
+                auth,
+                normalizedEmail,
+                normalizedPassword
+            );
 
-        await set(
-            ref(
-                db,
-                `users/${firebaseUser.uid}`
-            ),
-            {
-                uid:
-                    firebaseUser.uid,
+        createdUser =
+            credential.user;
 
-                username:
-                    originalUsername,
+        const now =
+            Date.now();
 
-                normalizedUsername,
-
-                displayName:
-                    normalizedDisplayName,
-
-                email,
-
-                role:
-                    USER_ROLES.STAFF,
-
-                active:
-                    true,
-
-                createdAt:
-                    now,
-
-                updatedAt:
-                    now
-            }
-        );
-
-        await set(
-            ref(
-                db,
-                `usernames/${normalizedUsername}`
-            ),
-            {
-                uid:
-                    firebaseUser.uid,
-
-                role:
-                    USER_ROLES.STAFF,
-
-                createdAt:
-                    now
-            }
-        );
-
-        await signOut(
-            auth
-        );
-
-        return {
+        const profile = {
             uid:
-                firebaseUser.uid,
+                createdUser.uid,
+
+            email:
+                normalizedEmail,
 
             username:
-                originalUsername,
+                normalizedUsername,
 
             displayName:
                 normalizedDisplayName,
 
             role:
-                USER_ROLES.STAFF
-        };
-    } catch (error) {
-        try {
-            await signOut(
-                auth
-            );
-        } catch (signOutError) {
-            console.warn(
-                "Không đăng xuất được sau lỗi đăng ký:",
-                signOutError
-            );
-        }
+                USER_ROLE.STAFF,
 
-        throw error;
-    }
-}
+            status:
+                USER_STATUS.PENDING,
 
-export async function loginWithUsername(
-    username,
-    password
-) {
-    const email =
-        usernameToEmail(
-            username
-        );
+            approved:
+                false,
 
-    const normalizedPassword =
-        String(
-            password || ""
-        );
+            locked:
+                false,
 
-    if (!normalizedPassword) {
-        throw new Error(
-            "Vui lòng nhập mật khẩu."
-        );
-    }
+            deleted:
+                false,
 
-    await setPersistence(
-        auth,
-        browserLocalPersistence
-    );
+            createdAt:
+                now,
 
-    const credential =
-        await signInWithEmailAndPassword(
-            auth,
-            email,
-            normalizedPassword
-        );
+            updatedAt:
+                now,
 
-    const firebaseUser =
-        credential.user;
-
-    let profile;
-
-    try {
-        profile =
-            await getUserProfile(
-                firebaseUser.uid
-            );
-    } catch (error) {
-        await signOut(
-            auth
-        );
-
-        throw new Error(
-            "Không đọc được thông tin phân quyền."
-        );
-    }
-
-    if (!profile) {
-        await signOut(
-            auth
-        );
-
-        throw new Error(
-            "Tài khoản chưa được cấp quyền sử dụng."
-        );
-    }
-
-    if (!profile.active) {
-        await signOut(
-            auth
-        );
-
-        throw new Error(
-            "Tài khoản này đã bị khóa."
-        );
-    }
-
-    if (
-        profile.role !== USER_ROLES.ADMIN
-        &&
-        profile.role !== USER_ROLES.STAFF
-    ) {
-        await signOut(
-            auth
-        );
-
-        throw new Error(
-            "Tài khoản chưa có quyền hợp lệ."
-        );
-    }
-
-    return {
-        user:
-            firebaseUser,
-
-        profile
-    };
-}
-
-export async function logout() {
-    await signOut(
-        auth
-    );
-}
-
-export async function waitForAuthState() {
-    /*
-        Firebase 10 hỗ trợ authStateReady().
-        Dùng timeout để không bị đứng mãi tại
-        "Đang tải menu...".
-    */
-    if (
-        typeof auth.authStateReady
-        === "function"
-    ) {
-        await Promise.race([
-            auth.authStateReady(),
-
-            createTimeoutPromise(
-                10000,
-                "Firebase kiểm tra đăng nhập quá lâu."
-            )
-        ]);
-
-        return auth.currentUser;
-    }
-
-    /*
-        Phương án dự phòng.
-    */
-    return new Promise(
-        (resolve, reject) => {
-            let unsubscribe =
-                null;
-
-            const timeoutId =
-                window.setTimeout(
-                    () => {
-                        if (unsubscribe) {
-                            unsubscribe();
-                        }
-
-                        reject(
-                            new Error(
-                                "Firebase kiểm tra đăng nhập quá lâu."
-                            )
-                        );
-                    },
-                    10000
-                );
-
-            unsubscribe =
-                onAuthStateChanged(
-                    auth,
-
-                    (user) => {
-                        window.clearTimeout(
-                            timeoutId
-                        );
-
-                        if (unsubscribe) {
-                            unsubscribe();
-                        }
-
-                        resolve(
-                            user
-                        );
-                    },
-
-                    (error) => {
-                        window.clearTimeout(
-                            timeoutId
-                        );
-
-                        if (unsubscribe) {
-                            unsubscribe();
-                        }
-
-                        reject(
-                            error
-                        );
-                    }
-                );
-        }
-    );
-}
-
-export async function getCurrentSession() {
-    const user =
-        await waitForAuthState();
-
-    if (!user) {
-        return {
-            user:
+            approvedAt:
                 null,
 
-            profile:
+            approvedBy:
+                null,
+
+            lockedAt:
+                null,
+
+            lockedBy:
+                null,
+
+            deletedAt:
+                null,
+
+            deletedBy:
+                null,
+
+            lastLoginAt:
                 null
         };
-    }
 
-    let profile;
+        /*
+            Lưu cùng lúc:
+            - users/{uid}
+            - usernames/{username}
 
-    try {
-        profile =
-            await Promise.race([
-                getUserProfile(
-                    user.uid
-                ),
+            Nếu một phần lỗi thì toàn bộ update bị hủy.
+        */
+        await update(
+            ref(db),
+            {
+                [`users/${createdUser.uid}`]:
+                    profile,
 
-                createTimeoutPromise(
-                    10000,
-                    "Không đọc được quyền tài khoản."
-                )
-            ]);
+                [`usernames/${normalizedUsername}`]:
+                    {
+                        uid:
+                            createdUser.uid,
+
+                        email:
+                            normalizedEmail,
+
+                        createdAt:
+                            now
+                    }
+            }
+        );
+
+        /*
+            Tài khoản đang pending,
+            bắt buộc đăng xuất sau đăng ký.
+        */
+        await safeSignOut();
+
+        return {
+            success: true,
+
+            userId:
+                createdUser.uid,
+
+            profile,
+
+            message:
+                "Đăng ký thành công. Tài khoản đang chờ admin xác nhận."
+        };
     } catch (error) {
-        console.error(
-            "Lỗi đọc hồ sơ người dùng:",
+        /*
+            Nếu đã tạo Authentication nhưng không ghi được Database,
+            thử xóa tài khoản Auth vừa tạo để tránh tài khoản bị thiếu profile.
+        */
+        if (
+            createdUser
+            && auth.currentUser?.uid ===
+                createdUser.uid
+        ) {
+            try {
+                await deleteUser(
+                    createdUser
+                );
+            } catch (
+                deleteError
+            ) {
+                console.warn(
+                    "Không xóa được tài khoản Auth sau khi lưu Database thất bại:",
+                    deleteError
+                );
+            }
+        }
+
+        await safeSignOut();
+
+        throw normalizeAuthError(
             error
         );
-
-        throw error;
     }
-
-    if (
-        !profile
-        ||
-        !profile.active
-    ) {
-        await logout();
-
-        return {
-            user:
-                null,
-
-            profile:
-                null
-        };
-    }
-
-    return {
-        user,
-        profile
-    };
 }
 
+/**
+ * Đăng xuất tài khoản.
+ */
+export async function logout() {
+    await safeSignOut();
+}
+
+/**
+ * Đăng xuất an toàn.
+ */
+async function safeSignOut() {
+    try {
+        if (auth.currentUser) {
+            await signOut(auth);
+        }
+    } catch (error) {
+        console.warn(
+            "Không đăng xuất được Firebase:",
+            error
+        );
+    } finally {
+        clearSessionProfile();
+    }
+}
+
+/**
+ * Theo dõi trạng thái Firebase Authentication.
+ */
 export function observeAuthState(
     callback
 ) {
     return onAuthStateChanged(
         auth,
-
         async (user) => {
             if (!user) {
-                callback({
-                    user:
-                        null,
+                clearSessionProfile();
 
-                    profile:
-                        null
-                });
+                callback?.(null);
 
                 return;
             }
@@ -616,20 +901,85 @@ export function observeAuthState(
                         user.uid
                     );
 
-                callback({
+                if (!profile) {
+                    await safeSignOut();
+
+                    callback?.({
+                        user: null,
+
+                        profile: null,
+
+                        accessResult: {
+                            allowed: false,
+
+                            code:
+                                "PROFILE_NOT_FOUND",
+
+                            message:
+                                "Không tìm thấy thông tin tài khoản."
+                        }
+                    });
+
+                    return;
+                }
+
+                const accessResult =
+                    getAccountAccessResult(
+                        profile
+                    );
+
+                if (!accessResult.allowed) {
+                    await safeSignOut();
+
+                    callback?.({
+                        user: null,
+                        profile,
+                        accessResult
+                    });
+
+                    return;
+                }
+
+                const sessionProfile =
+                    createSessionProfile({
+                        user,
+                        profile
+                    });
+
+                saveSessionProfile(
+                    sessionProfile
+                );
+
+                callback?.({
                     user,
-                    profile
+
+                    profile:
+                        sessionProfile,
+
+                    accessResult
                 });
             } catch (error) {
                 console.error(
-                    "Không đọc được quyền người dùng:",
+                    "Lỗi kiểm tra trạng thái đăng nhập:",
                     error
                 );
 
-                callback({
-                    user,
-                    profile:
-                        null,
+                clearSessionProfile();
+
+                callback?.({
+                    user: null,
+
+                    profile: null,
+
+                    accessResult: {
+                        allowed: false,
+
+                        code:
+                            "AUTH_STATE_ERROR",
+
+                        message:
+                            "Không kiểm tra được phiên đăng nhập."
+                    },
 
                     error
                 });
@@ -638,184 +988,78 @@ export function observeAuthState(
     );
 }
 
-export function getHomePageByRole(
-    role
-) {
-    const normalizedRole =
-        normalizeRole(
-            role
-        );
-
-    return (
-        ROLE_HOME_PAGES[
-            normalizedRole
-        ]
-        ||
-        "./login.html"
-    );
-}
-
-export function getAuthErrorMessage(
-    error
-) {
-    const errorCode =
+/**
+ * Chuyển lỗi Firebase thành thông báo dễ hiểu.
+ */
+function normalizeAuthError(error) {
+    const code =
         String(
             error?.code || ""
         );
 
-    switch (errorCode) {
-        case "auth/invalid-credential":
-        case "auth/invalid-login-credentials":
-        case "auth/user-not-found":
-        case "auth/wrong-password":
-            return (
-                "Tên đăng nhập hoặc mật khẩu không đúng."
-            );
-
-        case "auth/invalid-email":
-            return (
-                "Tên đăng nhập không hợp lệ."
-            );
-
-        case "auth/user-disabled":
-            return (
-                "Tài khoản đã bị vô hiệu hóa."
-            );
-
-        case "auth/too-many-requests":
-            return (
-                "Bạn đã đăng nhập sai quá nhiều lần. "
-                +
-                "Hãy thử lại sau."
-            );
-
-        case "auth/network-request-failed":
-            return (
-                "Không thể kết nối Firebase. "
-                +
-                "Hãy kiểm tra mạng."
-            );
-
-        case "auth/operation-not-allowed":
-            return (
-                "Đăng nhập Email/Password chưa được bật."
-            );
-
-        default:
-            return (
-                error?.message
-                ||
-                "Không thể đăng nhập."
-            );
-    }
-}
-
-export function getRegisterErrorMessage(
-    error
-) {
-    const errorCode =
+    const rawMessage =
         String(
-            error?.code || ""
+            error?.message || ""
         );
 
-    switch (errorCode) {
-        case "auth/email-already-in-use":
-            return (
-                "Tên đăng nhập này đã được sử dụng."
-            );
-
-        case "auth/invalid-email":
-            return (
-                "Tên đăng nhập không hợp lệ."
-            );
-
-        case "auth/weak-password":
-            return (
-                "Mật khẩu quá yếu. "
-                +
-                "Hãy dùng ít nhất 6 ký tự."
-            );
-
-        case "auth/network-request-failed":
-            return (
-                "Không thể kết nối Firebase. "
-                +
-                "Hãy kiểm tra mạng."
-            );
-
-        case "auth/operation-not-allowed":
-            return (
-                "Đăng ký Email/Password chưa được bật."
-            );
-
-        case "auth/too-many-requests":
-            return (
-                "Bạn thao tác quá nhiều lần. "
-                +
-                "Hãy thử lại sau."
-            );
-
-        default:
-            return (
-                error?.message
-                ||
-                "Không thể đăng ký tài khoản."
-            );
-    }
-}
-
-function normalizeRole(
-    role
-) {
-    const normalizedRole =
-        String(
-            role || ""
+    /*
+        Giữ nguyên lỗi do code tự tạo.
+    */
+    if (
+        rawMessage
+        && !rawMessage.startsWith(
+            "Firebase:"
         )
-            .trim()
-            .toLowerCase();
-
-    if (
-        normalizedRole
-        === USER_ROLES.ADMIN
     ) {
-        return USER_ROLES.ADMIN;
+        return new Error(
+            rawMessage
+        );
     }
 
-    if (
-        normalizedRole
-        === USER_ROLES.STAFF
-        ||
-        normalizedRole
-        === "employee"
-        ||
-        normalizedRole
-        === "nhanvien"
-        ||
-        normalizedRole
-        === "nhân viên"
-    ) {
-        return USER_ROLES.STAFF;
-    }
+    const errorMessages = {
+        "auth/email-already-in-use":
+            "Email này đã được đăng ký.",
 
-    return "";
-}
+        "auth/invalid-email":
+            "Email không hợp lệ.",
 
-function createTimeoutPromise(
-    milliseconds,
-    message
-) {
-    return new Promise(
-        (_, reject) => {
-            window.setTimeout(
-                () => {
-                    reject(
-                        new Error(
-                            message
-                        )
-                    );
-                },
-                milliseconds
-            );
-        }
+        "auth/weak-password":
+            "Mật khẩu quá yếu. Vui lòng dùng ít nhất 6 ký tự.",
+
+        "auth/missing-password":
+            "Vui lòng nhập mật khẩu.",
+
+        "auth/invalid-credential":
+            "Email hoặc mật khẩu không đúng.",
+
+        "auth/invalid-login-credentials":
+            "Email hoặc mật khẩu không đúng.",
+
+        "auth/user-disabled":
+            "Tài khoản Firebase Authentication đã bị vô hiệu hóa.",
+
+        "auth/user-not-found":
+            "Không tìm thấy tài khoản.",
+
+        "auth/wrong-password":
+            "Email hoặc mật khẩu không đúng.",
+
+        "auth/too-many-requests":
+            "Bạn đã thử quá nhiều lần. Vui lòng đợi một lúc rồi thử lại.",
+
+        "auth/network-request-failed":
+            "Không thể kết nối Firebase. Vui lòng kiểm tra mạng.",
+
+        "auth/operation-not-allowed":
+            "Firebase chưa bật phương thức đăng nhập Email/Password.",
+
+        "auth/internal-error":
+            "Firebase gặp lỗi nội bộ. Vui lòng thử lại."
+    };
+
+    return new Error(
+        errorMessages[code]
+        || rawMessage
+        || "Không thể xử lý tài khoản."
     );
 }
