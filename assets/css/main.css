@@ -5943,3 +5943,52 @@ th {
         max-height: 380px !important;
     }
 }
+/* =========================================================
+   MOBILE: ĐƯA HÓA ĐƠN VÀ THANH TOÁN LÊN TRÊN
+========================================================= */
+
+@media (max-width: 850px) {
+    /*
+        Chuyển khu vực bán hàng thành flex để có thể
+        thay đổi thứ tự hai khối trên điện thoại.
+    */
+    .pos-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+    }
+
+    /*
+        Hóa đơn đang chọn nằm trên.
+    */
+    .cart-panel {
+        order: 1 !important;
+
+        position: static !important;
+
+        width: 100% !important;
+        margin-top: 0 !important;
+    }
+
+    /*
+        Tìm kiếm, danh mục và sản phẩm nằm dưới.
+    */
+    .pos-products-panel {
+        order: 2 !important;
+
+        width: 100% !important;
+    }
+}
+
+
+/* Điện thoại nhỏ */
+@media (max-width: 480px) {
+    .pos-layout {
+        gap: 14px !important;
+    }
+
+    .cart-panel,
+    .pos-products-panel {
+        width: 100% !important;
+    }
+}
