@@ -125,7 +125,11 @@ function getScannerConfig() {
             height: 190
         },
 
-        aspectRatio: 16 / 9,
+        /*
+            Không ép camera về tỉ lệ 16:9.
+            Trên điện thoại dọc, ép 16:9 có thể làm hình
+            bị cắt và trông giống như camera tự zoom.
+        */
 
         disableFlip: true,
 
@@ -279,19 +283,21 @@ async function configureCameraControls() {
                 || 0.1
             );
 
-        currentZoom =
-            Number(
-                settings.zoom
-                || 1
-            );
-
-        currentZoom = Math.min(
+        /*
+            Luôn mở camera ở mức thấp nhất gần 1x.
+            Một số điện thoại ghi nhớ mức zoom của lần trước,
+            làm camera vừa mở đã bị phóng lớn.
+        */
+        const defaultZoom = Math.min(
             zoomMax,
             Math.max(
                 zoomMin,
-                currentZoom
+                1
             )
         );
+
+        currentZoom =
+            defaultZoom;
 
         elements.cameraZoomInput.min =
             String(
@@ -312,6 +318,26 @@ async function configureCameraControls() {
             String(
                 currentZoom
             );
+
+        /*
+            Áp dụng 1x ngay khi camera vừa khởi động.
+            Người dùng vẫn có thể kéo thanh zoom sau đó.
+        */
+        try {
+            await cameraTrack.applyConstraints({
+                advanced: [
+                    {
+                        zoom:
+                            defaultZoom
+                    }
+                ]
+            });
+        } catch (error) {
+            console.warn(
+                "Không thể đặt camera về 1x:",
+                error
+            );
+        }
 
         updateZoomText(
             currentZoom
