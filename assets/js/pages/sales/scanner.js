@@ -66,28 +66,56 @@ async function playScanSound() {
 
         oscillator.type = "sine";
 
+        const startTime =
+            audioContext.currentTime;
+
+        /*
+            Hai tiếng "tích tích" ngắn khi quét thành công.
+        */
         oscillator.frequency.setValueAtTime(
             1050,
-            audioContext.currentTime
+            startTime
+        );
+
+        oscillator.frequency.setValueAtTime(
+            1320,
+            startTime + 0.11
         );
 
         gainNode.gain.setValueAtTime(
-            0.18,
-            audioContext.currentTime
+            0.001,
+            startTime
+        );
+
+        gainNode.gain.linearRampToValueAtTime(
+            0.20,
+            startTime + 0.01
         );
 
         gainNode.gain.exponentialRampToValueAtTime(
             0.001,
-            audioContext.currentTime + 0.14
+            startTime + 0.08
+        );
+
+        gainNode.gain.setValueAtTime(
+            0.001,
+            startTime + 0.10
+        );
+
+        gainNode.gain.linearRampToValueAtTime(
+            0.20,
+            startTime + 0.12
+        );
+
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            startTime + 0.20
         );
 
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        oscillator.start();
-
-        oscillator.stop(
-            audioContext.currentTime + 0.14
-        );
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.22);
     } catch (error) {
         console.warn(
             "Không phát được âm thanh quét mã:",
@@ -208,6 +236,47 @@ async function focusCamera() {
     }
 }
 
+async function ensureCameraVideoPlaying() {
+    if (!cameraVideo) {
+        return;
+    }
+
+    /*
+        iPhone và trình duyệt mở bên trong Zalo/Facebook đôi khi
+        hiển thị nút Play thay vì phát camera ngay.
+    */
+    cameraVideo.setAttribute(
+        "playsinline",
+        ""
+    );
+
+    cameraVideo.setAttribute(
+        "webkit-playsinline",
+        ""
+    );
+
+    cameraVideo.setAttribute(
+        "autoplay",
+        ""
+    );
+
+    cameraVideo.muted =
+        true;
+
+    cameraVideo.playsInline =
+        true;
+
+    try {
+        await cameraVideo.play();
+    } catch (error) {
+        console.warn(
+            "Camera chưa thể tự phát:",
+            error
+        );
+    }
+}
+
+
 async function configureCameraControls() {
     hideCameraControls();
 
@@ -223,6 +292,8 @@ async function configureCameraControls() {
             ?.srcObject
             ?.getVideoTracks?.()[0]
         || null;
+
+    await ensureCameraVideoPlaying();
 
     if (!cameraTrack) {
         return;

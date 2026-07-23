@@ -3913,10 +3913,14 @@ th {
 }
 
 #barcodeReader video {
+    display: block !important;
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
     min-height: 280px;
-    object-fit: cover;
+    max-height: 70vh;
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #000000;
 }
 
 .scanner-message {
@@ -5870,217 +5874,72 @@ th {
         flex: 1;
     }
 }
+
 /* =========================================================
    CAMERA KHÔNG TỰ CẮT / PHÓNG TO
 ========================================================= */
 
-/*
-    Hiển thị đầy đủ khung hình camera.
-
-    object-fit: contain:
-    - Không cắt hai bên video.
-    - Không tạo cảm giác camera bị zoom sẵn.
-    - Có thể xuất hiện khoảng đen nếu tỷ lệ camera
-      khác tỷ lệ khung hiển thị.
-*/
-#barcodeReader video,
-#barcodeReader__scan_region video {
-    width: 100% !important;
-    height: auto !important;
-
-    max-width: 100% !important;
-    max-height: 70vh !important;
-
-    display: block !important;
-
-    object-fit: contain !important;
-    object-position: center center !important;
-
-    transform: none !important;
-    scale: 1 !important;
-
-    border-radius: 14px;
-    background: #000000;
-}
-
-
-/*
-    Không ép vùng camera thành tỷ lệ 16:9
-    hoặc chiều cao cố định.
-*/
 #barcodeReader,
 #barcodeReader__scan_region {
+    background: #000000 !important;
+}
+
+#barcodeReader video,
+#barcodeReader__scan_region video {
+    display: block !important;
     width: 100% !important;
-
     height: auto !important;
-    min-height: 0 !important;
-
-    overflow: hidden !important;
-
-    background: #000000;
-    border-radius: 14px;
-}
-
-
-/*
-    Một số thư viện tự tạo div bao quanh video
-    và gán chiều cao cố định.
-*/
-#barcodeReader__scan_region {
-    display: flex !important;
-
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-
-/*
-    Khung quét do thư viện tạo ra không được
-    làm thay đổi kích thước video.
-*/
-#barcodeReader__scan_region > div {
     max-width: 100% !important;
+    max-height: 52vh !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: none !important;
+    background: #000000 !important;
+}
+
+@media (max-width: 768px) {
+    #barcodeReader {
+        min-height: 0;
+    }
+
+    #barcodeReader video,
+    #barcodeReader__scan_region video {
+        min-height: 0 !important;
+        max-height: 48vh !important;
+    }
 }
 
 
-/*
-    Giao diện điều khiển zoom.
-*/
-.camera-controls {
-    width: 100%;
+/* =========================================================
+   KÍCH THƯỚC CAMERA QUÉT MÃ TRÊN ĐIỆN THOẠI
+========================================================= */
 
-    margin-top: 14px;
-    padding: 14px;
-
-    border: 1px solid #f2d4df;
-    border-radius: 14px;
-
-    background: #fff8fb;
+#barcodeReader {
+    overflow: hidden !important;
+    border-radius: 18px !important;
 }
 
-
-.camera-zoom-row {
-    display: flex;
-
-    align-items: center;
-    gap: 12px;
+#barcodeReader video,
+#barcodeReader__scan_region video {
+    min-height: 280px !important;
 }
 
-
-.camera-zoom-reset {
-    flex: 0 0 auto;
-
-    min-width: 54px;
-    height: 42px;
-
-    padding: 0 14px;
-
-    border: 1px solid #e8a4bd;
-    border-radius: 12px;
-
-    background: #ffffff;
-    color: #a94f70;
-
-    font-size: 15px;
-    font-weight: 700;
-
-    cursor: pointer;
-}
-
-
-.camera-zoom-reset:hover {
-    background: #fdeaf1;
-}
-
-
-.camera-zoom-field {
-    flex: 1;
-
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-
-.camera-zoom-field label {
-    flex: 0 0 auto;
-
-    color: #765760;
-
-    font-size: 14px;
-    font-weight: 700;
-}
-
-
-.camera-zoom-field input[type="range"] {
-    width: 100%;
-
-    cursor: pointer;
-}
-
-
-.camera-focus-help {
-    margin: 10px 0 0;
-
-    color: #876c75;
-
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-
-/*
-    Điện thoại dọc:
-    cho video dùng gần hết chiều ngang,
-    nhưng không phóng vượt khỏi màn hình.
-*/
 @media (max-width: 768px) {
     #barcodeReader video,
     #barcodeReader__scan_region video {
         width: 100% !important;
-        height: auto !important;
-
-        max-height: 68vh !important;
-
+        height: 46vh !important;
+        min-height: 300px !important;
+        max-height: 440px !important;
         object-fit: contain !important;
-        object-position: center center !important;
-    }
-
-    #barcodeReader,
-    #barcodeReader__scan_region {
-        width: 100% !important;
-        height: auto !important;
-    }
-
-    .camera-zoom-row {
-        align-items: stretch;
     }
 }
 
-
-/*
-    Điện thoại màn hình nhỏ.
-*/
-@media (max-width: 480px) {
+@media (max-width: 420px) {
     #barcodeReader video,
     #barcodeReader__scan_region video {
-        max-height: 64vh !important;
-
-        border-radius: 10px;
-    }
-
-    .camera-controls {
-        padding: 12px;
-    }
-
-    .camera-zoom-row {
-        gap: 8px;
-    }
-
-    .camera-zoom-reset {
-        min-width: 50px;
-        height: 40px;
-
-        padding: 0 11px;
+        height: 42vh !important;
+        min-height: 270px !important;
+        max-height: 380px !important;
     }
 }
